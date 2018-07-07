@@ -18,11 +18,6 @@ import (
 	"github.com/slok/kutator/pkg/webhook/mutating"
 )
 
-var patchTypeJSONPatch = func() *admissionv1beta1.PatchType {
-	pt := admissionv1beta1.PatchTypeJSONPatch
-	return &pt
-}()
-
 func getPodJSON() []byte {
 	pod := &corev1.Pod{
 		TypeMeta: metav1.TypeMeta{
@@ -139,10 +134,10 @@ type whfactory func(mutating.Mutator) webhook.Webhook
 
 func testPodAdmissionReviewMutation(whf whfactory, t *testing.T) {
 	tests := []struct {
-		name        string
-		mutator     mutating.Mutator
-		review      *admissionv1beta1.AdmissionReview
-		expResponse *admissionv1beta1.AdmissionResponse
+		name     string
+		mutator  mutating.Mutator
+		review   *admissionv1beta1.AdmissionReview
+		expPatch []string
 	}{
 		{
 			name:    "a review of a Pod with an ns mutator should mutate the ns",
@@ -155,11 +150,8 @@ func testPodAdmissionReviewMutation(whf whfactory, t *testing.T) {
 					},
 				},
 			},
-			expResponse: &admissionv1beta1.AdmissionResponse{
-				UID:       "test",
-				Patch:     []byte(`[{"op":"replace","path":"/metadata/namespace","value":"myChangedNS"}]`),
-				Allowed:   true,
-				PatchType: patchTypeJSONPatch,
+			expPatch: []string{
+				`{"op":"replace","path":"/metadata/namespace","value":"myChangedNS"}`,
 			},
 		},
 		{
@@ -178,11 +170,10 @@ func testPodAdmissionReviewMutation(whf whfactory, t *testing.T) {
 					},
 				},
 			},
-			expResponse: &admissionv1beta1.AdmissionResponse{
-				UID:       "test",
-				Patch:     []byte(`[{"op":"replace","path":"/metadata/annotations/key1","value":"val1_mutated"},{"op":"add","path":"/metadata/annotations/key5","value":"val5"},{"op":"remove","path":"/metadata/annotations/key3"}]`),
-				Allowed:   true,
-				PatchType: patchTypeJSONPatch,
+			expPatch: []string{
+				`{"op":"replace","path":"/metadata/annotations/key1","value":"val1_mutated"}`,
+				`{"op":"add","path":"/metadata/annotations/key5","value":"val5"}`,
+				`{"op":"remove","path":"/metadata/annotations/key3"}`,
 			},
 		},
 		{
@@ -196,11 +187,9 @@ func testPodAdmissionReviewMutation(whf whfactory, t *testing.T) {
 					},
 				},
 			},
-			expResponse: &admissionv1beta1.AdmissionResponse{
-				UID:       "test",
-				Patch:     []byte(`[{"op":"remove","path":"/spec/containers/0/resources/limits"},{"op":"remove","path":"/spec/containers/1/resources/limits"}]`),
-				Allowed:   true,
-				PatchType: patchTypeJSONPatch,
+			expPatch: []string{
+				`{"op":"remove","path":"/spec/containers/0/resources/limits"}`,
+				`{"op":"remove","path":"/spec/containers/1/resources/limits"}`,
 			},
 		},
 	}
@@ -210,7 +199,14 @@ func testPodAdmissionReviewMutation(whf whfactory, t *testing.T) {
 			assert := assert.New(t)
 			wh := whf(test.mutator)
 			gotResponse := wh.Review(test.review)
-			assert.Equal(test.expResponse, gotResponse)
+
+			// Check uid, allowed and patch
+			assert.True(gotResponse.Allowed)
+			assert.Equal(test.review.Request.UID, gotResponse.UID)
+			gotPatch := string(gotResponse.Patch)
+			for _, expPatchOp := range test.expPatch {
+				assert.Contains(gotPatch, expPatchOp)
+			}
 		})
 	}
 }
