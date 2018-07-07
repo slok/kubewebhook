@@ -1,4 +1,4 @@
-package mutate_test
+package mutating_test
 
 import (
 	"context"
@@ -8,47 +8,47 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	mmutate "github.com/slok/kutator/mocks/mutate"
+	mmutating "github.com/slok/kutator/mocks/webhook/mutating"
 	"github.com/slok/kutator/pkg/log"
-	"github.com/slok/kutator/pkg/mutate"
+	"github.com/slok/kutator/pkg/webhook/mutating"
 )
 
 func TestMutatorChain(t *testing.T) {
 	tests := []struct {
 		name         string
-		mutatorMocks func() []mutate.Mutator
+		mutatorMocks func() []mutating.Mutator
 		expErr       bool
 	}{
 		{
 			name: "Should call all the mutators",
-			mutatorMocks: func() []mutate.Mutator {
-				m1, m2, m3, m4, m5 := &mmutate.Mutator{}, &mmutate.Mutator{}, &mmutate.Mutator{}, &mmutate.Mutator{}, &mmutate.Mutator{}
+			mutatorMocks: func() []mutating.Mutator {
+				m1, m2, m3, m4, m5 := &mmutating.Mutator{}, &mmutating.Mutator{}, &mmutating.Mutator{}, &mmutating.Mutator{}, &mmutating.Mutator{}
 				m1.On("Mutate", mock.Anything, mock.Anything).Return(false, nil)
 				m2.On("Mutate", mock.Anything, mock.Anything).Return(false, nil)
 				m3.On("Mutate", mock.Anything, mock.Anything).Return(false, nil)
 				m4.On("Mutate", mock.Anything, mock.Anything).Return(false, nil)
 				m5.On("Mutate", mock.Anything, mock.Anything).Return(false, nil)
-				return []mutate.Mutator{m1, m2, m3, m4, m5}
+				return []mutating.Mutator{m1, m2, m3, m4, m5}
 			},
 		},
 		{
 			name: "Should stop in the middle of the chain",
-			mutatorMocks: func() []mutate.Mutator {
-				m1, m2, m3, m4, m5 := &mmutate.Mutator{}, &mmutate.Mutator{}, &mmutate.Mutator{}, &mmutate.Mutator{}, &mmutate.Mutator{}
+			mutatorMocks: func() []mutating.Mutator {
+				m1, m2, m3, m4, m5 := &mmutating.Mutator{}, &mmutating.Mutator{}, &mmutating.Mutator{}, &mmutating.Mutator{}, &mmutating.Mutator{}
 				m1.On("Mutate", mock.Anything, mock.Anything).Return(false, nil)
 				m2.On("Mutate", mock.Anything, mock.Anything).Return(false, nil)
 				m3.On("Mutate", mock.Anything, mock.Anything).Return(true, nil)
-				return []mutate.Mutator{m1, m2, m3, m4, m5}
+				return []mutating.Mutator{m1, m2, m3, m4, m5}
 			},
 		},
 		{
 			name: "Should return an error and stop the chain",
-			mutatorMocks: func() []mutate.Mutator {
-				m1, m2, m3, m4, m5 := &mmutate.Mutator{}, &mmutate.Mutator{}, &mmutate.Mutator{}, &mmutate.Mutator{}, &mmutate.Mutator{}
+			mutatorMocks: func() []mutating.Mutator {
+				m1, m2, m3, m4, m5 := &mmutating.Mutator{}, &mmutating.Mutator{}, &mmutating.Mutator{}, &mmutating.Mutator{}, &mmutating.Mutator{}
 				m1.On("Mutate", mock.Anything, mock.Anything).Return(false, nil)
 				m2.On("Mutate", mock.Anything, mock.Anything).Return(false, nil)
 				m3.On("Mutate", mock.Anything, mock.Anything).Return(false, fmt.Errorf("wanted error"))
-				return []mutate.Mutator{m1, m2, m3, m4, m5}
+				return []mutating.Mutator{m1, m2, m3, m4, m5}
 			},
 			expErr: true,
 		},
@@ -60,7 +60,7 @@ func TestMutatorChain(t *testing.T) {
 
 			// Mocks.
 			mutators := test.mutatorMocks()
-			chain := mutate.NewChain(log.Dummy, mutators...)
+			chain := mutating.NewChain(log.Dummy, mutators...)
 			_, err := chain.Mutate(context.TODO(), nil)
 
 			if test.expErr {
@@ -68,7 +68,7 @@ func TestMutatorChain(t *testing.T) {
 			} else if assert.NoError(err) {
 				// Check calls where ok.
 				for _, m := range mutators {
-					mm := m.(*mmutate.Mutator)
+					mm := m.(*mmutating.Mutator)
 					mm.AssertExpectations(t)
 				}
 			}
