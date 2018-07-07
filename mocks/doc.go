@@ -4,5 +4,8 @@ testing and integration tests whenever is possible.
 */
 package mocks // import "github.com/slok/kutator/mocks"
 
-// mutator mocks.
-//go:generate mockery -output ./mutate -outpkg mutate -dir ../pkg/mutate -name Mutator
+// Mutating mocks.
+//go:generate mockery -output ./webhook/mutating -outpkg mutating -dir ../pkg/webhook/mutating -name Mutator
+
+// Webhook mocks.
+//go:generate mockery -output ./webhook -outpkg webhook -dir ../pkg/webhook -name Webhook
