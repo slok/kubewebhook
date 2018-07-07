@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"reflect"
 
-	jsonpatch "github.com/evanphx/json-patch"
+	"github.com/mattbaird/jsonpatch"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -154,16 +154,22 @@ func mutatingAdmissionReview(mutator Mutator, admissionRequestUID types.UID, obj
 		return toAdmissionErrorResponse(err, logger)
 	}
 
-	patch, err := jsonpatch.CreateMergePatch(origJSON, mutatedJSON)
+	patch, err := jsonpatch.CreatePatch(origJSON, mutatedJSON)
 	if err != nil {
 		return toAdmissionErrorResponse(err, logger)
 	}
+
+	marshalledPatch, err := json.Marshal(patch)
+	if err != nil {
+		return toAdmissionErrorResponse(err, logger)
+	}
+	logger.Debugf("json patch for request %s: %s", admissionRequestUID, string(marshalledPatch))
 
 	// Forge response.
 	return &admissionv1beta1.AdmissionResponse{
 		UID:     admissionRequestUID,
 		Allowed: true,
-		Patch:   patch,
+		Patch:   marshalledPatch,
 		PatchType: func() *admissionv1beta1.PatchType {
 			pt := admissionv1beta1.PatchTypeJSONPatch
 			return &pt

@@ -1,6 +1,6 @@
 [[constraint]]
-  name = "github.com/evanphx/json-patch"
-  version = "3.0.0"
+  name = "github.com/mattbaird/jsonpatch"
+  branch = "master"
 
 # Kubernetes >= 1.10.
 # Note: Change all at once.

@@ -24,7 +24,9 @@ func (d *dummy) Errorf(format string, args ...interface{})   {}
 func (d *dummy) Debugf(format string, args ...interface{})   {}
 
 // Std is a wrapper for go standard library logger.
-type Std struct{}
+type Std struct {
+	Debug bool
+}
 
 func (s *Std) logWithPrefix(prefix, format string, args ...interface{}) {
 	format = fmt.Sprintf("%s %s", prefix, format)
@@ -41,5 +43,7 @@ func (s *Std) Errorf(format string, args ...interface{}) {
 	s.logWithPrefix("[ERROR]", format, args...)
 }
 func (s *Std) Debugf(format string, args ...interface{}) {
-	s.logWithPrefix("[DEBUG]", format, args...)
+	if s.Debug {
+		s.logWithPrefix("[DEBUG]", format, args...)
+	}
 }

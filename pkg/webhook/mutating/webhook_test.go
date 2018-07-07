@@ -157,7 +157,7 @@ func testPodAdmissionReviewMutation(whf whfactory, t *testing.T) {
 			},
 			expResponse: &admissionv1beta1.AdmissionResponse{
 				UID:       "test",
-				Patch:     []byte(`{"metadata":{"namespace":"myChangedNS"}}`),
+				Patch:     []byte(`[{"op":"replace","path":"/metadata/namespace","value":"myChangedNS"}]`),
 				Allowed:   true,
 				PatchType: patchTypeJSONPatch,
 			},
@@ -180,7 +180,7 @@ func testPodAdmissionReviewMutation(whf whfactory, t *testing.T) {
 			},
 			expResponse: &admissionv1beta1.AdmissionResponse{
 				UID:       "test",
-				Patch:     []byte(`{"metadata":{"annotations":{"key1":"val1_mutated","key3":null,"key5":"val5"}}}`),
+				Patch:     []byte(`[{"op":"replace","path":"/metadata/annotations/key1","value":"val1_mutated"},{"op":"add","path":"/metadata/annotations/key5","value":"val5"},{"op":"remove","path":"/metadata/annotations/key3"}]`),
 				Allowed:   true,
 				PatchType: patchTypeJSONPatch,
 			},
@@ -198,7 +198,7 @@ func testPodAdmissionReviewMutation(whf whfactory, t *testing.T) {
 			},
 			expResponse: &admissionv1beta1.AdmissionResponse{
 				UID:       "test",
-				Patch:     []byte(`{"spec":{"containers":[{"name":"container1","resources":{"requests":{"cpu":"10m","memory":"10Mi"}}},{"name":"container2","resources":{"requests":{"cpu":"30m","memory":"30Mi"}}}]}}`),
+				Patch:     []byte(`[{"op":"remove","path":"/spec/containers/0/resources/limits"},{"op":"remove","path":"/spec/containers/1/resources/limits"}]`),
 				Allowed:   true,
 				PatchType: patchTypeJSONPatch,
 			},
@@ -215,18 +215,23 @@ func testPodAdmissionReviewMutation(whf whfactory, t *testing.T) {
 	}
 }
 
-/*
 func BenchmarkDynamicPodAdmissionReviewMutation(b *testing.B) {
-	wh := webhook.NewDynamicWebhook()
-	benchmarkPodAdmissionReviewMutation(wh, b)
+	f := func(m mutating.Mutator) webhook.Webhook {
+		return mutating.NewDynamicWebhook(m, log.Dummy)
+	}
+	benchmarkPodAdmissionReviewMutation(f, b)
 }
 
 func BenchmarkStaticPodAdmissionReviewMutation(b *testing.B) {
-	wh, _ := webhook.NewStaticWebhook(&corev1.Pod{})
-	benchmarkPodAdmissionReviewMutation(wh, b)
+	f := func(m mutating.Mutator) webhook.Webhook {
+		wh, err := mutating.NewStaticWebhook(m, &corev1.Pod{}, log.Dummy)
+		assert.NoError(b, err)
+		return wh
+	}
+	benchmarkPodAdmissionReviewMutation(f, b)
 }
 
-func benchmarkPodAdmissionReviewMutation(wh webhook.Webhook, b *testing.B) {
+func benchmarkPodAdmissionReviewMutation(whf whfactory, b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		mutator := getPodNSMutator("myChangedNS")
 		ar := &admissionv1beta1.AdmissionReview{
@@ -237,7 +242,7 @@ func benchmarkPodAdmissionReviewMutation(wh webhook.Webhook, b *testing.B) {
 				},
 			},
 		}
-		wh.MutationAdmissionReview(mutator, ar)
+		wh := whf(mutator)
+		wh.Review(ar)
 	}
 }
-*/
