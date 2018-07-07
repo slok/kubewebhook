@@ -11,8 +11,8 @@ import (
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	"k8s.io/apimachinery/pkg/types"
 
-	mwebhook "github.com/slok/kutator/mocks/webhook"
-	kutatorhttp "github.com/slok/kutator/pkg/http"
+	mwebhook "github.com/slok/kubewebhook/mocks/webhook"
+	kubewebhookhttp "github.com/slok/kubewebhook/pkg/http"
 )
 
 func getTestAdmissionReviewRequestStr(uid string) string {
@@ -65,7 +65,7 @@ func TestDefaultWebhookFlow(t *testing.T) {
 			mwh := &mwebhook.Webhook{}
 			mwh.On("Review", mock.Anything).Once().Return(test.reviewResponse, nil)
 
-			h := kutatorhttp.HandlerFor(mwh)
+			h := kubewebhookhttp.HandlerFor(mwh)
 
 			req := httptest.NewRequest("GET", "/awesome/webhook", bytes.NewBufferString(test.body))
 			w := httptest.NewRecorder()

@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"os"
 
-	whhttp "github.com/slok/kutator/pkg/http"
-	"github.com/slok/kutator/pkg/log"
-	mutatingwh "github.com/slok/kutator/pkg/webhook/mutating"
+	whhttp "github.com/slok/kubewebhook/pkg/http"
+	"github.com/slok/kubewebhook/pkg/log"
+	mutatingwh "github.com/slok/kubewebhook/pkg/webhook/mutating"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )

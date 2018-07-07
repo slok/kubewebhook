@@ -6,7 +6,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/slok/kutator/pkg/log"
+	"github.com/slok/kubewebhook/pkg/log"
 )
 
 // Mutator knows how to mutate the received kubernetes object.

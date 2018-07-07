@@ -1,9 +1,9 @@
 
 # Name of this service/application
-SERVICE_NAME := kutator
+SERVICE_NAME := kubewebhook
 
 # Path of the go service inside docker
-DOCKER_GO_SERVICE_PATH := /go/src/github.com/slok/kutator
+DOCKER_GO_SERVICE_PATH := /go/src/github.com/slok/kubewebhook
 
 # Shell to use for running scripts
 SHELL := $(shell which bash)

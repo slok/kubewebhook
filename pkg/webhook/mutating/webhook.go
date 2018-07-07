@@ -14,8 +14,8 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	kubernetesscheme "k8s.io/client-go/kubernetes/scheme"
 
-	"github.com/slok/kutator/pkg/log"
-	"github.com/slok/kutator/pkg/webhook"
+	"github.com/slok/kubewebhook/pkg/log"
+	"github.com/slok/kubewebhook/pkg/webhook"
 )
 
 type dynamicWebhook struct {

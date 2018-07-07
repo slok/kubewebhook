@@ -8,9 +8,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	mmutating "github.com/slok/kutator/mocks/webhook/mutating"
-	"github.com/slok/kutator/pkg/log"
-	"github.com/slok/kutator/pkg/webhook/mutating"
+	mmutating "github.com/slok/kubewebhook/mocks/webhook/mutating"
+	"github.com/slok/kubewebhook/pkg/log"
+	"github.com/slok/kubewebhook/pkg/webhook/mutating"
 )
 
 func TestMutatorChain(t *testing.T) {

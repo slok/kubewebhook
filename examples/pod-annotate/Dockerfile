@@ -1,9 +1,9 @@
 FROM golang:1.10-alpine AS build-stage
 
-WORKDIR /go/src/github.com/slok/kutator
+WORKDIR /go/src/github.com/slok/kubewebhook
 COPY . .
 
-RUN CGO_ENABLED=0 go build -o /bin/pod-annotator --ldflags "-w -extldflags '-static'"  github.com/slok/kutator/examples/pod-annotate
+RUN CGO_ENABLED=0 go build -o /bin/pod-annotator --ldflags "-w -extldflags '-static'"  github.com/slok/kubewebhook/examples/pod-annotate
 
 # Final image.
 FROM alpine:latest

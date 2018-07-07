@@ -17,4 +17,4 @@ RUN addgroup -g $gid app && \
 
 
 USER app
-WORKDIR /go/src/github.com/slok/kutator
+WORKDIR /go/src/github.com/slok/kubewebhook
