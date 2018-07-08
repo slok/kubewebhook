@@ -2,7 +2,7 @@
     <img src="logo/kubewebhook_logo@0,5x.png" width="30%" align="center" alt="kubewebhook">
 </p>
 
-# kubewebhook [![Build Status](https://travis-ci.org/slok/kubewebhook.svg?branch=master)](https://travis-ci.org/slok/kubewebhook)
+# kubewebhook [![Build Status][travis-image]][travis-url] [![Go Report Card][goreport-image]][goreport-url] [![GoDoc][godoc-image]][godoc-url]
 
 Kubewebhook is a small Go framework to create [external admission webhooks][aw-url] for Kubernetes.
 
@@ -66,4 +66,10 @@ You can get more examples in [here](examples)
 
 WIP
 
+[travis-image]: https://travis-ci.org/slok/kubewebhook.svg?branch=master
+[travis-url]: https://travis-ci.org/slok/kubewebhook
+[goreport-image]: https://goreportcard.com/badge/github.com/slok/kubewebhook
+[goreport-url]: https://goreportcard.com/report/github.com/slok/kubewebhook
+[godoc-image]: https://godoc.org/github.com/slok/kubewebhook?status.svg
+[godoc-url]: https://godoc.org/github.com/slok/kubewebhook
 [aw-url]: https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers
