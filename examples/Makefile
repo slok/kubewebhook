@@ -11,6 +11,10 @@ build-examples:
 	docker build -t $(POD_ANNOTATE_IMAGE) --build-arg example=$(POD_ANNOTATE_EXAMPLE) -f ./Dockerfile ../
 	docker build -t $(INGRESS_HOST_VALIDATOR_IMAGE) --build-arg example=$(INGRESS_HOST_VALIDATOR_EXAMPLE) -f ./Dockerfile ../
 
+push-examples:
+	docker push $(POD_ANNOTATE_IMAGE)
+	docker push $(INGRESS_HOST_VALIDATOR_IMAGE)
+
 create-certs:
 	./create-certs.sh default ${POD_ANNOTATE_EXAMPLE}
 	./create-certs.sh default ${INGRESS_HOST_VALIDATOR_EXAMPLE}
