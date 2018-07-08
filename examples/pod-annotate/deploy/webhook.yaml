@@ -13,7 +13,7 @@ spec:
     spec:
       containers:
         - name: pod-annotate-webhook
-          image: quay.io/slok/pod-annotate-webhook:latest
+          image: quay.io/slok/kubewebhook-pod-annotate-example:latest
           imagePullPolicy: Always
           args:
             - -tls-cert-file=/etc/webhook/certs/cert.pem
