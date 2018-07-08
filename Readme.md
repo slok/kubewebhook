@@ -2,7 +2,7 @@
     <img src="logo/kubewebhook_logo@0,5x.png" width="30%" align="center" alt="kubewebhook">
 </p>
 
-# kubewebhook
+# kubewebhook [![Build Status](https://travis-ci.org/slok/kubewebhook.svg?branch=master)](https://travis-ci.org/slok/kubewebhook)
 
 Kubewebhook is a small Go framework to create [external admission webhooks][aw-url] for Kubernetes.
 
