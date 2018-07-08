@@ -7,5 +7,8 @@ package mocks // import "github.com/slok/kubewebhook/mocks"
 // Mutating mocks.
 //go:generate mockery -output ./webhook/mutating -outpkg mutating -dir ../pkg/webhook/mutating -name Mutator
 
+// Validating mocks.
+//go:generate mockery -output ./webhook/validating -outpkg validating -dir ../pkg/webhook/validating -name Validator
+
 // Webhook mocks.
 //go:generate mockery -output ./webhook -outpkg webhook -dir ../pkg/webhook -name Webhook

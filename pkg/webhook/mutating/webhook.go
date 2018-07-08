@@ -16,6 +16,7 @@ import (
 
 	"github.com/slok/kubewebhook/pkg/log"
 	"github.com/slok/kubewebhook/pkg/webhook"
+	"github.com/slok/kubewebhook/pkg/webhook/internal/helpers"
 )
 
 type dynamicWebhook struct {
@@ -48,17 +49,19 @@ func (w *dynamicWebhook) init() {
 // MutatingAdmissionReview will handle the mutating of the admission review and
 // return the AdmissionResponse.
 func (w *dynamicWebhook) Review(ar *admissionv1beta1.AdmissionReview) *admissionv1beta1.AdmissionResponse {
+	uid := ar.Request.UID
+
 	w.logger.Debugf("reviewing request %s, named: %s/%s", ar.Request.UID, ar.Request.Namespace, ar.Request.Name)
 
 	// Get the object.
 	obj, _, err := w.deserializer.Decode(ar.Request.Object.Raw, nil, nil)
 	if err != nil {
-		return toAdmissionErrorResponse(fmt.Errorf("error deseralizing request raw object: %s", err), w.logger)
+		return helpers.ToAdmissionErrorResponse(uid, fmt.Errorf("error deseralizing request raw object: %s", err), w.logger)
 	}
 	origObj, ok := obj.(metav1.Object)
 	if !ok {
 		err := fmt.Errorf("impossible to type assert the runtime.Object")
-		return toAdmissionErrorResponse(err, w.logger)
+		return helpers.ToAdmissionErrorResponse(uid, err, w.logger)
 	}
 
 	// Copy the object to have the original and be able to get the patch.
@@ -66,7 +69,7 @@ func (w *dynamicWebhook) Review(ar *admissionv1beta1.AdmissionReview) *admission
 	mutatingObj, ok := objCopy.(metav1.Object)
 	if !ok {
 		err := fmt.Errorf("impossible to type assert the deep copy to metav1.Object")
-		return toAdmissionErrorResponse(err, w.logger)
+		return helpers.ToAdmissionErrorResponse(uid, err, w.logger)
 	}
 
 	return mutatingAdmissionReview(w.mutator, ar.Request.UID, origObj, mutatingObj, w.logger)
@@ -83,44 +86,32 @@ type staticWebhook struct {
 // it will mutate the received resources.
 // This webhook will always allow the admission of the resource, only will deny in case of error.
 func NewStaticWebhook(mutator Mutator, obj metav1.Object, logger log.Logger) (webhook.Webhook, error) {
-	// Object is an interface, we assume that is a pointer.
-	// Get the indirect type of the object.
-	objType := reflect.Indirect(reflect.ValueOf(obj)).Type()
-
 	// Create a custom deserializer for the received admission review request.
 	runtimeScheme := runtime.NewScheme()
 	codecs := serializer.NewCodecFactory(runtimeScheme)
 
 	return &staticWebhook{
-		objType:      objType,
+		objType:      helpers.GetK8sObjType(obj),
 		deserializer: codecs.UniversalDeserializer(),
 		mutator:      mutator,
 		logger:       logger,
 	}, nil
 }
 
-// newObj returns a new object of webhook's object type.
-func (w *staticWebhook) newObj() metav1.Object {
-	// Create a new object of the webhook resource type
-	// convert to ptr and typeassert to Kubernetes Object.
-	var obj interface{}
-	newObj := reflect.New(w.objType)
-	obj = newObj.Interface()
-	return obj.(metav1.Object)
-}
-
 func (w *staticWebhook) Review(ar *admissionv1beta1.AdmissionReview) *admissionv1beta1.AdmissionResponse {
-	w.logger.Debugf("reviewing request %s, named: %s/%s", ar.Request.UID, ar.Request.Namespace, ar.Request.Name)
-	obj := w.newObj()
+	uid := ar.Request.UID
+
+	w.logger.Debugf("reviewing request %s, named: %s/%s", uid, ar.Request.Namespace, ar.Request.Name)
+	obj := helpers.NewK8sObj(w.objType)
 	runtimeObj, ok := obj.(runtime.Object)
 	if !ok {
-		return toAdmissionErrorResponse(fmt.Errorf("could not type assert metav1.Object to runtime.Object"), w.logger)
+		return helpers.ToAdmissionErrorResponse(uid, fmt.Errorf("could not type assert metav1.Object to runtime.Object"), w.logger)
 	}
 
 	// Get the object.
 	_, _, err := w.deserializer.Decode(ar.Request.Object.Raw, nil, runtimeObj)
 	if err != nil {
-		return toAdmissionErrorResponse(fmt.Errorf("error deseralizing request raw object: %s", err), w.logger)
+		return helpers.ToAdmissionErrorResponse(uid, fmt.Errorf("error deseralizing request raw object: %s", err), w.logger)
 	}
 
 	// Copy the object to have the original and be able to get the patch.
@@ -128,10 +119,10 @@ func (w *staticWebhook) Review(ar *admissionv1beta1.AdmissionReview) *admissionv
 	mutatingObj, ok := objCopy.(metav1.Object)
 	if !ok {
 		err := fmt.Errorf("impossible to type assert the deep copy to metav1.Object")
-		return toAdmissionErrorResponse(err, w.logger)
+		return helpers.ToAdmissionErrorResponse(uid, err, w.logger)
 	}
 
-	return mutatingAdmissionReview(w.mutator, ar.Request.UID, obj, mutatingObj, w.logger)
+	return mutatingAdmissionReview(w.mutator, uid, obj, mutatingObj, w.logger)
 
 }
 
@@ -140,44 +131,42 @@ func mutatingAdmissionReview(mutator Mutator, admissionRequestUID types.UID, obj
 	// Mutate the object.
 	_, err := mutator.Mutate(context.TODO(), copyObj)
 	if err != nil {
-		return toAdmissionErrorResponse(err, logger)
+		return helpers.ToAdmissionErrorResponse(admissionRequestUID, err, logger)
 	}
 
 	// Get the diff patch of the original and mutated object.
 	origJSON, err := json.Marshal(obj)
 	if err != nil {
-		return toAdmissionErrorResponse(err, logger)
+		return helpers.ToAdmissionErrorResponse(admissionRequestUID, err, logger)
 
 	}
 	mutatedJSON, err := json.Marshal(copyObj)
 	if err != nil {
-		return toAdmissionErrorResponse(err, logger)
+		return helpers.ToAdmissionErrorResponse(admissionRequestUID, err, logger)
 	}
 
 	patch, err := jsonpatch.CreatePatch(origJSON, mutatedJSON)
 	if err != nil {
-		return toAdmissionErrorResponse(err, logger)
+		return helpers.ToAdmissionErrorResponse(admissionRequestUID, err, logger)
 	}
 
 	marshalledPatch, err := json.Marshal(patch)
 	if err != nil {
-		return toAdmissionErrorResponse(err, logger)
+		return helpers.ToAdmissionErrorResponse(admissionRequestUID, err, logger)
 	}
 	logger.Debugf("json patch for request %s: %s", admissionRequestUID, string(marshalledPatch))
 
 	// Forge response.
 	return &admissionv1beta1.AdmissionResponse{
-		UID:     admissionRequestUID,
-		Allowed: true,
-		Patch:   marshalledPatch,
-		PatchType: func() *admissionv1beta1.PatchType {
-			pt := admissionv1beta1.PatchTypeJSONPatch
-			return &pt
-		}(),
+		UID:       admissionRequestUID,
+		Allowed:   true,
+		Patch:     marshalledPatch,
+		PatchType: jsonPatchType,
 	}
 }
 
-func toAdmissionErrorResponse(err error, logger log.Logger) *admissionv1beta1.AdmissionResponse {
-	logger.Errorf("admission webhook error: %s", err)
-	return &admissionv1beta1.AdmissionResponse{Result: &metav1.Status{Message: err.Error()}}
-}
+// jsonPatchType is the type for Kubernetes responses type.
+var jsonPatchType = func() *admissionv1beta1.PatchType {
+	pt := admissionv1beta1.PatchTypeJSONPatch
+	return &pt
+}()
