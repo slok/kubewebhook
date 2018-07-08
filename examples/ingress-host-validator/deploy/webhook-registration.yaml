@@ -1,0 +1,22 @@
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: ingress-host-validator-webhook
+  labels:
+    app: ingress-host-validator-webhook
+    kind: validating
+webhooks:
+  - name: ingress-host-validator-webhook.slok.xyz
+    clientConfig:
+      service:
+        name: ingress-host-validator-webhook
+        namespace: default
+        path: "/validating"
+      caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUM1akNDQWM0Q0NRQ2o1aWt3NlZlcHdUQU5CZ2txaGtpRzl3MEJBUXNGQURBMU1UTXdNUVlEVlFRRERDcHAKYm1keVpYTnpMV2h2YzNRdGRtRnNhV1JoZEc5eUxYZGxZbWh2YjJzdVpHVm1ZWFZzZEM1emRtTXdIaGNOTVRndwpOekE0TVRVME56VXdXaGNOTVRrd056QTRNVFUwTnpVd1dqQTFNVE13TVFZRFZRUUREQ3BwYm1keVpYTnpMV2h2CmMzUXRkbUZzYVdSaGRHOXlMWGRsWW1odmIyc3VaR1ZtWVhWc2RDNXpkbU13Z2dFaU1BMEdDU3FHU0liM0RRRUIKQVFVQUE0SUJEd0F3Z2dFS0FvSUJBUUMwNGMvYXk3QWltWklkZHNFbmxmcWdKUHpRTW1pOEt3YVgyZGkzb2l5Zwo1TnBNajd3enhrdFluejJkekNTTEUxaWdmQ1RzTFJoaXlSZEQrTFN0bmUrLzY0M0FQUlNRU0ZqcUtKeTh4aElTClRiVUpTVklra0NsLzU1T28wUHJ0cWtWc2VraytzTlNmazExeWFzNjF2djBFRmw5ajh1RHAzWm1CU0k0cHN5dVMKdHJUQXZzN1VpQzVXa3BiR2FXREJzbndJZ0pvdG44YWprbGlPNVdnTzFuQXc5ay8yWUhidmYzaUgyS255OEJzTwpyY2lJcjd1UzA2KzIxRXVLb1VCdWJ4SVYxbXYvbkUwWW56UHNJb0NNb3A4cTFqZWdBQXJGRjYreElrZFA2SlhqCll5emJlWkJKZ2V0UG84bmY2bEhxT1hzemhBZWZYTHVOanF2NFBLcHR6ekMvQWdNQkFBRXdEUVlKS29aSWh2Y04KQVFFTEJRQURnZ0VCQUhlQUhldERzLzVxaVI0S1RYMzJwWC9aeHMzbEx0eDh6eWRmR24rV2lEZU12cld6NXhETApNUE9YTzUrSU5NNlYvRzVrL2RCbFRRSGlWaGpzS3hrSGRCWDhwMHZUN1Q1dTl1SE5LZC9oT2hQb0IyV1VWVzVyCk85TTJPc1F2RzNyMWtFNG0xeXZFY2x0YlZ1OFVTaVl2Ym8rMWh6dUJucmpraTBCTGlkdTNKc3NjazhnS3NsZEYKYjc1QTdWLzBHVWlrVjYvVVRaUXpSTWcxeE9NRVh0TStWeW0yMkkyelZ1c05ZK2VNSlF5N1g0MFRYWHA4aEZFagp1bVJVNlR5QUhucmplUllIVENWTW1tdTlJV3JOekJPK3R2ZVdFVmZZZUVoWmZzT0VMcVFtV1c1elg1WXZJWFI5CmppZ01SQ2xUZ1oxbzZ3Q0pPY2xYaUxLMHRSSjlwSUtQTGswPQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
+    rules:
+      - operations: [ "CREATE", "UPDATE" ]
+        apiGroups: ["extensions"]
+        apiVersions: ["v1beta1"]
+        resources: ["ingresses"]
+        
+        

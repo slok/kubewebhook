@@ -1,0 +1,42 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: ingress-host-validator-webhook
+  labels:
+    app: ingress-host-validator-webhook
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: ingress-host-validator-webhook
+    spec:
+      containers:
+        - name: ingress-host-validator-webhook
+          image: quay.io/slok/kubewebhook-ingress-host-validator-example:latest
+          imagePullPolicy: Always
+          args:
+            - -tls-cert-file=/etc/webhook/certs/cert.pem
+            - -tls-key-file=/etc/webhook/certs/key.pem
+            - -ingress-host-regex=^.*kubewebhook\.github\.io$
+          volumeMounts:
+            - name: webhook-certs
+              mountPath: /etc/webhook/certs
+              readOnly: true
+      volumes:
+        - name: webhook-certs
+          secret:
+            secretName: ingress-host-validator-webhook-certs
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ingress-host-validator-webhook
+  labels:
+    app: ingress-host-validator-webhook
+spec:
+  ports:
+  - port: 443
+    targetPort: 8080
+  selector:
+    app: ingress-host-validator-webhook
