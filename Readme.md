@@ -1,5 +1,5 @@
 <p align="center">
-    <img src="logo/kubewebhook_logo@0,5x.png" width="50%" align="center" alt="kubewebhook">
+    <img src="logo/kubewebhook_logo@0,5x.png" width="30%" align="center" alt="kubewebhook">
 </p>
 
 # kubewebhook
