@@ -1,0 +1,26 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: valid-ingress
+spec:
+  rules:
+  - host: this.is.a.valid.test.kubewebhook.github.io
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: not-valid-ingress
+spec:
+  rules:
+  - host: this.is.not.a.valid.test
+  - host: this.also.is.not.a.valid.test
+
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: not-valid-ingress2
+spec:
+  rules:
+  - host: this.is.a.valid.test.kubewebhook.github.io
+  - host: this.is.not.a.valid.test
