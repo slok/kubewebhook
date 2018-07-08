@@ -53,22 +53,7 @@ func main() {
 	cfg := initFlags()
 
 	// Create our mutator
-	mt := mutatingwh.MutatorFunc(func(_ context.Context, obj metav1.Object) (bool, error) {
-		pod, ok := obj.(*corev1.Pod)
-		if !ok {
-			// If not a pod just continue the mutation chain(if there is one) and don't do nothing.
-			return false, nil
-		}
-
-		// Mutate our object with the required annotations.
-		if pod.Annotations == nil {
-			pod.Annotations = make(map[string]string)
-		}
-		pod.Annotations["mutated"] = "true"
-		pod.Annotations["mutator"] = "pod-annotate"
-
-		return false, nil
-	})
+	mt := mutatingwh.MutatorFunc(annotatePodMutator)
 
 	wh, err := mutatingwh.NewStaticWebhook(mt, &corev1.Pod{}, logger)
 	if err != nil {
