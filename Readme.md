@@ -1,4 +1,6 @@
-<p align="center"><img src="logo/kubewebhook_logo@0,5x.png" width="200"></p>
+<p align="center">
+    <img src="logo/kubewebhook_logo@0,5x.png" width="50%" align="center" alt="kubewebhook">
+</p>
 
 # kubewebhook
 
