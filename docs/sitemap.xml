@@ -3,28 +3,28 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   
   <url>
-    <loc>/getting-started/basic-concepts/</loc>
+    <loc>https://xlarrakoetxea.org/kubewebhook/getting-started/basic-concepts/</loc>
   </url>
   
   <url>
-    <loc>/getting-started/</loc>
+    <loc>https://xlarrakoetxea.org/kubewebhook/getting-started/</loc>
   </url>
   
   <url>
-    <loc>/api/</loc>
+    <loc>https://xlarrakoetxea.org/kubewebhook/api/</loc>
   </url>
   
   <url>
-    <loc>/categories/</loc>
+    <loc>https://xlarrakoetxea.org/kubewebhook/categories/</loc>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>/</loc>
+    <loc>https://xlarrakoetxea.org/kubewebhook/</loc>
   </url>
   
   <url>
-    <loc>/tags/</loc>
+    <loc>https://xlarrakoetxea.org/kubewebhook/tags/</loc>
     <priority>0</priority>
   </url>
   
