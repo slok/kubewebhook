@@ -1,0 +1,43 @@
+[
+{
+	"uri": "/getting-started/basic-concepts/",
+	"title": "Basic concepts",
+	"tags": [],
+	"description": "",
+	"content": " Basic concepts Kubewebhooks embreces simplicity that\u0026rsquo;s why there are very few components that are required, a webhook server is made up of a server and one or more webhooks.\nWebhooks There are two types of webhooks, Validating and Mutating, they are valid Webhook interface implementation.\nValidating webhooks These webhooks only validate the received object, a Validating webhook is made up of a Validator interface, this interface only validates an metav1.Object.\nValidating webhooks are with admissionregistration.k8s.io/v1beta1/ValidatingWebhookConfiguration Kubernetes resource\nA Validator can act also as a validator chain, Check validating.Chain Mutating webhooks Mutating webhooks are similar to validating webhooks but instead of validating the object it modifies (mutate) them. A Mutating webhook is made up of Mutator interface.\nMutating webhooks are with admissionregistration.k8s.io/v1beta1/MutatingWebhookConfiguration Kubernetes resource\nA Mutator can act also as a mutator chain, Check mutating.Chain HTTP Handler Kubewebhook focuses on the Kubernetes webhooks itself, it doesn\u0026rsquo;t try to manage the http server, that\u0026rsquo;s why it will provide a Go http.Handler and you can set this handler on the http.Server that you want with the options.\nThis approach makes gives the user the flexibility to serve the webhook in very customized ways like number of connections, address, paths\u0026hellip;\nTo get a Handler from a previous created Webhook you can use http.HandlerFor method.\nYou can create a single HTTP server with multiple webhooks (multiple hadlers) "
+},
+{
+	"uri": "/getting-started/",
+	"title": "Getting started",
+	"tags": [],
+	"description": "",
+	"content": " Getting started If it\u0026rsquo;s the first time that you are using Kubewebhook you should get familiar with the few pieces that are needed to create a webhook.\n basic concepts  Now you are ready to get stared with with Kubewebook, you can choose to start with a mutating webhook or a validating webhook, in the end both use the same approach, so it doesn\u0026rsquo;t matter.\n Mutating tutorial (TODO, check example for now) Validating tutorial (TODO, check example for now)  "
+},
+{
+	"uri": "/api/",
+	"title": "API",
+	"tags": [],
+	"description": "",
+	"content": " API To check the API there is already generated using godoc. Check it here\n"
+},
+{
+	"uri": "/categories/",
+	"title": "Categories",
+	"tags": [],
+	"description": "",
+	"content": ""
+},
+{
+	"uri": "/",
+	"title": "Kubewebhook documentation",
+	"tags": [],
+	"description": "",
+	"content": " Kubewebhook Kubewebhook is a small Go framework to create external admission webhooks for Kubernetes.\nWith Kubewebhook you can make validating and mutating webhooks very fast and focusing mainly on the domain logic of the webhook itself.\nMain features  Ready for mutating and validating webhook kinds. Easy and testable API. Simple, extensible and flexible. Multiple webhooks on the same server.  "
+},
+{
+	"uri": "/tags/",
+	"title": "Tags",
+	"tags": [],
+	"description": "",
+	"content": ""
+}]

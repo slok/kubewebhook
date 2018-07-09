@@ -12,6 +12,7 @@ defaultContentLanguage = "en"
 defaultContentLanguageInSubdir= false
 enableMissingTranslationPlaceholders = false
 
+publishDir = "../"
 
 [params]
 editURL = "https://github.com/slok/kubwebhook/edit/master/docs/content/"

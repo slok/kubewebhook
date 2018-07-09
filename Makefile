@@ -88,6 +88,7 @@ mocks: build
 	$(DOCKER_RUN_CMD) /bin/sh -c '$(MOCKS_CMD)'
 
 docs-generate: build
+	$(DOCKER_DOCS_RUN_CMD) /bin/bash -c "cd src && hugo"
 
 docs-serve: build
 	$(DOCKER_DOCS_RUN_CMD) /bin/bash -c "cd src && hugo server --bind=0.0.0.0"
