@@ -7,11 +7,10 @@ theme = "docdock"
 #themesdir = "../.."
 pygmentsCodeFences = true
 pygmentsStyle = "monokailight"
-
 defaultContentLanguage = "en"
 defaultContentLanguageInSubdir= false
 enableMissingTranslationPlaceholders = false
-
+canonifyURLs = true
 publishDir = "../"
 
 [params]
