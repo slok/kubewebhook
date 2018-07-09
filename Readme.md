@@ -15,6 +15,10 @@ With Kubewebhook you can make validating and mutating webhooks very fast and foc
 - Simple, extensible and flexible.
 - Multiple webhooks on the same server.
 
+## Status
+
+At this moment the project is being tested on production but not ready to mark as production-ready, that's why there is no release yet.
+
 ## Example
 
 Here is a simple example of mutating webhook that will add `mutated=true` and `mutator=pod-annotate` annotations.
@@ -64,7 +68,8 @@ You can get more examples in [here](examples)
 
 ## Documentation
 
-WIP
+- [Documentation][docs]
+- [API][godoc-url]
 
 [travis-image]: https://travis-ci.org/slok/kubewebhook.svg?branch=master
 [travis-url]: https://travis-ci.org/slok/kubewebhook
@@ -73,3 +78,4 @@ WIP
 [godoc-image]: https://godoc.org/github.com/slok/kubewebhook?status.svg
 [godoc-url]: https://godoc.org/github.com/slok/kubewebhook
 [aw-url]: https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers
+[docs]: https://slok.github.io/kubewebhook
