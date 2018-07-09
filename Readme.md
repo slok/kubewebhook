@@ -78,4 +78,4 @@ You can get more examples in [here](examples)
 [godoc-image]: https://godoc.org/github.com/slok/kubewebhook?status.svg
 [godoc-url]: https://godoc.org/github.com/slok/kubewebhook
 [aw-url]: https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers
-[docs]: https://slok.github.io/kubewebhook
+[docs]: https://xlarrakoetxea.org/kubewebhook
