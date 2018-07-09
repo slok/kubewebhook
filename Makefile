@@ -25,6 +25,7 @@ UNIT_TEST_CMD := ./hack/scripts/unit-test.sh
 INTEGRATION_TEST_CMD := ./hack/scripts/integration-test.sh
 MOCKS_CMD := ./hack/scripts/mockgen.sh
 DOCKER_RUN_CMD := docker run -v ${PWD}:$(DOCKER_GO_SERVICE_PATH) --rm -it $(SERVICE_NAME)
+DOCKER_DOCS_RUN_CMD := docker run -v ${PWD}/docs:/docs --rm -it -p 1313:1313 $(SERVICE_NAME)-docs
 DEP_ENSURE_CMD := dep ensure
 
 # environment dirs
@@ -42,10 +43,11 @@ ifndef DOCKER
 	@exit 1
 endif
 
-# Build the development docker image
+# Build the development docker images
 .PHONY: build
 build:
 	docker build -t $(SERVICE_NAME) --build-arg uid=$(UID) --build-arg  gid=$(GID) -f ./docker/dev/Dockerfile .
+	docker build -t $(SERVICE_NAME)-docs --build-arg uid=$(UID) --build-arg  gid=$(GID) -f ./docker/docs/Dockerfile .
 
 # Shell the development docker image
 .PHONY: build
@@ -84,3 +86,9 @@ ci: ci-integration-test
 .PHONY: mocks
 mocks: build
 	$(DOCKER_RUN_CMD) /bin/sh -c '$(MOCKS_CMD)'
+
+docs-generate: build
+	$(DOCKER_DOCS_RUN_CMD) /bin/bash -c "cd src && hugo"
+
+docs-serve: build
+	$(DOCKER_DOCS_RUN_CMD) /bin/bash -c "cd src && hugo server --bind=0.0.0.0"
