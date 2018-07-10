@@ -10,9 +10,9 @@ import (
 	"github.com/slok/kubewebhook/pkg/webhook/mutating"
 )
 
-// ExamplePodAnnotateMutatingWebhook shows how you would create a pod mutating webhook that adds
+// PodAnnotateMutatingWebhook shows how you would create a pod mutating webhook that adds
 // annotations to every pod received.
-func ExamplePodAnnotateMutatingWebhook() {
+func ExampleMutator_podAnnotateMutatingWebhook() {
 	// Annotations to add.
 	annotations := map[string]string{
 		"mutated":   "true",
