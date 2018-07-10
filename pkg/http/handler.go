@@ -21,7 +21,11 @@ var (
 
 // HandlerFor returns a new http.Handler ready to handle admission reviews using a
 // a webhook.
-func HandlerFor(webhook webhook.Webhook) http.Handler {
+func HandlerFor(webhook webhook.Webhook) (http.Handler, error) {
+	if webhook == nil {
+		return nil, fmt.Errorf("webhook can't be nil")
+	}
+
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Get webhook body with the admission review.
 		var body []byte
@@ -58,5 +62,5 @@ func HandlerFor(webhook webhook.Webhook) http.Handler {
 		if _, err := w.Write(resp); err != nil {
 			http.Error(w, fmt.Sprintf("could write response: %v", err), http.StatusInternalServerError)
 		}
-	})
+	}), nil
 }

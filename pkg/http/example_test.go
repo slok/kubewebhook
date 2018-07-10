@@ -32,7 +32,7 @@ func ExampleHandlerFor_serveWebhook() {
 	wh, _ := validating.NewWebhook(v, &corev1.Pod{}, log.Dummy)
 
 	// Get webhook handler and serve (webhooks need to be server with TLS).
-	whHandler := whhttp.HandlerFor(wh)
+	whHandler, _ := whhttp.HandlerFor(wh)
 	http.ListenAndServeTLS(":8080", "file.cert", "file.key", whHandler)
 }
 
@@ -57,11 +57,13 @@ func ExampleHandlerFor_serveMultipleWebhooks() {
 
 	// Create webhooks (don't check error).
 	vwh, _ := validating.NewWebhook(v, &corev1.Pod{}, log.Dummy)
+	vwhHandler, _ := whhttp.HandlerFor(vwh)
 	mwh, _ := mutating.NewStaticWebhook(m, &corev1.Pod{}, log.Dummy)
+	mwhHandler, _ := whhttp.HandlerFor(mwh)
 
 	// Create a muxer and handle different webhooks in different paths of the server.
 	mux := http.NewServeMux()
-	mux.Handle("/validate-pod", whhttp.HandlerFor(vwh))
-	mux.Handle("/mutate-pod", whhttp.HandlerFor(mwh))
+	mux.Handle("/validate-pod", vwhHandler)
+	mux.Handle("/mutate-pod", mwhHandler)
 	http.ListenAndServeTLS(":8080", "file.cert", "file.key", mux)
 }
