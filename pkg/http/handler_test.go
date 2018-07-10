@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	"k8s.io/apimachinery/pkg/types"
 
@@ -60,12 +61,14 @@ func TestDefaultWebhookFlow(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			assert := assert.New(t)
+			require := require.New(t)
 
 			// Mocks.
 			mwh := &mwebhook.Webhook{}
 			mwh.On("Review", mock.Anything).Once().Return(test.reviewResponse, nil)
 
-			h := kubewebhookhttp.HandlerFor(mwh)
+			h, err := kubewebhookhttp.HandlerFor(mwh)
+			require.NoError(err)
 
 			req := httptest.NewRequest("GET", "/awesome/webhook", bytes.NewBufferString(test.body))
 			w := httptest.NewRecorder()

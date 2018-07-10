@@ -90,7 +90,12 @@ func main() {
 	}
 
 	// Get the handler for our webhook.
-	whHandler := whhttp.HandlerFor(wh)
+	whHandler, err := whhttp.HandlerFor(wh)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error creating webhook handler: %s", err)
+		os.Exit(1)
+	}
+
 	logger.Infof("Listening on %s", cfg.addr)
 	err = http.ListenAndServeTLS(cfg.addr, cfg.certFile, cfg.keyFile, whHandler)
 	if err != nil {
