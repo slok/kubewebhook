@@ -14,8 +14,8 @@ import (
 	"github.com/slok/kubewebhook/pkg/webhook/validating"
 )
 
-// ExampleServeWebhook shows how to serve a validating webhook that denies all pods.
-func ExampleServeWebhook() {
+// ServeWebhook shows how to serve a validating webhook that denies all pods.
+func ExampleHandlerFor_serveWebhook() {
 	// Create (in)validator.
 	v := validating.ValidatorFunc(func(_ context.Context, obj metav1.Object) (bool, validating.ValidatorResult, error) {
 		// Assume always is a pod (you should check type assertion is ok to not panic).
@@ -36,8 +36,8 @@ func ExampleServeWebhook() {
 	http.ListenAndServeTLS(":8080", "file.cert", "file.key", whHandler)
 }
 
-// ExampleServeMultipleWebhooks shows how to serve multiple webhooks in the same server.
-func ExampleServeMultipleWebhooks() {
+// ServeMultipleWebhooks shows how to serve multiple webhooks in the same server.
+func ExampleHandlerFor_serveMultipleWebhooks() {
 	// Create (in)validator.
 	v := validating.ValidatorFunc(func(_ context.Context, obj metav1.Object) (bool, validating.ValidatorResult, error) {
 		// Assume always is a pod (you should check type assertion is ok to not panic).

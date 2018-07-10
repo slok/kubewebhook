@@ -12,10 +12,10 @@ import (
 	"github.com/slok/kubewebhook/pkg/webhook/validating"
 )
 
-// ExampleIngressHostValidatingWebhook shows how you would create a ingress validating webhook that checks
+// IngressHostValidatingWebhook shows how you would create a ingress validating webhook that checks
 // if an ingress has any rule with an invalid host that doesn't match the valid host regex and if is invalid
 // will not accept the ingress.
-func ExampleIngressHostValidatingWebhook() {
+func ExampleValidator_ingressHostValidatingWebhook() {
 	// Create the regex to validate the hosts.
 	validHost := regexp.MustCompile(`^.*\.batman\.best\.superhero\.io$`)
 
