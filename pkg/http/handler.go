@@ -46,7 +46,7 @@ func HandlerFor(webhook webhook.Webhook) (http.Handler, error) {
 		}
 
 		// Mutation logic.
-		admissionResp := webhook.Review(ar)
+		admissionResp := webhook.Review(r.Context(), ar)
 
 		// Forge the review response.
 		aResponse := admissionv1beta1.AdmissionReview{

@@ -48,7 +48,7 @@ func (w *dynamicWebhook) init() {
 
 // MutatingAdmissionReview will handle the mutating of the admission review and
 // return the AdmissionResponse.
-func (w *dynamicWebhook) Review(ar *admissionv1beta1.AdmissionReview) *admissionv1beta1.AdmissionResponse {
+func (w *dynamicWebhook) Review(ctx context.Context, ar *admissionv1beta1.AdmissionReview) *admissionv1beta1.AdmissionResponse {
 	uid := ar.Request.UID
 
 	w.logger.Debugf("reviewing request %s, named: %s/%s", ar.Request.UID, ar.Request.Namespace, ar.Request.Name)
@@ -72,7 +72,7 @@ func (w *dynamicWebhook) Review(ar *admissionv1beta1.AdmissionReview) *admission
 		return helpers.ToAdmissionErrorResponse(uid, err, w.logger)
 	}
 
-	return mutatingAdmissionReview(w.mutator, ar.Request.UID, origObj, mutatingObj, w.logger)
+	return mutatingAdmissionReview(ctx, w.mutator, ar.Request.UID, origObj, mutatingObj, w.logger)
 }
 
 type staticWebhook struct {
@@ -98,7 +98,7 @@ func NewStaticWebhook(mutator Mutator, obj metav1.Object, logger log.Logger) (we
 	}, nil
 }
 
-func (w *staticWebhook) Review(ar *admissionv1beta1.AdmissionReview) *admissionv1beta1.AdmissionResponse {
+func (w *staticWebhook) Review(ctx context.Context, ar *admissionv1beta1.AdmissionReview) *admissionv1beta1.AdmissionResponse {
 	uid := ar.Request.UID
 
 	w.logger.Debugf("reviewing request %s, named: %s/%s", uid, ar.Request.Namespace, ar.Request.Name)
@@ -122,14 +122,14 @@ func (w *staticWebhook) Review(ar *admissionv1beta1.AdmissionReview) *admissionv
 		return helpers.ToAdmissionErrorResponse(uid, err, w.logger)
 	}
 
-	return mutatingAdmissionReview(w.mutator, uid, obj, mutatingObj, w.logger)
+	return mutatingAdmissionReview(ctx, w.mutator, uid, obj, mutatingObj, w.logger)
 
 }
 
-func mutatingAdmissionReview(mutator Mutator, admissionRequestUID types.UID, obj, copyObj metav1.Object, logger log.Logger) *admissionv1beta1.AdmissionResponse {
+func mutatingAdmissionReview(ctx context.Context, mutator Mutator, admissionRequestUID types.UID, obj, copyObj metav1.Object, logger log.Logger) *admissionv1beta1.AdmissionResponse {
 
 	// Mutate the object.
-	_, err := mutator.Mutate(context.TODO(), copyObj)
+	_, err := mutator.Mutate(ctx, copyObj)
 	if err != nil {
 		return helpers.ToAdmissionErrorResponse(admissionRequestUID, err, logger)
 	}
