@@ -198,7 +198,7 @@ func testPodAdmissionReviewMutation(whf whfactory, t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			assert := assert.New(t)
 			wh := whf(test.mutator)
-			gotResponse := wh.Review(test.review)
+			gotResponse := wh.Review(context.TODO(), test.review)
 
 			// Check uid, allowed and patch
 			assert.True(gotResponse.Allowed)
@@ -239,6 +239,6 @@ func benchmarkPodAdmissionReviewMutation(whf whfactory, b *testing.B) {
 			},
 		}
 		wh := whf(mutator)
-		wh.Review(ar)
+		wh.Review(context.TODO(), ar)
 	}
 }

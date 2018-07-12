@@ -1,5 +1,6 @@
 ## 0.x.x / 2018-xx-xx
 
+* [FEATURE] Pass request context to the webhook and its mutating/validating chain.
 * [FEATURE] Add static validating webhook.
 * [FEATURE] Add mutating webhook example.
 * [FEATURE] Add dynamic mutating webhook.

@@ -37,7 +37,7 @@ func NewWebhook(validator Validator, obj metav1.Object, logger log.Logger) (webh
 	}, nil
 }
 
-func (w *staticwebhook) Review(ar *admissionv1beta1.AdmissionReview) *admissionv1beta1.AdmissionResponse {
+func (w *staticwebhook) Review(ctx context.Context, ar *admissionv1beta1.AdmissionReview) *admissionv1beta1.AdmissionResponse {
 	uid := ar.Request.UID
 
 	w.logger.Debugf("reviewing request %s, named: %s/%s", ar.Request.UID, ar.Request.Namespace, ar.Request.Name)
@@ -55,7 +55,7 @@ func (w *staticwebhook) Review(ar *admissionv1beta1.AdmissionReview) *admissionv
 	}
 
 	// Check validation on the object.
-	_, res, err := w.validator.Validate(context.TODO(), obj)
+	_, res, err := w.validator.Validate(ctx, obj)
 	if err != nil {
 		return helpers.ToAdmissionErrorResponse(uid, err, w.logger)
 	}

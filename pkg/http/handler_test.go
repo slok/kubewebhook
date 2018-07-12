@@ -65,7 +65,7 @@ func TestDefaultWebhookFlow(t *testing.T) {
 
 			// Mocks.
 			mwh := &mwebhook.Webhook{}
-			mwh.On("Review", mock.Anything).Once().Return(test.reviewResponse, nil)
+			mwh.On("Review", mock.Anything, mock.Anything).Once().Return(test.reviewResponse, nil)
 
 			h, err := kubewebhookhttp.HandlerFor(mwh)
 			require.NoError(err)
