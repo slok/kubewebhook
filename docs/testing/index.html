@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Kubewebhook documentation</title>
+    
+      <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="generator" content="Hugo 0.42.2" />
+<title>Testing :: Kubewebhook documentation</title>
+<link rel="shortcut icon" href="https://xlarrakoetxea.org/kubewebhook/images/favicon.png" type="image/x-icon" />
+<link href="https://xlarrakoetxea.org/kubewebhook/css/font-awesome.min.css" rel="stylesheet">
+<link href="https://xlarrakoetxea.org/kubewebhook/css/nucleus.css" rel="stylesheet">
+<link href="https://xlarrakoetxea.org/kubewebhook/theme-flex/style.css" rel="stylesheet">
+
+<link rel="stylesheet" href="https://xlarrakoetxea.org/kubewebhook/css/bootstrap.min.css">
+<script src="https://xlarrakoetxea.org/kubewebhook/js/jquery-2.x.min.js"></script>
+<script type="text/javascript">
+      var baseurl = "https:\/\/xlarrakoetxea.org\/kubewebhook\/";
+</script>
+<meta name="description" content="">
+
+
+
+    
+  </head>
+  <body data-url="/testing/">
+    
+      <header>
+  <div class="logo">
+    
+	
+  
+    <a class="baselink" href="https://xlarrakoetxea.org/kubewebhook/">Kubewebhook documentation</a>
+  
+
+  </div>
+  <div class="burger"><a href="javascript:void(0);" style="font-size:15px;">&#9776;</a></div>
+    <nav class="shortcuts">
+            <li class="" role="">
+                <a href="https://github.com/slok/kubewebhook" target="_blank" rel="noopener">
+                  <i class='fa fa-github'></i> <label>Github repo</label>
+                </a>
+            </li>
+    </nav>
+</header>
+<article>
+  <aside>
+    <ul class="menu">
+    <li data-nav-id="/getting-started/" class="dd-item alwaysopen haschildren
+        ">
+      <div>
+      <a href="https://xlarrakoetxea.org/kubewebhook/getting-started/">Getting started</a>
+            <i class="fa fa-angle-down fa-lg category-icon"></i><i class="fa fa-circle-thin read-icon"></i>
+      </div>
+        <ul>
+      <li data-nav-id="/getting-started/basic-concepts/" class="dd-item">
+        <div>
+          <a href="https://xlarrakoetxea.org/kubewebhook/getting-started/basic-concepts/">
+            Basic concepts
+          </a><i class="fa fa-circle-thin read-icon"></i>
+        </div>
+    </li>
+        </ul>
+    </li>
+    <li data-nav-id="/api/" class="dd-item alwaysopen
+        ">
+      <div>
+      <a href="https://xlarrakoetxea.org/kubewebhook/api/">API</a><i class="fa fa-circle-thin read-icon"></i>
+      </div>
+    </li>
+    <li data-nav-id="/testing/" class="dd-item parent active alwaysopen
+        ">
+      <div>
+      <a href="https://xlarrakoetxea.org/kubewebhook/testing/">Testing</a><i class="fa fa-circle-thin read-icon"></i>
+      </div>
+    </li>
+    <li data-nav-id="/best-practices/" class="dd-item alwaysopen
+        ">
+      <div>
+      <a href="https://xlarrakoetxea.org/kubewebhook/best-practices/">Best practices</a><i class="fa fa-circle-thin read-icon"></i>
+      </div>
+    </li>
+
+
+
+
+    </ul>
+    <section>
+    </section>
+  </aside>
+  <section class="page">
+    
+    <div class="nav-select">
+      <center>Navigation : 
+        <select onchange="javascript:location.href = this.value;">
+          
+    <option value="/getting-started/" >
+   Getting started</option> 
+      <option value="/getting-started/basic-concepts/" >- Basic concepts</option>
+  
+    <option value="/api/" >
+   API</option> 
+  
+    <option value="/testing/"  selected>
+   Testing</option> 
+  
+    <option value="/best-practices/" >
+   Best practices</option> 
+  
+
+
+
+        </select>
+      </center>
+    </div>
+      <div>
+        <div class="searchbox">
+          <input data-search-input id="search-by" type="text" placeholder="Search...">
+        </div>
+        <script type="text/javascript" src="https://xlarrakoetxea.org/kubewebhook/js/lunr.min.js"></script>
+        <script type="text/javascript" src="https://xlarrakoetxea.org/kubewebhook/js/auto-complete.js"></script>
+        <link href="https://xlarrakoetxea.org/kubewebhook/css/auto-complete.css" rel="stylesheet">
+        <script type="text/javascript">
+          
+              var baseurl = "https:\/\/xlarrakoetxea.org\/kubewebhook\/";
+          
+        </script>
+        <script type="text/javascript" src="https://xlarrakoetxea.org/kubewebhook/js/search.js"></script>
+      </div>
+    
+
+    <h1>Testing</h1>
+    
+    
+    
+
+
+
+<h1 id="testing">Testing</h1>
+
+<p>One of the most important things is to have a reliable software. Testing will help us increasing reliability.</p>
+
+<p>Admission webhooks are hard to test mainly because of three things:</p>
+
+<ul>
+<li>It&rsquo;s mandatory to use TLS.</li>
+<li>Apiserver is the one that makes the calls.</li>
+<li>The servie needs to be in a cluster or available in a exposed host.</li>
+</ul>
+
+<p>Kubewebhook is tested, this means that it&rsquo;s not necessary to test the infrastructure code, you just need to test your mutators and validators logic.</p>
+
+<p>This doesn&rsquo;t mean that you could create integration tests, but integration tests should be less than unit test.</p>
+
+<p>Lets make a testing example of a mutator.</p>
+
+<h2 id="example">Example</h2>
+
+<p>The example is <a href="https://github.com/slok/kubewebhook/tree/master/examples/mutatortesting">here</a> also</p>
+
+<p>Imagine a webhook like this. It only sets labels on every pod that it receives</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#f92672">package</span> <span style="color:#a6e22e">mutatortesting</span>
+
+<span style="color:#f92672">import</span> (
+	<span style="color:#e6db74">&#34;context&#34;</span>
+
+	<span style="color:#a6e22e">corev1</span> <span style="color:#e6db74">&#34;k8s.io/api/core/v1&#34;</span>
+  <span style="color:#a6e22e">metav1</span> <span style="color:#e6db74">&#34;k8s.io/apimachinery/pkg/apis/meta/v1&#34;</span>
+
+  <span style="color:#e6db74">&#34;github.com/slok/kubewebhook/pkg/webhook/mutating&#34;</span>
+)
+
+<span style="color:#75715e">// PodLabeler is a mutator that will set labels on the received pods.
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">PodLabeler</span> <span style="color:#66d9ef">struct</span> {
+	<span style="color:#a6e22e">labels</span> <span style="color:#66d9ef">map</span>[<span style="color:#66d9ef">string</span>]<span style="color:#66d9ef">string</span>
+}
+
+<span style="color:#75715e">// NewPodLabeler returns a new PodLabeler initialized.
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">NewPodLabeler</span>(<span style="color:#a6e22e">labels</span> <span style="color:#66d9ef">map</span>[<span style="color:#66d9ef">string</span>]<span style="color:#66d9ef">string</span>) <span style="color:#a6e22e">mutating</span>.<span style="color:#a6e22e">Mutator</span> {
+	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">labels</span> <span style="color:#f92672">==</span> <span style="color:#66d9ef">nil</span> {
+		<span style="color:#a6e22e">labels</span> = make(<span style="color:#66d9ef">map</span>[<span style="color:#66d9ef">string</span>]<span style="color:#66d9ef">string</span>)
+	}
+	<span style="color:#66d9ef">return</span> <span style="color:#f92672">&amp;</span><span style="color:#a6e22e">PodLabeler</span>{
+		<span style="color:#a6e22e">labels</span>: <span style="color:#a6e22e">labels</span>,
+	}
+}
+
+<span style="color:#75715e">// Mutate will set the required labels on the pods. Satisfies mutating.Mutator interface.
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">func</span> (<span style="color:#a6e22e">p</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">PodLabeler</span>) <span style="color:#a6e22e">Mutate</span>(<span style="color:#a6e22e">ctx</span> <span style="color:#a6e22e">context</span>.<span style="color:#a6e22e">Context</span>, <span style="color:#a6e22e">obj</span> <span style="color:#a6e22e">metav1</span>.<span style="color:#a6e22e">Object</span>) (<span style="color:#66d9ef">bool</span>, <span style="color:#66d9ef">error</span>) {
+	<span style="color:#a6e22e">pod</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">obj</span>.(<span style="color:#f92672">*</span><span style="color:#a6e22e">corev1</span>.<span style="color:#a6e22e">Pod</span>)
+
+	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">pod</span>.<span style="color:#a6e22e">Labels</span> <span style="color:#f92672">==</span> <span style="color:#66d9ef">nil</span> {
+		<span style="color:#a6e22e">pod</span>.<span style="color:#a6e22e">Labels</span> = make(<span style="color:#66d9ef">map</span>[<span style="color:#66d9ef">string</span>]<span style="color:#66d9ef">string</span>)
+	}
+
+	<span style="color:#66d9ef">for</span> <span style="color:#a6e22e">k</span>, <span style="color:#a6e22e">v</span> <span style="color:#f92672">:=</span> <span style="color:#66d9ef">range</span> <span style="color:#a6e22e">p</span>.<span style="color:#a6e22e">labels</span> {
+		<span style="color:#a6e22e">pod</span>.<span style="color:#a6e22e">Labels</span>[<span style="color:#a6e22e">k</span>] = <span style="color:#a6e22e">v</span>
+	}
+	<span style="color:#66d9ef">return</span> <span style="color:#66d9ef">false</span>, <span style="color:#66d9ef">nil</span>
+}</code></pre></div>
+<p>You would make a test that check the business logic of the mutator itself and nothing more.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#f92672">package</span> <span style="color:#a6e22e">mutatortesting_test</span>
+
+<span style="color:#f92672">import</span> (
+	<span style="color:#e6db74">&#34;context&#34;</span>
+	<span style="color:#e6db74">&#34;testing&#34;</span>
+
+	<span style="color:#e6db74">&#34;github.com/stretchr/testify/assert&#34;</span>
+	<span style="color:#a6e22e">corev1</span> <span style="color:#e6db74">&#34;k8s.io/api/core/v1&#34;</span>
+	<span style="color:#a6e22e">metav1</span> <span style="color:#e6db74">&#34;k8s.io/apimachinery/pkg/apis/meta/v1&#34;</span>
+
+	<span style="color:#e6db74">&#34;github.com/slok/kubewebhook/examples/mutatortesting&#34;</span>
+)
+
+<span style="color:#66d9ef">func</span> <span style="color:#a6e22e">TestPodTaggerMutate</span>(<span style="color:#a6e22e">t</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">testing</span>.<span style="color:#a6e22e">T</span>) {
+	<span style="color:#a6e22e">tests</span> <span style="color:#f92672">:=</span> []<span style="color:#66d9ef">struct</span> {
+		<span style="color:#a6e22e">name</span>   <span style="color:#66d9ef">string</span>
+		<span style="color:#a6e22e">pod</span>    <span style="color:#f92672">*</span><span style="color:#a6e22e">corev1</span>.<span style="color:#a6e22e">Pod</span>
+		<span style="color:#a6e22e">labels</span> <span style="color:#66d9ef">map</span>[<span style="color:#66d9ef">string</span>]<span style="color:#66d9ef">string</span>
+		<span style="color:#a6e22e">expPod</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">corev1</span>.<span style="color:#a6e22e">Pod</span>
+		<span style="color:#a6e22e">expErr</span> <span style="color:#66d9ef">bool</span>
+	}{
+		{
+			<span style="color:#a6e22e">name</span>: <span style="color:#e6db74">&#34;Mutating a pod without labels should set the labels correctly.&#34;</span>,
+			<span style="color:#a6e22e">pod</span>: <span style="color:#f92672">&amp;</span><span style="color:#a6e22e">corev1</span>.<span style="color:#a6e22e">Pod</span>{
+				<span style="color:#a6e22e">ObjectMeta</span>: <span style="color:#a6e22e">metav1</span>.<span style="color:#a6e22e">ObjectMeta</span>{
+					<span style="color:#a6e22e">Name</span>: <span style="color:#e6db74">&#34;test&#34;</span>,
+				},
+			},
+			<span style="color:#a6e22e">labels</span>: <span style="color:#66d9ef">map</span>[<span style="color:#66d9ef">string</span>]<span style="color:#66d9ef">string</span>{<span style="color:#e6db74">&#34;bruce&#34;</span>: <span style="color:#e6db74">&#34;wayne&#34;</span>, <span style="color:#e6db74">&#34;peter&#34;</span>: <span style="color:#e6db74">&#34;parker&#34;</span>},
+			<span style="color:#a6e22e">expPod</span>: <span style="color:#f92672">&amp;</span><span style="color:#a6e22e">corev1</span>.<span style="color:#a6e22e">Pod</span>{
+				<span style="color:#a6e22e">ObjectMeta</span>: <span style="color:#a6e22e">metav1</span>.<span style="color:#a6e22e">ObjectMeta</span>{
+					<span style="color:#a6e22e">Name</span>:   <span style="color:#e6db74">&#34;test&#34;</span>,
+					<span style="color:#a6e22e">Labels</span>: <span style="color:#66d9ef">map</span>[<span style="color:#66d9ef">string</span>]<span style="color:#66d9ef">string</span>{<span style="color:#e6db74">&#34;bruce&#34;</span>: <span style="color:#e6db74">&#34;wayne&#34;</span>, <span style="color:#e6db74">&#34;peter&#34;</span>: <span style="color:#e6db74">&#34;parker&#34;</span>},
+				},
+			},
+		},
+		{
+			<span style="color:#a6e22e">name</span>: <span style="color:#e6db74">&#34;Mutating a pod with labels should aggregate and replace the labels with the existing ones.&#34;</span>,
+			<span style="color:#a6e22e">pod</span>: <span style="color:#f92672">&amp;</span><span style="color:#a6e22e">corev1</span>.<span style="color:#a6e22e">Pod</span>{
+				<span style="color:#a6e22e">ObjectMeta</span>: <span style="color:#a6e22e">metav1</span>.<span style="color:#a6e22e">ObjectMeta</span>{
+					<span style="color:#a6e22e">Name</span>:   <span style="color:#e6db74">&#34;test&#34;</span>,
+					<span style="color:#a6e22e">Labels</span>: <span style="color:#66d9ef">map</span>[<span style="color:#66d9ef">string</span>]<span style="color:#66d9ef">string</span>{<span style="color:#e6db74">&#34;bruce&#34;</span>: <span style="color:#e6db74">&#34;banner&#34;</span>, <span style="color:#e6db74">&#34;tony&#34;</span>: <span style="color:#e6db74">&#34;stark&#34;</span>},
+				},
+			},
+			<span style="color:#a6e22e">labels</span>: <span style="color:#66d9ef">map</span>[<span style="color:#66d9ef">string</span>]<span style="color:#66d9ef">string</span>{<span style="color:#e6db74">&#34;bruce&#34;</span>: <span style="color:#e6db74">&#34;wayne&#34;</span>, <span style="color:#e6db74">&#34;peter&#34;</span>: <span style="color:#e6db74">&#34;parker&#34;</span>},
+			<span style="color:#a6e22e">expPod</span>: <span style="color:#f92672">&amp;</span><span style="color:#a6e22e">corev1</span>.<span style="color:#a6e22e">Pod</span>{
+				<span style="color:#a6e22e">ObjectMeta</span>: <span style="color:#a6e22e">metav1</span>.<span style="color:#a6e22e">ObjectMeta</span>{
+					<span style="color:#a6e22e">Name</span>:   <span style="color:#e6db74">&#34;test&#34;</span>,
+					<span style="color:#a6e22e">Labels</span>: <span style="color:#66d9ef">map</span>[<span style="color:#66d9ef">string</span>]<span style="color:#66d9ef">string</span>{<span style="color:#e6db74">&#34;bruce&#34;</span>: <span style="color:#e6db74">&#34;wayne&#34;</span>, <span style="color:#e6db74">&#34;peter&#34;</span>: <span style="color:#e6db74">&#34;parker&#34;</span>, <span style="color:#e6db74">&#34;tony&#34;</span>: <span style="color:#e6db74">&#34;stark&#34;</span>},
+				},
+			},
+		},
+	}
+
+	<span style="color:#66d9ef">for</span> <span style="color:#a6e22e">_</span>, <span style="color:#a6e22e">test</span> <span style="color:#f92672">:=</span> <span style="color:#66d9ef">range</span> <span style="color:#a6e22e">tests</span> {
+		<span style="color:#a6e22e">t</span>.<span style="color:#a6e22e">Run</span>(<span style="color:#a6e22e">test</span>.<span style="color:#a6e22e">name</span>, <span style="color:#66d9ef">func</span>(<span style="color:#a6e22e">t</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">testing</span>.<span style="color:#a6e22e">T</span>) {
+			<span style="color:#a6e22e">assert</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">assert</span>.<span style="color:#a6e22e">New</span>(<span style="color:#a6e22e">t</span>)
+
+			<span style="color:#a6e22e">pl</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">mutatortesting</span>.<span style="color:#a6e22e">NewPodLabeler</span>(<span style="color:#a6e22e">test</span>.<span style="color:#a6e22e">labels</span>)
+			<span style="color:#a6e22e">gotPod</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">test</span>.<span style="color:#a6e22e">pod</span>
+			<span style="color:#a6e22e">_</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">pl</span>.<span style="color:#a6e22e">Mutate</span>(<span style="color:#a6e22e">context</span>.<span style="color:#a6e22e">TODO</span>(), <span style="color:#a6e22e">gotPod</span>)
+
+			<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">test</span>.<span style="color:#a6e22e">expErr</span> {
+				<span style="color:#a6e22e">assert</span>.<span style="color:#a6e22e">Error</span>(<span style="color:#a6e22e">err</span>)
+			} <span style="color:#66d9ef">else</span> <span style="color:#66d9ef">if</span> <span style="color:#a6e22e">assert</span>.<span style="color:#a6e22e">NoError</span>(<span style="color:#a6e22e">err</span>) {
+				<span style="color:#75715e">// Check the expected pod.
+</span><span style="color:#75715e"></span>				<span style="color:#a6e22e">assert</span>.<span style="color:#a6e22e">Equal</span>(<span style="color:#a6e22e">test</span>.<span style="color:#a6e22e">expPod</span>, <span style="color:#a6e22e">gotPod</span>)
+			}
+		})
+	}
+}</code></pre></div>
+
+
+    
+    
+        <div class="chevrons">
+    <div id="navigation">
+<a class="nav nav-prev" href="https://xlarrakoetxea.org/kubewebhook/api/" title="API"> <i class="fa fa-chevron-left"></i><label>API</label></a>
+    <a class="nav nav-next" href="https://xlarrakoetxea.org/kubewebhook/best-practices/" title="Best practices" style="margin-right: 0px;"><label>Best practices</label><i class="fa fa-chevron-right"></i></a></div>
+  </div>
+
+  </section>
+</article>
+
+<footer>
+
+<div class="footline">
+    
+
+    
+
+  
+
+    <div class="github-link">
+      <a href="https://github.com/slok/kubwebhook/edit/master/docs/content/testing/_index.md" target="blank"><i class="fa fa-code-fork"></i>
+        Improve this page</a>
+    </div>
+  </div>
+
+
+	<div>
+
+
+  
+    Create a content/_footer.md file to customize the footer content
+  
+
+
+
+	</div>
+</footer>
+
+<script src="https://xlarrakoetxea.org/kubewebhook/js/clipboard.min.js"></script>
+
+<link href="https://xlarrakoetxea.org/kubewebhook/css/featherlight.min.css" rel="stylesheet">
+<script src="https://xlarrakoetxea.org/kubewebhook/js/featherlight.min.js"></script>
+
+
+
+<script src="https://xlarrakoetxea.org/kubewebhook/theme-flex/script.js"></script>
+
+    
+
+    
+    
+
+    
+  </body>
+</html>

@@ -6,7 +6,7 @@
       <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <meta name="generator" content="Hugo 0.42.2" />
-<title>Categories :: Kubewebhook documentation</title>
+<title>Best practices :: Kubewebhook documentation</title>
 <link rel="shortcut icon" href="https://xlarrakoetxea.org/kubewebhook/images/favicon.png" type="image/x-icon" />
 <link href="https://xlarrakoetxea.org/kubewebhook/css/font-awesome.min.css" rel="stylesheet">
 <link href="https://xlarrakoetxea.org/kubewebhook/css/nucleus.css" rel="stylesheet">
@@ -23,7 +23,7 @@
 
     
   </head>
-  <body data-url="/categories/">
+  <body data-url="/best-practices/">
     
       <header>
   <div class="logo">
@@ -74,7 +74,7 @@
       <a href="https://xlarrakoetxea.org/kubewebhook/testing/">Testing</a><i class="fa fa-circle-thin read-icon"></i>
       </div>
     </li>
-    <li data-nav-id="/best-practices/" class="dd-item alwaysopen
+    <li data-nav-id="/best-practices/" class="dd-item parent active alwaysopen
         ">
       <div>
       <a href="https://xlarrakoetxea.org/kubewebhook/best-practices/">Best practices</a><i class="fa fa-circle-thin read-icon"></i>
@@ -104,7 +104,7 @@
     <option value="/testing/" >
    Testing</option> 
   
-    <option value="/best-practices/" >
+    <option value="/best-practices/"  selected>
    Best practices</option> 
   
 
@@ -129,32 +129,60 @@
       </div>
     
 
-    <h1>Categories</h1>
+    <h1>Best practices</h1>
     
     
     
 
 
 
-<div class="extra-pagination inner">
-<nav class="pagination" role="navigation">
-	
-	<span class="page-number">Page 1 of 0</span>
-	
-</nav>
+<h1 id="best-practices">Best practices</h1>
 
-</div>
+<p>When you make a Kubernetes admission webhook there are some points that are need to take into account.</p>
+
+<h2 id="latency">Latency</h2>
+
+<p>The webhooks are called synchronously from the apiserver, this means that when the apiserver starts the chain of admission before storing the object. If the latency of your webhook is high it will impact on every object.</p>
+
+<div class="notices tip" >To reduce the latency if you need resources from the apiserver a good pattern is to use a cache that is populated using a controller that is watching resource changes and populating the cache</div>
 
 
+<h2 id="number-of-calls">Number of calls</h2>
 
-<div style="margin-bottom:2rem"></div>
+<p>Webhook admissions are requested using TLS, and every webhook configuration can have multiple calls to different webhooks or endpoints. Every call has impact on the chain.</p>
 
-<nav class="pagination" role="navigation">
-	
-	<span class="page-number">Page 1 of 0</span>
-	
-</nav>
+<p>If multiple mutations or validations can be grouped in a single mutation chain that would reduce the latency and the number of calls.</p>
 
+<h2 id="controllers-and-operators">Controllers and operators</h2>
+
+<p>Webhooks should not be used to take other actions on a resource creation, delete or update event. If that&rsquo;s the case a controller or a operator should be used instead. Admission webhooks act on the resource itself before being stored on the ETCD.</p>
+
+<h2 id="grouping">Grouping</h2>
+
+<p>If you have custom webhooks on your cluster, would be good to have all the webhooks on the same server and group all mutating webhooks by type.</p>
+
+<p>Example: A server that has 3 webhooks</p>
+
+<ul>
+<li>Pod mutating webhook</li>
+<li>Pod validating webhook</li>
+<li>Ingress validating webhook.</li>
+</ul>
+
+<p>Each one has a chain with multiple validators and mutators. Example</p>
+
+<ul>
+<li>Pod mutating webhook.
+
+<ul>
+<li>Add team labels based on the namespace.</li>
+<li>Set tolerations based on the execution type.</li>
+<li>Set some stablished standard annotations.</li>
+<li>Add prometheus monitoring port.</li>
+</ul></li>
+</ul>
+
+<p>That chain would act on one single mutating webhook call and will return all the mutations in one request.</p>
 
 
 
@@ -162,7 +190,8 @@
     
         <div class="chevrons">
     <div id="navigation">
-<a class="nav nav-next" href="https://xlarrakoetxea.org/kubewebhook/getting-started/" title="Getting started" style="margin-right: 0px;"><label>Getting started</label><i class="fa fa-chevron-right"></i></a></div>
+<a class="nav nav-prev" href="https://xlarrakoetxea.org/kubewebhook/testing/" title="Testing"> <i class="fa fa-chevron-left"></i><label>Testing</label></a>
+    <a class="nav nav-next" href="https://xlarrakoetxea.org/kubewebhook/getting-started/" title="Getting started" style="margin-right: 0px;"><label>Getting started</label><i class="fa fa-chevron-right"></i></a></div>
   </div>
 
   </section>
@@ -178,7 +207,7 @@
   
 
     <div class="github-link">
-      <a href="https://github.com/slok/kubwebhook/edit/master/docs/content/" target="blank"><i class="fa fa-code-fork"></i>
+      <a href="https://github.com/slok/kubwebhook/edit/master/docs/content/best-practices/_index.md" target="blank"><i class="fa fa-code-fork"></i>
         Improve this page</a>
     </div>
   </div>

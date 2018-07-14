@@ -7,11 +7,12 @@ import (
 	"net/http"
 	"os"
 
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	whhttp "github.com/slok/kubewebhook/pkg/http"
 	"github.com/slok/kubewebhook/pkg/log"
 	mutatingwh "github.com/slok/kubewebhook/pkg/webhook/mutating"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func annotatePodMutator(_ context.Context, obj metav1.Object) (bool, error) {
