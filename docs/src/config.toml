@@ -5,25 +5,23 @@ DefaultContentLanguage = "en"
 title = "Kubewebhook documentation"
 theme = "docdock"
 #themesdir = "../.."
-pygmentsCodeFences = true
-pygmentsStyle = "monokailight"
 defaultContentLanguage = "en"
 defaultContentLanguageInSubdir= false
 enableMissingTranslationPlaceholders = false
-canonifyURLs = true
 publishDir = "../"
+pygmentsCodeFences = true
+canonifyURLs = true
 
 [params]
 editURL = "https://github.com/slok/kubwebhook/edit/master/docs/content/"
 showVisitedLinks = true # default is false
 themeStyle = "flex" # "original" or "flex" # default "flex"
-themeVariant = "blue" # choose theme variant "green", "gold" , "gray", "blue" (default)
 ordersectionsby = "weight" # ordersectionsby = "title"
 disableHomeIcon = true # default is false
 disableSearch = false # default is false
 disableNavChevron = false # set true to hide next/prev chevron, default is false
 highlightClientSide = false # set true to use highlight.pack.js instead of the default hugo chroma highlighter
-menushortcutsnewtab = false # set true to open shortcuts links to a new tab/window
+menushortcutsnewtab = true # set true to open shortcuts links to a new tab/window
 enableGitInfo = true
 
 [outputs]

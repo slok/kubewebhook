@@ -8,11 +8,12 @@ import (
 	"os"
 	"regexp"
 
+	extensionsv1beta1 "k8s.io/api/extensions/v1beta1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	whhttp "github.com/slok/kubewebhook/pkg/http"
 	"github.com/slok/kubewebhook/pkg/log"
 	validatingwh "github.com/slok/kubewebhook/pkg/webhook/validating"
-	extensionsv1beta1 "k8s.io/api/extensions/v1beta1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type ingressHostValidator struct {
