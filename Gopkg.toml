@@ -1,5 +1,5 @@
 [[constraint]]
-  name = "github.com/mattbaird/jsonpatch"
+  name = "github.com/appscode/jsonpatch"
   branch = "master"
 
 # Kubernetes >= 1.10.
