@@ -184,6 +184,10 @@
 
 <p>That chain would act on one single mutating webhook call and will return all the mutations in one request.</p>
 
+<h2 id="namespace">Namespace</h2>
+
+<p>Sometimes the object received for mutating or validating doesn&rsquo;t have the Namespace set, this is mainly because it has not been defaulted yet (AFAIK). In this case you can get the namespace from the admission request, the request is stored on the received context (in the mutators/validators). Check Kubewebhook <a href="https://godoc.org/github.com/slok/kubewebhook/pkg/webhook/context,">context API docs</a></p>
+
 
 
     

@@ -181,6 +181,10 @@ alert-success"
 role="alert">You can create a single HTTP server with multiple webhooks (multiple hadlers)</div>
 
 
+<h2 id="context">Context</h2>
+
+<p>Every webhook receives and passes a <code>context.Context</code>. In this context is also stored the orignal <code>admissionv1beta1.AdmissionRequest</code> in case more information is required in a mutator or a validator, like the operation of the webhook (<code>CREATE</code>, <code>UPDATE</code>&hellip;).</p>
+
 
     
     

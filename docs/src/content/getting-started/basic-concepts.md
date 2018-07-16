@@ -39,6 +39,10 @@ To get a Handler from a previous created Webhook you can use [`http.HandlerFor`]
 
 {{% alert theme="success" %}}You can create a single HTTP server with multiple webhooks (multiple hadlers){{% /alert %}}
 
+## Context
+
+Every webhook receives and passes a `context.Context`. In this context is also stored the orignal `admissionv1beta1.AdmissionRequest` in case more information is required in a mutator or a validator, like the operation of the webhook (`CREATE`, `UPDATE`...).
+
 [webhook-docs]: https://godoc.org/github.com/slok/kubewebhook/pkg/webhook#Webhook
 [validator-docs]: https://godoc.org/github.com/slok/kubewebhook/pkg/webhook/validating#Validator
 [mutator-docs]: https://godoc.org/github.com/slok/kubewebhook/pkg/webhook/mutating#Mutator
