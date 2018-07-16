@@ -44,3 +44,9 @@ Each one has a chain with multiple validators and mutators. Example
   - Add prometheus monitoring port.
 
 That chain would act on one single mutating webhook call and will return all the mutations in one request.
+
+## Namespace
+
+Sometimes the object received for mutating or validating doesn't have the Namespace set, this is mainly because it has not been defaulted yet (AFAIK). In this case you can get the namespace from the admission request, the request is stored on the received context (in the mutators/validators). Check Kubewebhook [context API docs][context-docs]
+
+[context-docs]: https://godoc.org/github.com/slok/kubewebhook/pkg/webhook/context,
