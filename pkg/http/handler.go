@@ -11,6 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 
 	"github.com/slok/kubewebhook/pkg/webhook"
+	whcontext "github.com/slok/kubewebhook/pkg/webhook/context"
 )
 
 var (
@@ -45,8 +46,11 @@ func HandlerFor(webhook webhook.Webhook) (http.Handler, error) {
 			return
 		}
 
+		// Set the admission request on the request.
+		ctx := whcontext.SetAdmissionRequest(r.Context(), ar.Request)
+
 		// Mutation logic.
-		admissionResp := webhook.Review(r.Context(), ar)
+		admissionResp := webhook.Review(ctx, ar)
 
 		// Forge the review response.
 		aResponse := admissionv1beta1.AdmissionReview{
