@@ -2,6 +2,12 @@
 
 
 [[projects]]
+  branch = "master"
+  name = "github.com/appscode/jsonpatch"
+  packages = ["."]
+  revision = "1359b374de83fa14fd58ab10aa8ea4935f84d249"
+
+[[projects]]
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
   revision = "346938d642f2ec3594ed81d874461961cd0faa76"
@@ -38,12 +44,6 @@
   name = "github.com/json-iterator/go"
   packages = ["."]
   revision = "f2b4162afba35581b6d4a50d3b8f34e33c144682"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/mattbaird/jsonpatch"
-  packages = ["."]
-  revision = "81af80346b1a01caae0cbc27fd3c1ba5b11e189f"
 
 [[projects]]
   name = "github.com/modern-go/concurrent"
@@ -209,6 +209,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "9859cbe801009fb64ff894676e2673e540b2fbb6b35020c43757576d0b21e7aa"
+  inputs-digest = "fd461ba4b474df527ac76a3be529bc22d50c1880d3ebfd7bbbdd78f5fa163f7c"
   solver-name = "gps-cdcl"
   solver-version = 1
