@@ -39,5 +39,5 @@ func ExampleMutator_podAnnotateMutatingWebhook() {
 	})
 
 	// Create webhook (usage of webhook not in this example).
-	mutating.NewStaticWebhook(pam, &corev1.Pod{}, log.Dummy)
+	mutating.NewWebhook(pam, &corev1.Pod{}, log.Dummy)
 }

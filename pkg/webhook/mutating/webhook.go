@@ -12,68 +12,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/types"
-	kubernetesscheme "k8s.io/client-go/kubernetes/scheme"
 
 	"github.com/slok/kubewebhook/pkg/log"
 	"github.com/slok/kubewebhook/pkg/webhook"
 	"github.com/slok/kubewebhook/pkg/webhook/internal/helpers"
 )
-
-type dynamicWebhook struct {
-	mutator      Mutator
-	deserializer runtime.Decoder
-	logger       log.Logger
-}
-
-// NewDynamicWebhook is the default implementation of a mutating webhook and will return a webhook ready
-// for dynamic types that can receive different type of objects to mutate on the same webhook.
-// This webhook will always allow the admission of the resource, only will deny in case of error.
-func NewDynamicWebhook(mutator Mutator, logger log.Logger) webhook.Webhook {
-	w := &dynamicWebhook{
-		mutator: mutator,
-		logger:  logger,
-	}
-	w.init()
-	return w
-}
-
-func (w *dynamicWebhook) init() {
-	// Register all the Kubernetes object types so we can receive any
-	// kubernetes object and deserialize.
-	scheme := runtime.NewScheme()
-	codecs := serializer.NewCodecFactory(scheme)
-	kubernetesscheme.AddToScheme(scheme)
-	w.deserializer = codecs.UniversalDeserializer()
-}
-
-// MutatingAdmissionReview will handle the mutating of the admission review and
-// return the AdmissionResponse.
-func (w *dynamicWebhook) Review(ctx context.Context, ar *admissionv1beta1.AdmissionReview) *admissionv1beta1.AdmissionResponse {
-	uid := ar.Request.UID
-
-	w.logger.Debugf("reviewing request %s, named: %s/%s", ar.Request.UID, ar.Request.Namespace, ar.Request.Name)
-
-	// Get the object.
-	obj, _, err := w.deserializer.Decode(ar.Request.Object.Raw, nil, nil)
-	if err != nil {
-		return helpers.ToAdmissionErrorResponse(uid, fmt.Errorf("error deseralizing request raw object: %s", err), w.logger)
-	}
-	origObj, ok := obj.(metav1.Object)
-	if !ok {
-		err := fmt.Errorf("impossible to type assert the runtime.Object")
-		return helpers.ToAdmissionErrorResponse(uid, err, w.logger)
-	}
-
-	// Copy the object to have the original and be able to get the patch.
-	objCopy := obj.DeepCopyObject()
-	mutatingObj, ok := objCopy.(metav1.Object)
-	if !ok {
-		err := fmt.Errorf("impossible to type assert the deep copy to metav1.Object")
-		return helpers.ToAdmissionErrorResponse(uid, err, w.logger)
-	}
-
-	return mutatingAdmissionReview(ctx, w.mutator, ar.Request.UID, origObj, mutatingObj, w.logger)
-}
 
 type staticWebhook struct {
 	objType      reflect.Type
@@ -82,10 +25,10 @@ type staticWebhook struct {
 	logger       log.Logger
 }
 
-// NewStaticWebhook is a mutating webhook and will return a webhook ready for a type of resource
-// it will mutate the received resources.
+// NewWebhook is a mutating webhook and will return a webhook ready for a type of resource.
+// It will mutate the received resources.
 // This webhook will always allow the admission of the resource, only will deny in case of error.
-func NewStaticWebhook(mutator Mutator, obj metav1.Object, logger log.Logger) (webhook.Webhook, error) {
+func NewWebhook(mutator Mutator, obj metav1.Object, logger log.Logger) (webhook.Webhook, error) {
 	// Create a custom deserializer for the received admission review request.
 	runtimeScheme := runtime.NewScheme()
 	codecs := serializer.NewCodecFactory(runtimeScheme)
@@ -122,39 +65,39 @@ func (w *staticWebhook) Review(ctx context.Context, ar *admissionv1beta1.Admissi
 		return helpers.ToAdmissionErrorResponse(uid, err, w.logger)
 	}
 
-	return mutatingAdmissionReview(ctx, w.mutator, uid, obj, mutatingObj, w.logger)
+	return w.mutatingAdmissionReview(ctx, uid, obj, mutatingObj)
 
 }
 
-func mutatingAdmissionReview(ctx context.Context, mutator Mutator, admissionRequestUID types.UID, obj, copyObj metav1.Object, logger log.Logger) *admissionv1beta1.AdmissionResponse {
+func (w *staticWebhook) mutatingAdmissionReview(ctx context.Context, admissionRequestUID types.UID, obj, copyObj metav1.Object) *admissionv1beta1.AdmissionResponse {
 
 	// Mutate the object.
-	_, err := mutator.Mutate(ctx, copyObj)
+	_, err := w.mutator.Mutate(ctx, copyObj)
 	if err != nil {
-		return helpers.ToAdmissionErrorResponse(admissionRequestUID, err, logger)
+		return helpers.ToAdmissionErrorResponse(admissionRequestUID, err, w.logger)
 	}
 
 	// Get the diff patch of the original and mutated object.
 	origJSON, err := json.Marshal(obj)
 	if err != nil {
-		return helpers.ToAdmissionErrorResponse(admissionRequestUID, err, logger)
+		return helpers.ToAdmissionErrorResponse(admissionRequestUID, err, w.logger)
 
 	}
 	mutatedJSON, err := json.Marshal(copyObj)
 	if err != nil {
-		return helpers.ToAdmissionErrorResponse(admissionRequestUID, err, logger)
+		return helpers.ToAdmissionErrorResponse(admissionRequestUID, err, w.logger)
 	}
 
 	patch, err := jsonpatch.CreatePatch(origJSON, mutatedJSON)
 	if err != nil {
-		return helpers.ToAdmissionErrorResponse(admissionRequestUID, err, logger)
+		return helpers.ToAdmissionErrorResponse(admissionRequestUID, err, w.logger)
 	}
 
 	marshalledPatch, err := json.Marshal(patch)
 	if err != nil {
-		return helpers.ToAdmissionErrorResponse(admissionRequestUID, err, logger)
+		return helpers.ToAdmissionErrorResponse(admissionRequestUID, err, w.logger)
 	}
-	logger.Debugf("json patch for request %s: %s", admissionRequestUID, string(marshalledPatch))
+	w.logger.Debugf("json patch for request %s: %s", admissionRequestUID, string(marshalledPatch))
 
 	// Forge response.
 	return &admissionv1beta1.AdmissionResponse{
