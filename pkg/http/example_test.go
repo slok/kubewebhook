@@ -9,7 +9,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	whhttp "github.com/slok/kubewebhook/pkg/http"
-	"github.com/slok/kubewebhook/pkg/log"
 	"github.com/slok/kubewebhook/pkg/webhook/mutating"
 	"github.com/slok/kubewebhook/pkg/webhook/validating"
 )
@@ -29,7 +28,11 @@ func ExampleHandlerFor_serveWebhook() {
 	})
 
 	// Create webhook (don't check error).
-	wh, _ := validating.NewWebhook(v, &corev1.Pod{}, log.Dummy)
+	cfg := validating.WebhookConfig{
+		Name: "serveWebhook",
+		Obj:  &corev1.Pod{},
+	}
+	wh, _ := validating.NewWebhook(cfg, v, nil, nil)
 
 	// Get webhook handler and serve (webhooks need to be server with TLS).
 	whHandler, _ := whhttp.HandlerFor(wh)
@@ -56,9 +59,18 @@ func ExampleHandlerFor_serveMultipleWebhooks() {
 	})
 
 	// Create webhooks (don't check error).
-	vwh, _ := validating.NewWebhook(v, &corev1.Pod{}, log.Dummy)
+	vcfg := validating.WebhookConfig{
+		Name: "validatingServeWebhook",
+		Obj:  &corev1.Pod{},
+	}
+	vwh, _ := validating.NewWebhook(vcfg, v, nil, nil)
 	vwhHandler, _ := whhttp.HandlerFor(vwh)
-	mwh, _ := mutating.NewStaticWebhook(m, &corev1.Pod{}, log.Dummy)
+
+	mcfg := mutating.WebhookConfig{
+		Name: "muratingServeWebhook",
+		Obj:  &corev1.Pod{},
+	}
+	mwh, _ := mutating.NewWebhook(mcfg, m, nil, nil)
 	mwhHandler, _ := whhttp.HandlerFor(mwh)
 
 	// Create a muxer and handle different webhooks in different paths of the server.

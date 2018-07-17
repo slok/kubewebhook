@@ -14,6 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/slok/kubewebhook/pkg/log"
+	"github.com/slok/kubewebhook/pkg/observability/metrics"
 	"github.com/slok/kubewebhook/pkg/webhook/validating"
 )
 
@@ -92,7 +93,12 @@ func TestPodAdmissionReviewValidation(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			wh, err := validating.NewWebhook(test.validator, &corev1.Pod{}, log.Dummy)
+			cfg := validating.WebhookConfig{
+				Name: "test",
+				Obj:  &corev1.Pod{},
+			}
+
+			wh, err := validating.NewWebhook(cfg, test.validator, metrics.Dummy, log.Dummy)
 			require.NoError(err)
 			gotResponse := wh.Review(context.TODO(), test.review)
 
@@ -118,7 +124,13 @@ func BenchmarkPodAdmissionReviewValidation(b *testing.B) {
 				},
 			},
 		}
-		wh, _ := validating.NewWebhook(getRandomValidator(), &corev1.Pod{}, log.Dummy)
+
+		cfg := validating.WebhookConfig{
+			Name: "test",
+			Obj:  &corev1.Pod{},
+		}
+
+		wh, _ := validating.NewWebhook(cfg, getRandomValidator(), metrics.Dummy, log.Dummy)
 		wh.Review(context.TODO(), ar)
 	}
 }

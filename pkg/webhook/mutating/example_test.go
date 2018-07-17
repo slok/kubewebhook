@@ -6,7 +6,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/slok/kubewebhook/pkg/log"
 	"github.com/slok/kubewebhook/pkg/webhook/mutating"
 )
 
@@ -39,5 +38,9 @@ func ExampleMutator_podAnnotateMutatingWebhook() {
 	})
 
 	// Create webhook (usage of webhook not in this example).
-	mutating.NewWebhook(pam, &corev1.Pod{}, log.Dummy)
+	cfg := mutating.WebhookConfig{
+		Name: "podAnnotateMutatingWebhook",
+		Obj:  &corev1.Pod{},
+	}
+	mutating.NewWebhook(cfg, pam, nil, nil)
 }
