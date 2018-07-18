@@ -8,7 +8,6 @@ import (
 	extensionsv1beta1 "k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/slok/kubewebhook/pkg/log"
 	"github.com/slok/kubewebhook/pkg/webhook/validating"
 )
 
@@ -46,5 +45,9 @@ func ExampleValidator_ingressHostValidatingWebhook() {
 	})
 
 	// Create webhook (usage of webhook not in this example).
-	validating.NewWebhook(ivh, &extensionsv1beta1.Ingress{}, log.Dummy)
+	cfg := validating.WebhookConfig{
+		Name: "example",
+		Obj:  &extensionsv1beta1.Ingress{},
+	}
+	validating.NewWebhook(cfg, ivh, nil, nil)
 }

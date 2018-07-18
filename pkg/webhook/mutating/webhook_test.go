@@ -7,14 +7,16 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
+	mmetrics "github.com/slok/kubewebhook/mocks/observability/metrics"
 	"github.com/slok/kubewebhook/pkg/log"
-	"github.com/slok/kubewebhook/pkg/webhook"
+	"github.com/slok/kubewebhook/pkg/observability/metrics"
 	"github.com/slok/kubewebhook/pkg/webhook/mutating"
 )
 
@@ -112,27 +114,7 @@ func getPodResourceLimitDeletorMutator() mutating.Mutator {
 	})
 }
 
-func TestDynamicMutationWebhook(t *testing.T) {
-	f := func(m mutating.Mutator) webhook.Webhook {
-		return mutating.NewDynamicWebhook(m, log.Dummy)
-	}
-
-	testPodAdmissionReviewMutation(f, t)
-}
-
-func TestStaticMutationWebhook(t *testing.T) {
-	f := func(m mutating.Mutator) webhook.Webhook {
-		wh, err := mutating.NewStaticWebhook(m, &corev1.Pod{}, log.Dummy)
-		assert.NoError(t, err)
-		return wh
-	}
-
-	testPodAdmissionReviewMutation(f, t)
-}
-
-type whfactory func(mutating.Mutator) webhook.Webhook
-
-func testPodAdmissionReviewMutation(whf whfactory, t *testing.T) {
+func TestPodAdmissionReviewMutation(t *testing.T) {
 	tests := []struct {
 		name     string
 		mutator  mutating.Mutator
@@ -197,7 +179,19 @@ func testPodAdmissionReviewMutation(whf whfactory, t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			assert := assert.New(t)
-			wh := whf(test.mutator)
+
+			// Mocks.
+			mm := &mmetrics.Recorder{}
+			mm.On("IncAdmissionReview", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Once()
+			mm.On("ObserveAdmissionReviewDuration", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Once()
+
+			cfg := mutating.WebhookConfig{
+				Name: "test",
+				Obj:  &corev1.Pod{},
+			}
+			wh, err := mutating.NewWebhook(cfg, test.mutator, mm, log.Dummy)
+			assert.NoError(err)
+
 			gotResponse := wh.Review(context.TODO(), test.review)
 
 			// Check uid, allowed and patch
@@ -211,23 +205,7 @@ func testPodAdmissionReviewMutation(whf whfactory, t *testing.T) {
 	}
 }
 
-func BenchmarkDynamicPodAdmissionReviewMutation(b *testing.B) {
-	f := func(m mutating.Mutator) webhook.Webhook {
-		return mutating.NewDynamicWebhook(m, log.Dummy)
-	}
-	benchmarkPodAdmissionReviewMutation(f, b)
-}
-
-func BenchmarkStaticPodAdmissionReviewMutation(b *testing.B) {
-	f := func(m mutating.Mutator) webhook.Webhook {
-		wh, err := mutating.NewStaticWebhook(m, &corev1.Pod{}, log.Dummy)
-		assert.NoError(b, err)
-		return wh
-	}
-	benchmarkPodAdmissionReviewMutation(f, b)
-}
-
-func benchmarkPodAdmissionReviewMutation(whf whfactory, b *testing.B) {
+func BenchmarkPodAdmissionReviewMutation(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		mutator := getPodNSMutator("myChangedNS")
 		ar := &admissionv1beta1.AdmissionReview{
@@ -238,7 +216,13 @@ func benchmarkPodAdmissionReviewMutation(whf whfactory, b *testing.B) {
 				},
 			},
 		}
-		wh := whf(mutator)
+
+		cfg := mutating.WebhookConfig{
+			Name: "test",
+			Obj:  &corev1.Pod{},
+		}
+		wh, err := mutating.NewWebhook(cfg, mutator, metrics.Dummy, log.Dummy)
+		assert.NoError(b, err)
 		wh.Review(context.TODO(), ar)
 	}
 }

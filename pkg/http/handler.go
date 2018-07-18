@@ -46,7 +46,7 @@ func HandlerFor(webhook webhook.Webhook) (http.Handler, error) {
 			return
 		}
 
-		// Set the admission request on the request.
+		// Set the admission request on the context.
 		ctx := whcontext.SetAdmissionRequest(r.Context(), ar.Request)
 
 		// Mutation logic.

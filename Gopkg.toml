@@ -2,6 +2,10 @@
   name = "github.com/appscode/jsonpatch"
   branch = "master"
 
+[[constraint]]
+  name = "github.com/prometheus/client_golang"
+  branch = "master"
+
 # Kubernetes >= 1.10.
 # Note: Change all at once.
 [[constraint]]
@@ -11,11 +15,6 @@
 [[constraint]]
   name = "k8s.io/apimachinery"
   version = "kubernetes-1.10.5"
-
-[[constraint]]
-  name = "k8s.io/client-go"
-  version = "kubernetes-1.10.5"
-
 
 [prune]
   go-tests = true

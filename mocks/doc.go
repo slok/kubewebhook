@@ -12,3 +12,6 @@ package mocks // import "github.com/slok/kubewebhook/mocks"
 
 // Webhook mocks.
 //go:generate mockery -output ./webhook -outpkg webhook -dir ../pkg/webhook -name Webhook
+
+// Observability mocks.
+//go:generate mockery -output ./observability/metrics -outpkg metrics -dir ../pkg/observability/metrics -name Recorder

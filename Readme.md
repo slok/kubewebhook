@@ -14,6 +14,7 @@ With Kubewebhook you can make validating and mutating webhooks very fast and foc
 - Easy and testable API.
 - Simple, extensible and flexible.
 - Multiple webhooks on the same server.
+- Webhook metrics ([RED][red-metrics-url]) for [Prometheus][prometheus-url]
 
 ## Status
 
@@ -79,3 +80,5 @@ You can get more examples in [here](examples)
 [godoc-url]: https://godoc.org/github.com/slok/kubewebhook
 [aw-url]: https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers
 [docs]: https://xlarrakoetxea.org/kubewebhook
+[red-metrics-url]: https://www.weave.works/blog/the-red-method-key-metrics-for-microservices-architecture/
+[prometheus-url]: https://prometheus.io/

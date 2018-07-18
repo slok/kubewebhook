@@ -84,7 +84,11 @@ func main() {
 		logger:    logger,
 	}
 
-	wh, err := validatingwh.NewWebhook(vl, &extensionsv1beta1.Ingress{}, logger)
+	vcfg := validatingwh.WebhookConfig{
+		Name: "ingressHostValidator",
+		Obj:  &extensionsv1beta1.Ingress{},
+	}
+	wh, err := validatingwh.NewWebhook(vcfg, vl, nil, logger)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error creating webhook: %s", err)
 		os.Exit(1)

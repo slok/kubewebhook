@@ -56,7 +56,11 @@ func main() {
 	// Create our mutator
 	mt := mutatingwh.MutatorFunc(annotatePodMutator)
 
-	wh, err := mutatingwh.NewStaticWebhook(mt, &corev1.Pod{}, logger)
+	mcfg := mutatingwh.WebhookConfig{
+		Name: "podAnnotate",
+		Obj:  &corev1.Pod{},
+	}
+	wh, err := mutatingwh.NewWebhook(mcfg, mt, nil, logger)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error creating webhook: %s", err)
 		os.Exit(1)

@@ -7,13 +7,16 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
+	mmetrics "github.com/slok/kubewebhook/mocks/observability/metrics"
 	"github.com/slok/kubewebhook/pkg/log"
+	"github.com/slok/kubewebhook/pkg/observability/metrics"
 	"github.com/slok/kubewebhook/pkg/webhook/validating"
 )
 
@@ -92,11 +95,22 @@ func TestPodAdmissionReviewValidation(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			wh, err := validating.NewWebhook(test.validator, &corev1.Pod{}, log.Dummy)
+			// Mocks.
+			mm := &mmetrics.Recorder{}
+			mm.On("IncAdmissionReview", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Once()
+			mm.On("ObserveAdmissionReviewDuration", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Once()
+
+			cfg := validating.WebhookConfig{
+				Name: "test",
+				Obj:  &corev1.Pod{},
+			}
+
+			wh, err := validating.NewWebhook(cfg, test.validator, mm, log.Dummy)
 			require.NoError(err)
 			gotResponse := wh.Review(context.TODO(), test.review)
 
 			assert.Equal(test.expResponse, gotResponse)
+			mm.AssertExpectations(t)
 		})
 	}
 }
@@ -118,7 +132,13 @@ func BenchmarkPodAdmissionReviewValidation(b *testing.B) {
 				},
 			},
 		}
-		wh, _ := validating.NewWebhook(getRandomValidator(), &corev1.Pod{}, log.Dummy)
+
+		cfg := validating.WebhookConfig{
+			Name: "test",
+			Obj:  &corev1.Pod{},
+		}
+
+		wh, _ := validating.NewWebhook(cfg, getRandomValidator(), metrics.Dummy, log.Dummy)
 		wh.Review(context.TODO(), ar)
 	}
 }
