@@ -87,8 +87,14 @@ ci: ci-integration-test
 mocks: build
 	$(DOCKER_RUN_CMD) /bin/sh -c '$(MOCKS_CMD)'
 
+.PHONY: godoc
+godoc: 
+	godoc -http=":6060"
+
+.PHONY: docs-generate
 docs-generate: build
 	$(DOCKER_DOCS_RUN_CMD) /bin/bash -c "cd src && hugo"
 
+.PHONY: docs-serve
 docs-serve: build
 	$(DOCKER_DOCS_RUN_CMD) /bin/bash -c "cd src && hugo server --bind=0.0.0.0"
