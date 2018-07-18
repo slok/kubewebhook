@@ -7,12 +7,14 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
+	mmetrics "github.com/slok/kubewebhook/mocks/observability/metrics"
 	"github.com/slok/kubewebhook/pkg/log"
 	"github.com/slok/kubewebhook/pkg/observability/metrics"
 	"github.com/slok/kubewebhook/pkg/webhook/mutating"
@@ -178,11 +180,16 @@ func TestPodAdmissionReviewMutation(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			assert := assert.New(t)
 
+			// Mocks.
+			mm := &mmetrics.Recorder{}
+			mm.On("IncAdmissionReview", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Once()
+			mm.On("ObserveAdmissionReviewDuration", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Once()
+
 			cfg := mutating.WebhookConfig{
 				Name: "test",
 				Obj:  &corev1.Pod{},
 			}
-			wh, err := mutating.NewWebhook(cfg, test.mutator, metrics.Dummy, log.Dummy)
+			wh, err := mutating.NewWebhook(cfg, test.mutator, mm, log.Dummy)
 			assert.NoError(err)
 
 			gotResponse := wh.Review(context.TODO(), test.review)
