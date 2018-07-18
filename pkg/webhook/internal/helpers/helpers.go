@@ -2,6 +2,7 @@ package helpers
 
 import (
 	"reflect"
+	"strings"
 
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -37,4 +38,10 @@ func GetK8sObjType(obj metav1.Object) reflect.Type {
 	// Object is an interface, is safe to assume that is a pointer.
 	// Get the indirect type of the object.
 	return reflect.Indirect(reflect.ValueOf(obj)).Type()
+}
+
+// GroupVersionResourceToString returns a string representation. It differs from the
+// original stringer of the object itself.
+func GroupVersionResourceToString(gvr metav1.GroupVersionResource) string {
+	return strings.Join([]string{gvr.Group, "/", gvr.Version, "/", gvr.Resource}, "")
 }

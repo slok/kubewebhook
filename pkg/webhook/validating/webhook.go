@@ -128,14 +128,14 @@ func (w *staticWebhook) incAdmissionReviewMetric(ar *admissionv1beta1.AdmissionR
 		w.mRecorder.IncAdmissionReviewError(
 			w.cfg.Name,
 			ar.Request.Namespace,
-			ar.Request.Resource.String(),
+			helpers.GroupVersionResourceToString(ar.Request.Resource),
 			ar.Request.Operation,
 			metrics.ValidatingReviewKind)
 	} else {
 		w.mRecorder.IncAdmissionReview(
 			w.cfg.Name,
 			ar.Request.Namespace,
-			ar.Request.Resource.String(),
+			helpers.GroupVersionResourceToString(ar.Request.Resource),
 			ar.Request.Operation,
 			metrics.ValidatingReviewKind)
 	}
@@ -145,7 +145,7 @@ func (w *staticWebhook) observeAdmissionReviewDuration(ar *admissionv1beta1.Admi
 	w.mRecorder.ObserveAdmissionReviewDuration(
 		w.cfg.Name,
 		ar.Request.Namespace,
-		ar.Request.Resource.String(),
+		helpers.GroupVersionResourceToString(ar.Request.Resource),
 		ar.Request.Operation,
 		metrics.ValidatingReviewKind,
 		start)
