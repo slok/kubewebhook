@@ -94,24 +94,23 @@ func (w *staticWebhook) Review(ctx context.Context, ar *admissionv1beta1.Admissi
 	obj := helpers.NewK8sObj(w.objType)
 	runtimeObj, ok := obj.(runtime.Object)
 	if !ok {
-		w.incAdmissionReviewMetric(ar, true)
-		return helpers.ToAdmissionErrorResponse(auid, fmt.Errorf("could not type assert metav1.Object to runtime.Object"), w.logger)
+		err := fmt.Errorf("could not type assert metav1.Object to runtime.Object")
+		return w.toAdmissionErrorResponse(ar, err)
 	}
 
 	// Get the object.
 	_, _, err := w.deserializer.Decode(ar.Request.Object.Raw, nil, runtimeObj)
 	if err != nil {
-		w.incAdmissionReviewMetric(ar, true)
-		return helpers.ToAdmissionErrorResponse(auid, fmt.Errorf("error deseralizing request raw object: %s", err), w.logger)
+		err = fmt.Errorf("error deseralizing request raw object: %s", err)
+		return w.toAdmissionErrorResponse(ar, err)
 	}
 
 	// Copy the object to have the original and be able to get the patch.
 	objCopy := runtimeObj.DeepCopyObject()
 	mutatingObj, ok := objCopy.(metav1.Object)
 	if !ok {
-		w.incAdmissionReviewMetric(ar, true)
 		err := fmt.Errorf("impossible to type assert the deep copy to metav1.Object")
-		return helpers.ToAdmissionErrorResponse(auid, err, w.logger)
+		return w.toAdmissionErrorResponse(ar, err)
 	}
 
 	return w.mutatingAdmissionReview(ctx, ar, obj, mutatingObj)
@@ -124,33 +123,28 @@ func (w *staticWebhook) mutatingAdmissionReview(ctx context.Context, ar *admissi
 	// Mutate the object.
 	_, err := w.mutator.Mutate(ctx, copyObj)
 	if err != nil {
-		w.incAdmissionReviewMetric(ar, true)
-		return helpers.ToAdmissionErrorResponse(auid, err, w.logger)
+		return w.toAdmissionErrorResponse(ar, err)
 	}
 
 	// Get the diff patch of the original and mutated object.
 	origJSON, err := json.Marshal(obj)
 	if err != nil {
-		w.incAdmissionReviewMetric(ar, true)
-		return helpers.ToAdmissionErrorResponse(auid, err, w.logger)
+		return w.toAdmissionErrorResponse(ar, err)
 
 	}
 	mutatedJSON, err := json.Marshal(copyObj)
 	if err != nil {
-		w.incAdmissionReviewMetric(ar, true)
-		return helpers.ToAdmissionErrorResponse(auid, err, w.logger)
+		return w.toAdmissionErrorResponse(ar, err)
 	}
 
 	patch, err := jsonpatch.CreatePatch(origJSON, mutatedJSON)
 	if err != nil {
-		w.incAdmissionReviewMetric(ar, true)
-		return helpers.ToAdmissionErrorResponse(auid, err, w.logger)
+		return w.toAdmissionErrorResponse(ar, err)
 	}
 
 	marshalledPatch, err := json.Marshal(patch)
 	if err != nil {
-		w.incAdmissionReviewMetric(ar, true)
-		return helpers.ToAdmissionErrorResponse(auid, err, w.logger)
+		return w.toAdmissionErrorResponse(ar, err)
 	}
 	w.logger.Debugf("json patch for request %s: %s", auid, string(marshalledPatch))
 
@@ -161,6 +155,11 @@ func (w *staticWebhook) mutatingAdmissionReview(ctx context.Context, ar *admissi
 		Patch:     marshalledPatch,
 		PatchType: jsonPatchType,
 	}
+}
+
+func (w *staticWebhook) toAdmissionErrorResponse(ar *admissionv1beta1.AdmissionReview, err error) *admissionv1beta1.AdmissionResponse {
+	w.incAdmissionReviewMetric(ar, true)
+	return helpers.ToAdmissionErrorResponse(ar.Request.UID, err, w.logger)
 }
 
 func (w *staticWebhook) incAdmissionReviewMetric(ar *admissionv1beta1.AdmissionReview, err bool) {

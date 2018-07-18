@@ -85,29 +85,26 @@ func (w *staticWebhook) Review(ctx context.Context, ar *admissionv1beta1.Admissi
 	start := time.Now()
 	defer w.observeAdmissionReviewDuration(ar, start)
 
-	uid := ar.Request.UID
-
 	w.logger.Debugf("reviewing request %s, named: %s/%s", ar.Request.UID, ar.Request.Namespace, ar.Request.Name)
 
 	obj := helpers.NewK8sObj(w.objType)
 	runtimeObj, ok := obj.(runtime.Object)
 	if !ok {
-		w.incAdmissionReviewMetric(ar, true)
-		return helpers.ToAdmissionErrorResponse(uid, fmt.Errorf("could not type assert metav1.Object to runtime.Object"), w.logger)
+		err := fmt.Errorf("could not type assert metav1.Object to runtime.Object")
+		return w.toAdmissionErrorResponse(ar, err)
 	}
 
 	// Get the object.
 	_, _, err := w.deserializer.Decode(ar.Request.Object.Raw, nil, runtimeObj)
 	if err != nil {
-		w.incAdmissionReviewMetric(ar, true)
-		return helpers.ToAdmissionErrorResponse(uid, fmt.Errorf("error deseralizing request raw object: %s", err), w.logger)
+		err = fmt.Errorf("error deseralizing request raw object: %s", err)
+		return w.toAdmissionErrorResponse(ar, err)
 	}
 
 	// Check validation on the object.
 	_, res, err := w.validator.Validate(ctx, obj)
 	if err != nil {
-		w.incAdmissionReviewMetric(ar, true)
-		return helpers.ToAdmissionErrorResponse(uid, err, w.logger)
+		return w.toAdmissionErrorResponse(ar, err)
 	}
 
 	// Forge response.
@@ -119,6 +116,11 @@ func (w *staticWebhook) Review(ctx context.Context, ar *admissionv1beta1.Admissi
 			Message: res.Message,
 		},
 	}
+}
+
+func (w *staticWebhook) toAdmissionErrorResponse(ar *admissionv1beta1.AdmissionReview, err error) *admissionv1beta1.AdmissionResponse {
+	w.incAdmissionReviewMetric(ar, true)
+	return helpers.ToAdmissionErrorResponse(ar.Request.UID, err, w.logger)
 }
 
 func (w *staticWebhook) incAdmissionReviewMetric(ar *admissionv1beta1.AdmissionReview, err bool) {
