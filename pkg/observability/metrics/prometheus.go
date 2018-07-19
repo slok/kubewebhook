@@ -6,7 +6,10 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-const promWebhookSubsystem = "admission_webhook"
+const (
+	promNamespace        = "kubewebhook"
+	promWebhookSubsystem = "admission_webhook"
+)
 
 // Prometheus is the implementation of a metrics Recorder for
 // Prometheus system.
@@ -25,18 +28,21 @@ func NewPrometheus(registry prometheus.Registerer) *Prometheus {
 		reg: registry,
 
 		admissionReview: prometheus.NewCounterVec(prometheus.CounterOpts{
+			Namespace: promNamespace,
 			Subsystem: promWebhookSubsystem,
 			Name:      "admission_reviews_total",
 			Help:      "Total number of admission reviews handled.",
 		}, []string{"webhook", "namespace", "resource", "operation", "kind"}),
 
 		admissionReviewErr: prometheus.NewCounterVec(prometheus.CounterOpts{
+			Namespace: promNamespace,
 			Subsystem: promWebhookSubsystem,
 			Name:      "admission_review_errors_total",
 			Help:      "Total number of admission review errors when handling.",
 		}, []string{"webhook", "namespace", "resource", "operation", "kind"}),
 
 		admissionReviewDuration: prometheus.NewHistogramVec(prometheus.HistogramOpts{
+			Namespace: promNamespace,
 			Subsystem: promWebhookSubsystem,
 			Name:      "admission_review_duration_seconds",
 			Help:      "The duration of the admission review.",
