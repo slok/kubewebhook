@@ -1,5 +1,6 @@
 ## 0.x.x / 2018-xx-xx
 
+* [FEATURE] Add Grafana dashboard for Prometheus metrics.
 * [FEATURE] Add webhook admission review Prometheus metrics.
 * [FEATURE] Pass admission request on the context to the webhooks.
 * [FEATURE] Pass request context to the webhook and its mutating/validating chain.
