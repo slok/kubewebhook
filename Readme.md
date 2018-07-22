@@ -67,6 +67,13 @@ func main() {
 
 You can get more examples in [here](examples)
 
+## Compatibility matrix
+
+|                  | Kubernetes 1.10 | Kubernetes 1.11 |
+| ---------------- | --------------- | --------------- |
+| kubewebhook 0.1  | ✓               | ?               |
+| kubewebhook HEAD | ?+              | ✓               |
+
 ## Documentation
 
 - [Documentation][docs]
