@@ -1,3 +1,7 @@
+## 0.x.x / 2018-xx-xx
+
+* [ENHANCEMENT] Add MustHandleFor in case don't want to get an error (panic instead) and be less verbose.
+
 ## 0.1.0 / 2018-07-22
 
 * [FEATURE] Add Grafana dashboard for Prometheus metrics.
