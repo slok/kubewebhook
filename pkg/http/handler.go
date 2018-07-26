@@ -20,6 +20,16 @@ var (
 	deserializer  = codecs.UniversalDeserializer()
 )
 
+// MustHandlerFor it's the same as HandleFor but will panic instead of returning
+// a error.
+func MustHandlerFor(webhook webhook.Webhook) http.Handler {
+	h, err := HandlerFor(webhook)
+	if err != nil {
+		panic(err)
+	}
+	return h
+}
+
 // HandlerFor returns a new http.Handler ready to handle admission reviews using a
 // a webhook.
 func HandlerFor(webhook webhook.Webhook) (http.Handler, error) {
