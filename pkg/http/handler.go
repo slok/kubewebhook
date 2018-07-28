@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 
@@ -73,8 +74,14 @@ func HandlerFor(webhook webhook.Webhook) (http.Handler, error) {
 			return
 		}
 
+		// Forge the HTTP response.
+		// If the received admission review has failed mark the response as failed.
+		if admissionResp.Result != nil && admissionResp.Result.Status == metav1.StatusFailure {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+
 		if _, err := w.Write(resp); err != nil {
-			http.Error(w, fmt.Sprintf("could write response: %v", err), http.StatusInternalServerError)
+			http.Error(w, fmt.Sprintf("could not write response: %v", err), http.StatusInternalServerError)
 		}
 	}), nil
 }
