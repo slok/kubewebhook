@@ -35,7 +35,7 @@ func ExamplePrometheus_servePrometheusMetrics() {
 		Name: "instrucmentedWebhook",
 		Obj:  &corev1.Pod{},
 	}
-	mwh, _ := mutating.NewWebhook(mcfg, m, metricsRec, nil)
+	mwh, _ := mutating.NewWebhook(mcfg, m, nil, metricsRec, nil)
 
 	// Run our webhook server (not checking error in this example).
 	whHandler, _ := whhttp.HandlerFor(mwh)

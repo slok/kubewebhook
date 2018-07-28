@@ -42,5 +42,5 @@ func ExampleMutator_podAnnotateMutatingWebhook() {
 		Name: "podAnnotateMutatingWebhook",
 		Obj:  &corev1.Pod{},
 	}
-	mutating.NewWebhook(cfg, pam, nil, nil)
+	mutating.NewWebhook(cfg, pam, nil, nil, nil)
 }

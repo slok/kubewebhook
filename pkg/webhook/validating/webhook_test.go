@@ -105,7 +105,7 @@ func TestPodAdmissionReviewValidation(t *testing.T) {
 				Obj:  &corev1.Pod{},
 			}
 
-			wh, err := validating.NewWebhook(cfg, test.validator, mm, log.Dummy)
+			wh, err := validating.NewWebhook(cfg, test.validator, nil, mm, log.Dummy)
 			require.NoError(err)
 			gotResponse := wh.Review(context.TODO(), test.review)
 
@@ -138,7 +138,7 @@ func BenchmarkPodAdmissionReviewValidation(b *testing.B) {
 			Obj:  &corev1.Pod{},
 		}
 
-		wh, _ := validating.NewWebhook(cfg, getRandomValidator(), metrics.Dummy, log.Dummy)
+		wh, _ := validating.NewWebhook(cfg, getRandomValidator(), nil, metrics.Dummy, log.Dummy)
 		wh.Review(context.TODO(), ar)
 	}
 }

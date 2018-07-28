@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
-	"time"
 
 	"github.com/appscode/jsonpatch"
+	opentracing "github.com/opentracing/opentracing-go"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -15,8 +15,10 @@ import (
 
 	"github.com/slok/kubewebhook/pkg/log"
 	"github.com/slok/kubewebhook/pkg/observability/metrics"
+
 	"github.com/slok/kubewebhook/pkg/webhook"
 	"github.com/slok/kubewebhook/pkg/webhook/internal/helpers"
+	"github.com/slok/kubewebhook/pkg/webhook/internal/instrumenting"
 )
 
 // WebhookConfig is the Mutating webhook configuration.
@@ -47,7 +49,6 @@ type staticWebhook struct {
 	objType      reflect.Type
 	deserializer runtime.Decoder
 	mutator      Mutator
-	mRecorder    metrics.Recorder
 	cfg          WebhookConfig
 	logger       log.Logger
 }
@@ -55,7 +56,7 @@ type staticWebhook struct {
 // NewWebhook is a mutating webhook and will return a webhook ready for a type of resource.
 // It will mutate the received resources.
 // This webhook will always allow the admission of the resource, only will deny in case of error.
-func NewWebhook(cfg WebhookConfig, mutator Mutator, recorder metrics.Recorder, logger log.Logger) (webhook.Webhook, error) {
+func NewWebhook(cfg WebhookConfig, mutator Mutator, ot opentracing.Tracer, recorder metrics.Recorder, logger log.Logger) (webhook.Webhook, error) {
 	if err := cfg.validate(); err != nil {
 		return nil, err
 	}
@@ -69,25 +70,31 @@ func NewWebhook(cfg WebhookConfig, mutator Mutator, recorder metrics.Recorder, l
 		recorder = metrics.Dummy
 	}
 
+	if ot == nil {
+		logger.Warningf("no tracer active")
+		ot = &opentracing.NoopTracer{}
+	}
+
 	// Create a custom deserializer for the received admission review request.
 	runtimeScheme := runtime.NewScheme()
 	codecs := serializer.NewCodecFactory(runtimeScheme)
 
-	return &staticWebhook{
-		objType:      helpers.GetK8sObjType(cfg.Obj),
-		deserializer: codecs.UniversalDeserializer(),
-		mutator:      mutator,
-		cfg:          cfg,
-		mRecorder:    recorder,
-		logger:       logger,
+	return &instrumenting.Webhook{
+		Webhook: &staticWebhook{
+			objType:      helpers.GetK8sObjType(cfg.Obj),
+			deserializer: codecs.UniversalDeserializer(),
+			mutator:      mutator,
+			cfg:          cfg,
+			logger:       logger,
+		},
+		ReviewKind:      metrics.MutatingReviewKind,
+		WebhookName:     cfg.Name,
+		MetricsRecorder: recorder,
+		Tracer:          ot,
 	}, nil
 }
 
 func (w *staticWebhook) Review(ctx context.Context, ar *admissionv1beta1.AdmissionReview) *admissionv1beta1.AdmissionResponse {
-	w.incAdmissionReviewMetric(ar, false)
-	start := time.Now()
-	defer w.observeAdmissionReviewDuration(ar, start)
-
 	auid := ar.Request.UID
 
 	w.logger.Debugf("reviewing request %s, named: %s/%s", auid, ar.Request.Namespace, ar.Request.Name)
@@ -158,36 +165,7 @@ func (w *staticWebhook) mutatingAdmissionReview(ctx context.Context, ar *admissi
 }
 
 func (w *staticWebhook) toAdmissionErrorResponse(ar *admissionv1beta1.AdmissionReview, err error) *admissionv1beta1.AdmissionResponse {
-	w.incAdmissionReviewMetric(ar, true)
 	return helpers.ToAdmissionErrorResponse(ar.Request.UID, err, w.logger)
-}
-
-func (w *staticWebhook) incAdmissionReviewMetric(ar *admissionv1beta1.AdmissionReview, err bool) {
-	if err {
-		w.mRecorder.IncAdmissionReviewError(
-			w.cfg.Name,
-			ar.Request.Namespace,
-			helpers.GroupVersionResourceToString(ar.Request.Resource),
-			ar.Request.Operation,
-			metrics.MutatingReviewKind)
-	} else {
-		w.mRecorder.IncAdmissionReview(
-			w.cfg.Name,
-			ar.Request.Namespace,
-			helpers.GroupVersionResourceToString(ar.Request.Resource),
-			ar.Request.Operation,
-			metrics.MutatingReviewKind)
-	}
-}
-
-func (w *staticWebhook) observeAdmissionReviewDuration(ar *admissionv1beta1.AdmissionReview, start time.Time) {
-	w.mRecorder.ObserveAdmissionReviewDuration(
-		w.cfg.Name,
-		ar.Request.Namespace,
-		helpers.GroupVersionResourceToString(ar.Request.Resource),
-		ar.Request.Operation,
-		metrics.MutatingReviewKind,
-		start)
 }
 
 // jsonPatchType is the type for Kubernetes responses type.

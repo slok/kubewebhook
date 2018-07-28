@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"reflect"
-	"time"
 
+	opentracing "github.com/opentracing/opentracing-go"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -15,6 +15,7 @@ import (
 	"github.com/slok/kubewebhook/pkg/observability/metrics"
 	"github.com/slok/kubewebhook/pkg/webhook"
 	"github.com/slok/kubewebhook/pkg/webhook/internal/helpers"
+	"github.com/slok/kubewebhook/pkg/webhook/internal/instrumenting"
 )
 
 // WebhookConfig is the Validating webhook configuration.
@@ -41,18 +42,9 @@ func (c *WebhookConfig) validate() error {
 	return nil
 }
 
-type staticWebhook struct {
-	objType      reflect.Type
-	deserializer runtime.Decoder
-	validator    Validator
-	mRecorder    metrics.Recorder
-	cfg          WebhookConfig
-	logger       log.Logger
-}
-
 // NewWebhook is a validating webhook and will return a webhook ready for a type of resource
 // it will validate the received resources.
-func NewWebhook(cfg WebhookConfig, validator Validator, recorder metrics.Recorder, logger log.Logger) (webhook.Webhook, error) {
+func NewWebhook(cfg WebhookConfig, validator Validator, ot opentracing.Tracer, recorder metrics.Recorder, logger log.Logger) (webhook.Webhook, error) {
 	if err := cfg.validate(); err != nil {
 		return nil, err
 	}
@@ -66,25 +58,41 @@ func NewWebhook(cfg WebhookConfig, validator Validator, recorder metrics.Recorde
 		recorder = metrics.Dummy
 	}
 
+	if ot == nil {
+		logger.Warningf("no tracer active")
+		ot = &opentracing.NoopTracer{}
+	}
+
 	// Create a custom deserializer for the received admission review request.
 	runtimeScheme := runtime.NewScheme()
 	codecs := serializer.NewCodecFactory(runtimeScheme)
 
-	return &staticWebhook{
-		objType:      helpers.GetK8sObjType(cfg.Obj),
-		deserializer: codecs.UniversalDeserializer(),
-		validator:    validator,
-		mRecorder:    recorder,
-		cfg:          cfg,
-		logger:       logger,
+	// Create our webhook and wrap for instrumentation (metrics and tracing).
+	return &instrumenting.Webhook{
+		Webhook: &staticWebhook{
+			objType:      helpers.GetK8sObjType(cfg.Obj),
+			deserializer: codecs.UniversalDeserializer(),
+			validator:    validator,
+			cfg:          cfg,
+			logger:       logger,
+		},
+		ReviewKind:      metrics.ValidatingReviewKind,
+		WebhookName:     cfg.Name,
+		MetricsRecorder: recorder,
+		Tracer:          ot,
 	}, nil
 }
 
-func (w *staticWebhook) Review(ctx context.Context, ar *admissionv1beta1.AdmissionReview) *admissionv1beta1.AdmissionResponse {
-	w.incAdmissionReviewMetric(ar, false)
-	start := time.Now()
-	defer w.observeAdmissionReviewDuration(ar, start)
+// staticWebhook it's a validating webhook implementation for a  specific statuc object type.
+type staticWebhook struct {
+	objType      reflect.Type
+	deserializer runtime.Decoder
+	validator    Validator
+	cfg          WebhookConfig
+	logger       log.Logger
+}
 
+func (w *staticWebhook) Review(ctx context.Context, ar *admissionv1beta1.AdmissionReview) *admissionv1beta1.AdmissionResponse {
 	w.logger.Debugf("reviewing request %s, named: %s/%s", ar.Request.UID, ar.Request.Namespace, ar.Request.Name)
 
 	obj := helpers.NewK8sObj(w.objType)
@@ -101,7 +109,6 @@ func (w *staticWebhook) Review(ctx context.Context, ar *admissionv1beta1.Admissi
 		return w.toAdmissionErrorResponse(ar, err)
 	}
 
-	// Check validation on the object.
 	_, res, err := w.validator.Validate(ctx, obj)
 	if err != nil {
 		return w.toAdmissionErrorResponse(ar, err)
@@ -119,34 +126,5 @@ func (w *staticWebhook) Review(ctx context.Context, ar *admissionv1beta1.Admissi
 }
 
 func (w *staticWebhook) toAdmissionErrorResponse(ar *admissionv1beta1.AdmissionReview, err error) *admissionv1beta1.AdmissionResponse {
-	w.incAdmissionReviewMetric(ar, true)
 	return helpers.ToAdmissionErrorResponse(ar.Request.UID, err, w.logger)
-}
-
-func (w *staticWebhook) incAdmissionReviewMetric(ar *admissionv1beta1.AdmissionReview, err bool) {
-	if err {
-		w.mRecorder.IncAdmissionReviewError(
-			w.cfg.Name,
-			ar.Request.Namespace,
-			helpers.GroupVersionResourceToString(ar.Request.Resource),
-			ar.Request.Operation,
-			metrics.ValidatingReviewKind)
-	} else {
-		w.mRecorder.IncAdmissionReview(
-			w.cfg.Name,
-			ar.Request.Namespace,
-			helpers.GroupVersionResourceToString(ar.Request.Resource),
-			ar.Request.Operation,
-			metrics.ValidatingReviewKind)
-	}
-}
-
-func (w *staticWebhook) observeAdmissionReviewDuration(ar *admissionv1beta1.AdmissionReview, start time.Time) {
-	w.mRecorder.ObserveAdmissionReviewDuration(
-		w.cfg.Name,
-		ar.Request.Namespace,
-		helpers.GroupVersionResourceToString(ar.Request.Resource),
-		ar.Request.Operation,
-		metrics.ValidatingReviewKind,
-		start)
 }
