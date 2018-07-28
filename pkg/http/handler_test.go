@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
 	mwebhook "github.com/slok/kubewebhook/mocks/webhook"
@@ -47,7 +48,7 @@ func TestDefaultWebhookFlow(t *testing.T) {
 			expCode: 400,
 		},
 		{
-			name: "A regular call to the webhook handler should execute the webhook",
+			name: "A regular call to the webhook handler should execute the webhook and return OK if nothing failed",
 			body: getTestAdmissionReviewRequestStr("1234567890"),
 			reviewResponse: &admissionv1beta1.AdmissionResponse{
 				UID:     "1234567890",
@@ -55,6 +56,19 @@ func TestDefaultWebhookFlow(t *testing.T) {
 			},
 			expBody: `{"response":{"uid":"1234567890","allowed":true}}`,
 			expCode: 200,
+		},
+		{
+			name: "A regular call to the webhook handler should execute the webhook and return error if something failed",
+			body: getTestAdmissionReviewRequestStr("1234567890"),
+			reviewResponse: &admissionv1beta1.AdmissionResponse{
+				UID: "1234567890",
+				Result: &metav1.Status{
+					Status:  "Failure",
+					Message: "wanted error",
+				},
+			},
+			expBody: `{"response":{"uid":"1234567890","allowed":false,"status":{"metadata":{},"status":"Failure","message":"wanted error"}}}`,
+			expCode: 500,
 		},
 	}
 
