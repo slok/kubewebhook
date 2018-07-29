@@ -1,3 +1,9 @@
+## 0.x.x / 2018-xx-xx
+
+Breaking: Webhook constructors now need a tracer.
+
+[ENHANCEMENT] Add Open tracing support on webhooks
+
 ## 0.1.1 / 2018-07-28
 
 * [BUGFIX] Set internal server error status code (500) when a error on a webhook happens.

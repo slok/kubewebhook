@@ -15,6 +15,7 @@ With Kubewebhook you can make validating and mutating webhooks very fast and foc
 - Simple, extensible and flexible.
 - Multiple webhooks on the same server.
 - Webhook metrics ([RED][red-metrics-url]) for [Prometheus][prometheus-url] with [Grafana dashboard][grafana-dashboard] included.
+- Webhook tracing with [Opentracing][opentracing-url].
 
 ## Status
 
@@ -90,3 +91,4 @@ You can get more examples in [here](examples)
 [red-metrics-url]: https://www.weave.works/blog/the-red-method-key-metrics-for-microservices-architecture/
 [prometheus-url]: https://prometheus.io/
 [grafana-dashboard]: https://grafana.com/dashboards/7088
+[opentracing-url]: http://opentracing.io
