@@ -2,24 +2,29 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
+	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	whhttp "github.com/slok/kubewebhook/pkg/http"
 	"github.com/slok/kubewebhook/pkg/log"
 	"github.com/slok/kubewebhook/pkg/observability/metrics"
+	jaeger "github.com/uber/jaeger-client-go"
+	jaegerconfig "github.com/uber/jaeger-client-go/config"
 
 	"github.com/slok/kubewebhook/examples/multiwebhook/pkg/webhook/mutating"
 	"github.com/slok/kubewebhook/examples/multiwebhook/pkg/webhook/validating"
 )
 
 const (
-	gracePeriod = 3 * time.Second
+	gracePeriod   = 3 * time.Second
+	jaegerService = "multi-webhook"
 )
 
 var (
@@ -48,9 +53,14 @@ func (m *Main) Run() error {
 	// Create services.
 	promReg := prometheus.NewRegistry()
 	metricsRec := metrics.NewPrometheus(promReg)
+	tracer, closer, err := m.createTracer(jaegerService)
+	if err != nil {
+		return err
+	}
+	defer closer.Close()
 
 	// Create webhooks
-	mpw, err := mutating.NewPodWebhook(defLabels, metricsRec, m.logger)
+	mpw, err := mutating.NewPodWebhook(defLabels, tracer, metricsRec, m.logger)
 	if err != nil {
 		return err
 	}
@@ -59,7 +69,7 @@ func (m *Main) Run() error {
 		return err
 	}
 
-	vdw, err := validating.NewDeploymentWebhook(minReps, maxReps, metricsRec, m.logger)
+	vdw, err := validating.NewDeploymentWebhook(minReps, maxReps, tracer, metricsRec, m.logger)
 	if err != nil {
 		return err
 	}
@@ -126,6 +136,24 @@ func (m *Main) createSignalChan() chan os.Signal {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGTERM, syscall.SIGINT)
 	return c
+}
+
+func (m *Main) createTracer(service string) (opentracing.Tracer, io.Closer, error) {
+	cfg := &jaegerconfig.Configuration{
+		ServiceName: service,
+		Sampler: &jaegerconfig.SamplerConfig{
+			Type:  "const",
+			Param: 1,
+		},
+		Reporter: &jaegerconfig.ReporterConfig{
+			LogSpans: true,
+		},
+	}
+	tracer, closer, err := cfg.NewTracer(jaegerconfig.Logger(jaeger.NullLogger))
+	if err != nil {
+		return nil, nil, fmt.Errorf("cannot init Jaeger: %s", err)
+	}
+	return tracer, closer, nil
 }
 
 func main() {
