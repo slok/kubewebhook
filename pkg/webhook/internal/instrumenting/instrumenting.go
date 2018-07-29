@@ -30,17 +30,14 @@ func (w *Webhook) Review(ctx context.Context, ar *admissionv1beta1.AdmissionRevi
 	// Initialize metrics.
 	w.incAdmissionReviewMetric(ar, false)
 	start := time.Now()
+	defer w.observeAdmissionReviewDuration(ar, start)
 
 	// Create the span, add to the context and defer the finish of the span.
 	span := w.createReviewSpan(ctx, ar)
 	ctx = opentracing.ContextWithSpan(ctx, span)
+	defer span.Finish()
 
-	defer func() {
-		w.observeAdmissionReviewDuration(ar, start)
-		span.Finish()
-	}()
-
-	// Call the real review process.
+	// Call the review process.
 	span.LogKV("event", "start_review")
 	resp := w.Webhook.Review(ctx, ar)
 
