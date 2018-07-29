@@ -15,7 +15,6 @@ import (
 
 	"github.com/slok/kubewebhook/pkg/log"
 	"github.com/slok/kubewebhook/pkg/observability/metrics"
-
 	"github.com/slok/kubewebhook/pkg/webhook"
 	"github.com/slok/kubewebhook/pkg/webhook/internal/helpers"
 	"github.com/slok/kubewebhook/pkg/webhook/internal/instrumenting"
@@ -79,6 +78,7 @@ func NewWebhook(cfg WebhookConfig, mutator Mutator, ot opentracing.Tracer, recor
 	runtimeScheme := runtime.NewScheme()
 	codecs := serializer.NewCodecFactory(runtimeScheme)
 
+	// Create our webhook and wrap for instrumentation (metrics and tracing).
 	return &instrumenting.Webhook{
 		Webhook: &staticWebhook{
 			objType:      helpers.GetK8sObjType(cfg.Obj),
