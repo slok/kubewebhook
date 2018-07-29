@@ -60,7 +60,7 @@ func main() {
 		Name: "podAnnotate",
 		Obj:  &corev1.Pod{},
 	}
-	wh, err := mutatingwh.NewWebhook(mcfg, mt, nil, logger)
+	wh, err := mutatingwh.NewWebhook(mcfg, mt, nil, nil, logger)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error creating webhook: %s", err)
 		os.Exit(1)

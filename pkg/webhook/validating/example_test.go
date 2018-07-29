@@ -49,5 +49,5 @@ func ExampleValidator_ingressHostValidatingWebhook() {
 		Name: "example",
 		Obj:  &extensionsv1beta1.Ingress{},
 	}
-	validating.NewWebhook(cfg, ivh, nil, nil)
+	validating.NewWebhook(cfg, ivh, nil, nil, nil)
 }
