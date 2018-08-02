@@ -2,7 +2,9 @@
 
 Breaking: Webhook constructors now need a tracer.
 
-[ENHANCEMENT] Add Open tracing support on webhooks
+[ENHANCEMENT] Add Open tracing support on validators.
+[ENHANCEMENT] Add Open tracing support on mutators.
+[ENHANCEMENT] Add Open tracing support on webhooks.
 
 ## 0.1.1 / 2018-07-28
 

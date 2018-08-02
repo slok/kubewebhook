@@ -3,6 +3,8 @@ package validating
 import (
 	"context"
 	"fmt"
+	"math/rand"
+	"time"
 
 	"github.com/slok/kubewebhook/pkg/log"
 	"github.com/slok/kubewebhook/pkg/webhook/validating"
@@ -40,5 +42,16 @@ func (d *deploymentReplicasValidator) Validate(_ context.Context, obj metav1.Obj
 		}, nil
 	}
 
+	return false, validating.ValidatorResult{Valid: true}, nil
+}
+
+type lantencyValidator struct {
+	maxLatencyMS int
+}
+
+func (m *lantencyValidator) Validate(_ context.Context, obj metav1.Object) (bool, validating.ValidatorResult, error) {
+	rand := rand.New(rand.NewSource(time.Now().UnixNano()))
+	ms := time.Duration(rand.Intn(m.maxLatencyMS)) * time.Millisecond
+	time.Sleep(ms)
 	return false, validating.ValidatorResult{Valid: true}, nil
 }

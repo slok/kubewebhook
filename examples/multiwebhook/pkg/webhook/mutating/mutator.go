@@ -2,6 +2,8 @@ package mutating
 
 import (
 	"context"
+	"math/rand"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -15,7 +17,7 @@ type podLabelMutator struct {
 	logger log.Logger
 }
 
-func (p *podLabelMutator) Mutate(_ context.Context, obj metav1.Object) (bool, error) {
+func (m *podLabelMutator) Mutate(_ context.Context, obj metav1.Object) (bool, error) {
 	pod, ok := obj.(*corev1.Pod)
 	if !ok {
 		// If not a pod just continue the mutation chain(if there is one) and don't do nothing.
@@ -27,9 +29,20 @@ func (p *podLabelMutator) Mutate(_ context.Context, obj metav1.Object) (bool, er
 		pod.Labels = make(map[string]string)
 	}
 
-	for k, v := range p.labels {
+	for k, v := range m.labels {
 		pod.Labels[k] = v
 	}
 
+	return false, nil
+}
+
+type lantencyMutator struct {
+	maxLatencyMS int
+}
+
+func (m *lantencyMutator) Mutate(_ context.Context, _ metav1.Object) (bool, error) {
+	rand := rand.New(rand.NewSource(time.Now().UnixNano()))
+	ms := time.Duration(rand.Intn(m.maxLatencyMS)) * time.Millisecond
+	time.Sleep(ms)
 	return false, nil
 }

@@ -80,6 +80,8 @@ func HandlerFor(webhook webhook.Webhook) (http.Handler, error) {
 			w.WriteHeader(http.StatusInternalServerError)
 		}
 
+		w.Header().Set("Content-Type", "application/json")
+
 		if _, err := w.Write(resp); err != nil {
 			http.Error(w, fmt.Sprintf("could not write response: %v", err), http.StatusInternalServerError)
 		}
