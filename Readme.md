@@ -19,7 +19,7 @@ With Kubewebhook you can make validating and mutating webhooks very fast and foc
 
 ## Status
 
-At this moment the project is being tested on production but not ready to mark as production-ready, that's why there is no release yet.
+Kubewebhook has been used in production for several months, and the results have been good.
 
 ## Example
 
