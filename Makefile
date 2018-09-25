@@ -26,7 +26,7 @@ INTEGRATION_TEST_CMD := ./hack/scripts/integration-test.sh
 MOCKS_CMD := ./hack/scripts/mockgen.sh
 DOCKER_RUN_CMD := docker run -v ${PWD}:$(DOCKER_GO_SERVICE_PATH) --rm -it $(SERVICE_NAME)
 DOCKER_DOCS_RUN_CMD := docker run -v ${PWD}/docs:/docs --rm -it -p 1313:1313 $(SERVICE_NAME)-docs
-DEP_ENSURE_CMD := dep ensure
+DEPS_CMD := GO111MODULE=on go mod tidy && GO111MODULE=on go mod vendor
 
 # environment dirs
 DEV_DIR := docker/dev
@@ -98,3 +98,8 @@ docs-generate: build
 .PHONY: docs-serve
 docs-serve: build
 	$(DOCKER_DOCS_RUN_CMD) /bin/bash -c "cd src && hugo server --bind=0.0.0.0"
+
+.PHONY: deps
+deps:
+	$(DEPS_CMD)
+	
