@@ -27,7 +27,7 @@ func GetAdmissionRequest(ctx context.Context) *admissionv1beta1.AdmissionRequest
 }
 
 // IsAdmissionRequestDryRun returns true if the admission request stored
-// on the context is in dry run mode. If the request is mission or the
+// on the context is in dry run mode. If the request is missing or the
 // request is not dry run then it will return false.
 func IsAdmissionRequestDryRun(ctx context.Context) bool {
 	ar := GetAdmissionRequest(ctx)
