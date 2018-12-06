@@ -31,6 +31,6 @@ require (
 	golang.org/x/text v0.3.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.2.1 // indirect
-	k8s.io/api v0.0.0-20180927152034-21fd097ab3de
-	k8s.io/apimachinery v0.0.0-20180913025736-6dd46049f395
+	k8s.io/api v0.0.0-20181126151915-b503174bad59
+	k8s.io/apimachinery v0.0.0-20181126123746-eddba98df674
 )
