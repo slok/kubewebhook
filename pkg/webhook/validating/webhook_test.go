@@ -83,7 +83,6 @@ func TestPodAdmissionReviewValidation(t *testing.T) {
 				UID:     "test",
 				Allowed: false,
 				Result: &metav1.Status{
-					Status:  metav1.StatusSuccess,
 					Message: "invalid test chain",
 				},
 			},
