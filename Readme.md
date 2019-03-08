@@ -88,7 +88,7 @@ You can get more examples in [here](examples)
 [godoc-image]: https://godoc.org/github.com/slok/kubewebhook?status.svg
 [godoc-url]: https://godoc.org/github.com/slok/kubewebhook
 [aw-url]: https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers
-[docs]: https://xlarrakoetxea.org/kubewebhook
+[docs]: https://slok.github.io/kubewebhook/
 [red-metrics-url]: https://www.weave.works/blog/the-red-method-key-metrics-for-microservices-architecture/
 [prometheus-url]: https://prometheus.io/
 [grafana-dashboard]: https://grafana.com/dashboards/7088
