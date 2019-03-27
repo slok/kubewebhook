@@ -28,7 +28,6 @@ type Webhook struct {
 // Review will review using the webhook wrapping it with instrumentation.
 func (w *Webhook) Review(ctx context.Context, ar *admissionv1beta1.AdmissionReview) *admissionv1beta1.AdmissionResponse {
 	// Initialize metrics.
-	w.incAdmissionReviewMetric(ar, false)
 	start := time.Now()
 	defer w.observeAdmissionReviewDuration(ar, start)
 
@@ -43,7 +42,7 @@ func (w *Webhook) Review(ctx context.Context, ar *admissionv1beta1.AdmissionRevi
 
 	// Check if we had an error on the review or it ended correctly.
 	if resp.Result != nil && resp.Result.Status == metav1.StatusFailure {
-		w.incAdmissionReviewMetric(ar, true)
+		w.incAdmissionReviewMetric(ar, true, resp.Allowed)
 		opentracingext.Error.Set(span, true)
 		span.LogKV(
 			"event", "error",
@@ -51,6 +50,8 @@ func (w *Webhook) Review(ctx context.Context, ar *admissionv1beta1.AdmissionRevi
 		)
 		return resp
 	}
+
+	w.incAdmissionReviewMetric(ar, false, resp.Allowed)
 
 	var msg, status string
 	if resp.Result != nil {
@@ -68,21 +69,25 @@ func (w *Webhook) Review(ctx context.Context, ar *admissionv1beta1.AdmissionRevi
 	return resp
 }
 
-func (w *Webhook) incAdmissionReviewMetric(ar *admissionv1beta1.AdmissionReview, err bool) {
+func (w *Webhook) incAdmissionReviewMetric(ar *admissionv1beta1.AdmissionReview, err bool, allowed bool) {
 	if err {
 		w.MetricsRecorder.IncAdmissionReviewError(
 			w.WebhookName,
 			ar.Request.Namespace,
 			helpers.GroupVersionResourceToString(ar.Request.Resource),
 			ar.Request.Operation,
-			w.ReviewKind)
+			w.ReviewKind,
+			allowed,
+		)
 	} else {
 		w.MetricsRecorder.IncAdmissionReview(
 			w.WebhookName,
 			ar.Request.Namespace,
 			helpers.GroupVersionResourceToString(ar.Request.Resource),
 			ar.Request.Operation,
-			w.ReviewKind)
+			w.ReviewKind,
+			allowed,
+		)
 	}
 }
 

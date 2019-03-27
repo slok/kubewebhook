@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -32,14 +33,14 @@ func NewPrometheus(registry prometheus.Registerer) *Prometheus {
 			Subsystem: promWebhookSubsystem,
 			Name:      "admission_reviews_total",
 			Help:      "Total number of admission reviews handled.",
-		}, []string{"webhook", "namespace", "resource", "operation", "kind"}),
+		}, []string{"webhook", "namespace", "resource", "operation", "kind", "allowed"}),
 
 		admissionReviewErr: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Namespace: promNamespace,
 			Subsystem: promWebhookSubsystem,
 			Name:      "admission_review_errors_total",
 			Help:      "Total number of admission review errors when handling.",
-		}, []string{"webhook", "namespace", "resource", "operation", "kind"}),
+		}, []string{"webhook", "namespace", "resource", "operation", "kind", "allowed"}),
 
 		admissionReviewDuration: prometheus.NewHistogramVec(prometheus.HistogramOpts{
 			Namespace: promNamespace,
@@ -61,23 +62,25 @@ func (p *Prometheus) registerMetrics() {
 }
 
 // IncAdmissionReview satisfies Recorder interface.
-func (p *Prometheus) IncAdmissionReview(webhook, namespace, resource string, operation Operation, kind ReviewKind) {
+func (p *Prometheus) IncAdmissionReview(webhook, namespace, resource string, operation Operation, kind ReviewKind, allowed bool) {
 	p.admissionReview.WithLabelValues(
 		webhook,
 		namespace,
 		string(resource),
 		string(operation),
-		string(kind)).Inc()
+		string(kind),
+		fmt.Sprintf("%v", allowed)).Inc()
 }
 
 // IncAdmissionReviewError satisfies Recorder interface.
-func (p *Prometheus) IncAdmissionReviewError(webhook, namespace, resource string, operation Operation, kind ReviewKind) {
+func (p *Prometheus) IncAdmissionReviewError(webhook, namespace, resource string, operation Operation, kind ReviewKind, allowed bool) {
 	p.admissionReviewErr.WithLabelValues(
 		webhook,
 		namespace,
 		string(resource),
 		string(operation),
-		string(kind)).Inc()
+		string(kind),
+		fmt.Sprintf("%v", allowed)).Inc()
 }
 
 // ObserveAdmissionReviewDuration satisfies Recorder interface.

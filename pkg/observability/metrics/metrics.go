@@ -23,9 +23,9 @@ const (
 // Recorder knows how to record metrics.
 type Recorder interface {
 	// IncAdmissionReview will increment in one the admission review counter.
-	IncAdmissionReview(webhook, namespace, resource string, operation Operation, kind ReviewKind)
+	IncAdmissionReview(webhook, namespace, resource string, operation Operation, kind ReviewKind, allowed bool)
 	// IncAdmissionReviewError will increment in one the admission review counter errors.
-	IncAdmissionReviewError(webhook, namespace, resource string, operation Operation, kind ReviewKind)
+	IncAdmissionReviewError(webhook, namespace, resource string, operation Operation, kind ReviewKind, allowed bool)
 	// ObserveAdmissionReviewDuration will observe the duration of a admission review.
 	ObserveAdmissionReviewDuration(webhook, namespace, resource string, operation Operation, kind ReviewKind, start time.Time)
 }
@@ -35,9 +35,9 @@ var Dummy = &dummy{}
 
 type dummy struct{}
 
-func (d *dummy) IncAdmissionReview(webhook, namespace, resource string, operation Operation, kind ReviewKind) {
+func (d *dummy) IncAdmissionReview(webhook, namespace, resource string, operation Operation, kind ReviewKind, allowed bool) {
 }
-func (d *dummy) IncAdmissionReviewError(webhook, namespace, resource string, operation Operation, kind ReviewKind) {
+func (d *dummy) IncAdmissionReviewError(webhook, namespace, resource string, operation Operation, kind ReviewKind, allowed bool) {
 }
 func (d *dummy) ObserveAdmissionReviewDuration(webhook, namespace, resource string, operation Operation, kind ReviewKind, start time.Time) {
 }
