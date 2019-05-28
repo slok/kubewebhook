@@ -1,6 +1,6 @@
 language: go
 go:
-  - "1.11"
+  - "1.12"
 
 # This will allow forks to be build with travis.
 go_import_path: github.com/slok/kubewebhook

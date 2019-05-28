@@ -1,5 +1,6 @@
 ## 0.x.x / 2018-xx-xx
 
+* [ENHANCEMENT] Update to Kubernetes v1.12.
 * [ENHANCEMENT] Add util to know if a admission review is dry run.
 
 ## 0.2.0 / 2018-09-29
