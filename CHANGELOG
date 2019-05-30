@@ -1,28 +1,40 @@
-## 0.x.x / 2018-xx-xx
 
-* [ENHANCEMENT] Update to Kubernetes v1.12.
-* [ENHANCEMENT] Add util to know if a admission review is dry run.
+## [Unreleased]
 
-## 0.2.0 / 2018-09-29
+### Added
+- Util to know if a admission review is dry run.
+
+### Changed
+- Update to Kubernetes v1.12.
+
+## [0.2.0] - 2018-09-29
 
 Breaking: Webhook constructors now need a tracer.
 
-* [ENHANCEMENT] Add Open tracing support on validators.
-* [ENHANCEMENT] Add Open tracing support on mutators.
-* [ENHANCEMENT] Add Open tracing support on webhooks.
+### Added
+- Open tracing support on validators.
+- Open tracing support on mutators.
+- Open tracing support on webhooks.
 
-## 0.1.1 / 2018-07-28
+## [0.1.1] - 2018-07-22
+### Added
+- MustHandlerFor in case don't want to get an error (panic instead) and be less verbose.
 
-* [BUGFIX] Set internal server error status code (500) when a error on a webhook happens.
-* [ENHANCEMENT] Add MustHandlerFor in case don't want to get an error (panic instead) and be less verbose.
+### Fixed
+- Set internal server error status code (500) when a error on a webhook happens.
 
-## 0.1.0 / 2018-07-22
+## [0.1.0] - 2018-07-22
+### Added
+- Grafana dashboard for Prometheus metrics.
+- Webhook admission review Prometheus metrics.
+- Pass admission request on the context to the webhooks.
+- Pass request context to the webhook and its mutating/validating chain.
+- Static validating webhook.
+- Mutating webhook example.
+- Static mutating webhook.
+- Handler creator for webhooks.
 
-* [FEATURE] Add Grafana dashboard for Prometheus metrics.
-* [FEATURE] Add webhook admission review Prometheus metrics.
-* [FEATURE] Pass admission request on the context to the webhooks.
-* [FEATURE] Pass request context to the webhook and its mutating/validating chain.
-* [FEATURE] Add static validating webhook.
-* [FEATURE] Add mutating webhook example.
-* [FEATURE] Add static mutating webhook.
-* [FEATURE] Add handler creator for webhooks.
+[Unreleased]: https://github.com/slok/kubewebhook/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/slok/kubewebhook/compare/v0.1.1...v0.2.0
+[0.1.1]: https://github.com/slok/kubewebhook/compare/v0.1.0...v0.1.1
+[0.1.0]: https://github.com/slok/kubewebhook/releases/tag/v0.1.0

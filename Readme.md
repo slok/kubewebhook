@@ -70,11 +70,12 @@ You can get more examples in [here](examples)
 
 ## Compatibility matrix
 
-|                  | Kubernetes 1.10 | Kubernetes 1.11 | Kubernetes 1.12 | Kubernetes 1.13 |
-| ---------------- | --------------- | --------------- | --------------- | --------------- |
-| kubewebhook 0.1  | ✓               | ✓               | ?               | ?               |
-| kubewebhook 0.2  | ✓               | ✓               | ?               | ?               |
-| kubewebhook HEAD | ?               | ?               | ✓               | ?               |
+|                  | Kubernetes 1.10 | Kubernetes 1.11 | Kubernetes 1.12 | Kubernetes 1.13 | Kubernetes 1.14 |
+| ---------------- | --------------- | --------------- | --------------- | --------------- | --------------- |
+| kubewebhook 0.1  | ✓               | ✓               | ?               | ?               | ?               |
+| kubewebhook 0.2  | ✓               | ✓               | ?               | ?               | ?               |
+| kubewebhook 0.3  | ?               | ?               | ✓               | ?               | ?               |
+| kubewebhook HEAD | ?               | ?               | ?               | ✓?              | ?               |
 
 ## Documentation
 
