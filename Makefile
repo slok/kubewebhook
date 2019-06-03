@@ -22,7 +22,7 @@ COMMIT=$(shell git rev-parse --short HEAD)
 
 # cmds
 UNIT_TEST_CMD := ./hack/scripts/unit-test.sh
-INTEGRATION_TEST_CMD := ./hack/scripts/integration-test.sh
+INTEGRATION_TEST_CMD := ./hack/scripts/run-integration.sh
 MOCKS_CMD := ./hack/scripts/mockgen.sh
 DOCKER_RUN_CMD := docker run -v ${PWD}:$(DOCKER_GO_SERVICE_PATH) --rm -it $(SERVICE_NAME)
 DOCKER_DOCS_RUN_CMD := docker run -v ${PWD}/docs:/docs --rm -it -p 1313:1313 $(SERVICE_NAME)-docs
@@ -30,7 +30,10 @@ DEPS_CMD := GO111MODULE=on go mod tidy && GO111MODULE=on go mod vendor
 K8S_VERSION := "1.12.9"
 SET_K8S_DEPS_CMD := GO111MODULE=on go mod edit \
 	-require=k8s.io/apimachinery@kubernetes-${K8S_VERSION} \
-	-require=k8s.io/api@kubernetes-${K8S_VERSION} && \
+	-require=k8s.io/api@kubernetes-${K8S_VERSION} \
+	-require=k8s.io/client-go@kubernetes-${K8S_VERSION} \
+	-require=k8s.io/api@kubernetes-${K8S_VERSION} \
+	&& \
 	$(DEPS_CMD)
 
 
@@ -74,9 +77,9 @@ unit-test: build
 	$(DOCKER_RUN_CMD) /bin/sh -c '$(UNIT_TEST_CMD)'
 .PHONY: integration-test
 integration-test: build
-	$(DOCKER_RUN_CMD) /bin/sh -c '$(INTEGRATION_TEST_CMD)'
+	$(INTEGRATION_TEST_CMD)
 .PHONY: test
-test: integration-test
+test: unit-test
 
 # Test stuff in ci
 .PHONY: ci-unit-test
@@ -86,7 +89,7 @@ ci-unit-test:
 ci-integration-test:
 	$(INTEGRATION_TEST_CMD)
 .PHONY: ci
-ci: ci-integration-test
+ci: ci-unit-test ci-integration-test
 
 # Mocks stuff in dev
 .PHONY: mocks
@@ -112,3 +115,8 @@ deps:
 .PHONY: set-k8s-deps
 set-k8s-deps:
 	$(SET_K8S_DEPS_CMD)
+
+# Creates certificates for the integration test.
+.PHONY: create-integration-test-certs
+create-integration-test-certs:
+	./hack/scripts/integration-test-certs.sh

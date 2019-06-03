@@ -1,12 +1,33 @@
+sudo: required
+dist: trusty
+services:
+  - docker
+
 language: go
 go:
   - "1.12"
 
-# This will allow forks to be build with travis.
-go_import_path: github.com/slok/kubewebhook
-
-env:
-  - GO111MODULE=on
+before_install:
+  # No need to check serveo key fingerprints on integration tests SSH tunnels.
+  - echo -e "Host serveo.net\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
+  # Install tooling for integration tests.
+  - curl -Lo kind https://github.com/kubernetes-sigs/kind/releases/download/${KIND_VERSION}/kind-linux-amd64 && chmod +x kind && sudo mv kind /usr/local/bin/
+  - curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/${KUBERNETES_VERSION}/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
 
 script:
   - make ci
+
+env:
+  global:
+    - GO111MODULE=on
+    - KIND_VERSION=v0.3.0
+    - KUBERNETES_VERSION=1.13.6
+
+matrix:
+  include:
+    - env: KUBERNETES_VERSION=1.12.8
+    - env: KUBERNETES_VERSION=1.13.6
+    - env: KUBERNETES_VERSION=1.14.2
+  allow_failures:
+    - env: KUBERNETES_VERSION=1.12.8
+    - env: KUBERNETES_VERSION=1.14.2

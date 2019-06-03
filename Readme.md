@@ -70,17 +70,61 @@ You can get more examples in [here](examples)
 
 ## Compatibility matrix
 
+Integration tests will run on different Kubernetes versions, so if these are passing is likely that HEAD supports those Kubernetes versions, these will be marked on the matrix as `✓?`. Check the latest builds [here][travis-url]
+
 |                  | Kubernetes 1.10 | Kubernetes 1.11 | Kubernetes 1.12 | Kubernetes 1.13 | Kubernetes 1.14 |
 | ---------------- | --------------- | --------------- | --------------- | --------------- | --------------- |
 | kubewebhook 0.1  | ✓               | ✓               | ?               | ?               | ?               |
 | kubewebhook 0.2  | ✓               | ✓               | ?               | ?               | ?               |
 | kubewebhook 0.3  | ?               | ?               | ✓               | ?               | ?               |
-| kubewebhook HEAD | ?               | ?               | ?               | ✓?              | ?               |
+| kubewebhook HEAD | ?               | ?               | ✓?              | ✓?              | ✓?              |
 
 ## Documentation
 
 - [Documentation][docs]
 - [API][godoc-url]
+
+## Integration tests
+
+Tools required
+
+- [mkcert] (optional if you want to create new certificates).
+- [kind] (option1, to run the cluster).
+- [k3s] (option2, to run the cluster)
+- ssh (to expose our webhook to the internet).
+
+### (Optional) Certificates
+
+Certificates are ready to be used on [/test/integration/certs]. This certificates are valid for `*.serveo.net` so, they should be valid for our exposed webhooks using [serveo].
+
+If you want to create new certificates execute this:
+
+```bash
+make create-integration-test-certs
+```
+
+### Running the tests
+
+The integration tests are on [/tests/integration], there are the certificates valid for `serveo.net` where the tunnel will be exposing the webhooks.
+
+Go integration tests require this env vars:
+
+- `TEST_WEBHOOK_URL`: The url where the apiserver should make the webhook requests.
+- `TEST_LISTEN_PORT`: The port where our webhook will be listening the requests.
+
+There are 2 ways of bootstrapping the integration tests, one using kind and another using [k3s].
+
+To run the integration tests do:
+
+```bash
+make integration-test
+```
+
+This it will bootstrap a cluster with [kind] by default and a [k3s] cluster if `K3S=true` env var is set. A ssh tunnel in a random subdomain using the 1987 port, and finally use the precreated certificates (see previous step), after this will execute the tests, and do it's best effort to tear down the clusters (on k3s could be problems, so have a check on k3s processes).
+
+### Developing integration tests
+
+To develop integration test is handy to run a k3s cluster and a serveo tunnel, then check out [/tests/integration/helper/config] and use this development settings on the integration tests.
 
 [travis-image]: https://travis-ci.org/slok/kubewebhook.svg?branch=master
 [travis-url]: https://travis-ci.org/slok/kubewebhook
@@ -94,3 +138,7 @@ You can get more examples in [here](examples)
 [prometheus-url]: https://prometheus.io/
 [grafana-dashboard]: https://grafana.com/dashboards/7088
 [opentracing-url]: http://opentracing.io
+[mkcert]: https://github.com/FiloSottile/mkcert
+[kind]: https://github.com/kubernetes-sigs/kind
+[k3s]: https://k3s.io
+[serveo]: https://serveo.net
