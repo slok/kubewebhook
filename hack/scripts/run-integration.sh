@@ -6,6 +6,7 @@ DOMAIN=${DOMAIN_PREFIX}.serveo.net
 EXPOSED_PORT=$(shuf -i 1500-35000 -n 1)
 LOCAL_PORT=8080
 KUBERNETES_VERSION=v${KUBERNETES_VERSION:-1.14.9}
+PREVIOUS_KUBECTL_CONTEXT=$(kubectl config current-context) || PREVIOUS_KUBECTL_CONTEXT=""
 #K3S=true
 
 SUDO=''
@@ -20,7 +21,7 @@ function cleanup {
         $SUDO killall containerd-shim
     else
         echo "=> Removing kind cluster"
-        $SUDO kind delete cluster
+        kind delete cluster
     fi
 
     $SUDO kill ${SSH_TUNNEL_PID}
@@ -33,13 +34,14 @@ if [[ ! -z ${K3S} ]]; then
     $SUDO k3s server &
     K3S_PID=$!
     export KUBECONFIG="/etc/rancher/k3s/k3s.yaml"
+    $SUDO chmod a+r ${KUBECONFIG}
 else
     echo "Start Kind Kubernetes ${KUBERNETES_VERSION} cluster..."
-    $SUDO kind create cluster --image kindest/node:${KUBERNETES_VERSION}
-    export KUBECONFIG="$(kind get kubeconfig-path)"
+    kind create cluster --image kindest/node:${KUBERNETES_VERSION}
+    kubectl config use-context kind-kind
 fi
 
-$SUDO chmod a+r ${KUBECONFIG}
+
 
 # Sleep a bit so the cluster can start correctly.
 echo "Sleeping 20s to give the cluster time to set the runtime..."
