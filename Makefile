@@ -27,7 +27,7 @@ MOCKS_CMD := ./hack/scripts/mockgen.sh
 DOCKER_RUN_CMD := docker run -v ${PWD}:$(DOCKER_GO_SERVICE_PATH) --rm -it $(SERVICE_NAME)
 DOCKER_DOCS_RUN_CMD := docker run -v ${PWD}/docs:/docs --rm -it -p 1313:1313 $(SERVICE_NAME)-docs
 DEPS_CMD := GO111MODULE=on go mod tidy && GO111MODULE=on go mod vendor
-K8S_VERSION := "1.15.10"
+K8S_VERSION := "1.16.7"
 SET_K8S_DEPS_CMD := GO111MODULE=on go mod edit \
 	-require=k8s.io/apimachinery@kubernetes-${K8S_VERSION} \
 	-require=k8s.io/api@kubernetes-${K8S_VERSION} \
