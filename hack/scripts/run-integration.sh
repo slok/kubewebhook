@@ -1,12 +1,13 @@
 #!/bin/bash
 
+
+set -euo pipefail
+
 CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-DOMAIN_PREFIX=$(openssl rand -hex 12)
-DOMAIN=${DOMAIN_PREFIX}.serveo.net
-EXPOSED_PORT=$(shuf -i 1500-35000 -n 1)
+TUNNEL_INFO_PATH="/tmp/$(openssl rand -hex 12)-ngrok-tcp-tunnel"
 LOCAL_PORT=8080
 KUBERNETES_VERSION=v${KUBERNETES_VERSION:-1.13.6}
-#K3S=true
+K3S=${K3S:-false}
 
 SUDO=''
 if [[ $(id -u) -ne 0 ]]; then
@@ -14,7 +15,7 @@ if [[ $(id -u) -ne 0 ]]; then
 fi
 
 function cleanup {
-    if [[ ! -z ${K3S} ]]; then
+    if [ "${K3S}" = true ]; then
         echo "=> Removing K3S cluster"
         $SUDO kill ${K3S_PID}
         $SUDO killall containerd-shim
@@ -23,12 +24,13 @@ function cleanup {
         $SUDO kind delete cluster
     fi
 
-    $SUDO kill ${SSH_TUNNEL_PID}
+    echo "=> Removing SSH tunnel"
+    $SUDO kill ${TCP_SSH_TUNNEL_PID}
 }
 trap cleanup EXIT
 
 # Start Kubernetes cluster.
-if [[ ! -z ${K3S} ]]; then
+if [ "${K3S}" = true ]; then
     echo "Start K3S cluster..."
     $SUDO k3s server &
     K3S_PID=$!
@@ -39,24 +41,30 @@ else
     export KUBECONFIG="$(kind get kubeconfig-path)"
 fi
 
-$SUDO chmod a+r ${KUBECONFIG}
-
 # Sleep a bit so the cluster can start correctly.
-echo "Sleeping 20s to give the cluster time to set the runtime..."
-sleep 20
-
+echo "Sleeping 30s to give the cluster time to set the runtime..."
+sleep 30
+    
 # Create tunnel.
-echo "Create tunnel on ${DOMAIN}:${EXPOSED_PORT}..."
-ssh -R ${DOMAIN_PREFIX}:${EXPOSED_PORT}:localhost:${LOCAL_PORT} serveo.net &
-SSH_TUNNEL_PID=$!
+echo "Start creating SSH tunnel..."
+nohup ssh -R 0:localhost:${LOCAL_PORT} tunnel.us.ngrok.com tcp 22 > ${TUNNEL_INFO_PATH} &
+sleep 5
+TCP_SSH_TUNNEL_PID=$!
+TCP_SSH_TUNNEL_ADDRESS=$(cat ${TUNNEL_INFO_PATH} | grep  Forwarding |sed 's/.*tcp:\/\///')
+if [[ -z ${TCP_SSH_TUNNEL_ADDRESS} ]]; then
+    echo "No TCP address with SSH tunnel, something went wrong, exiting..."
+    exit 1
+fi
+echo "Created tunnel on ${TCP_SSH_TUNNEL_ADDRESS}..."
 
 # Sleep a bit so the cluster can start correctly.
 echo "Sleeping 5s to give the SSH tunnel time to connect..."
 sleep 5
 
+$SUDO chmod a+rw ${KUBECONFIG}
 
 # Run tests.
 echo "Run tests..."
-export TEST_WEBHOOK_URL="https://${DOMAIN}:${EXPOSED_PORT}"
+export TEST_WEBHOOK_URL="https://${TCP_SSH_TUNNEL_ADDRESS}"
 export TEST_LISTEN_PORT=${LOCAL_PORT}
-${CURRENT_DIR}/integration-test.sh
+    ${CURRENT_DIR}/integration-test.sh
