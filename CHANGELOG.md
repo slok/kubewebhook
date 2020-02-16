@@ -1,6 +1,10 @@
 
 ## [Unreleased]
 
+### Changed
+- Update to Kubernetes v1.13.
+
+
 ## [0.3.0] - 2019-05-30
 ### Added
 - Util to know if a admission review is dry run.

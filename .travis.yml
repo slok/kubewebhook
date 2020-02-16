@@ -5,11 +5,13 @@ services:
 
 language: go
 go:
-  - "1.12"
+  - "1.13"
 
 before_install:
-  # No need to check serveo key fingerprints on integration tests SSH tunnels.
-  - echo -e "Host serveo.net\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
+  # Prepare for SSH tunnels with Ngrok so we can expose the webhooks on integration tests.
+  - echo -e "Host tunnel.us.ngrok.com\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
+  - echo -e ${NGROK_SSH_PRIVATE_KEY_B64} | base64 -d > ~/.ssh/id_ed25519
+  - chmod 400 ~/.ssh/id_ed25519
   # Install tooling for integration tests.
   - curl -Lo kind https://github.com/kubernetes-sigs/kind/releases/download/${KIND_VERSION}/kind-linux-amd64 && chmod +x kind && sudo mv kind /usr/local/bin/
   - curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/${KUBERNETES_VERSION}/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
@@ -22,12 +24,11 @@ env:
     - GO111MODULE=on
     - KIND_VERSION=v0.3.0
     - KUBERNETES_VERSION=1.13.6
+    # - NGROK_SSH_PRIVATE_KEY_B64
 
 matrix:
   include:
-    - env: KUBERNETES_VERSION=1.12.8
     - env: KUBERNETES_VERSION=1.13.6
-    - env: KUBERNETES_VERSION=1.14.2
-  allow_failures:
-    - env: KUBERNETES_VERSION=1.12.8
-    - env: KUBERNETES_VERSION=1.14.2
+    #- env: KUBERNETES_VERSION=1.14.2
+  #allow_failures:
+  #  - env: KUBERNETES_VERSION=1.14.2
