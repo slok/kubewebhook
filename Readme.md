@@ -72,13 +72,13 @@ You can get more examples in [here](examples)
 
 Integration tests will run on different Kubernetes versions, so if these are passing is likely that HEAD supports those Kubernetes versions, these will be marked on the matrix as `✓?`. Check the latest builds [here][travis-url]
 
-|                  | Kubernetes 1.10 | Kubernetes 1.11 | Kubernetes 1.12 | Kubernetes 1.13 | Kubernetes 1.14 |
-| ---------------- | --------------- | --------------- | --------------- | --------------- | --------------- |
-| kubewebhook 0.1  | ✓               | ✓               | ?               | ?               | ?               |
-| kubewebhook 0.2  | ✓               | ✓               | ?               | ?               | ?               |
-| kubewebhook 0.3  | ?               | ?               | ✓               | ?               | ?               |
-| kubewebhook 0.4  | ?               | ?               | ✓?              | ✓               | ?               |
-| kubewebhook HEAD | ?               | ?               | ?               | ✓?              | ✓?              |
+|                  | Kubernetes 1.10 | Kubernetes 1.11 | Kubernetes 1.12 | Kubernetes 1.13 | Kubernetes 1.14 | Kubernetes 1.15 |
+| ---------------- | --------------- | --------------- | --------------- | --------------- | --------------- | --------------- |
+| kubewebhook 0.1  | ✓               | ✓               | ?               | ?               | ?               | ?               |
+| kubewebhook 0.2  | ✓               | ✓               | ?               | ?               | ?               | ?               |
+| kubewebhook 0.3  | ?               | ?               | ✓               | ?               | ?               | ?               |
+| kubewebhook 0.4  | ?               | ?               | ✓?              | ✓               | ?               | ?               |
+| kubewebhook HEAD | ?               | ?               | ?               | ?               | ✓               | ?               |
 
 ## Documentation
 
