@@ -77,7 +77,8 @@ Integration tests will run on different Kubernetes versions, so if these are pas
 | kubewebhook 0.1  | ✓               | ✓               | ?               | ?               | ?               |
 | kubewebhook 0.2  | ✓               | ✓               | ?               | ?               | ?               |
 | kubewebhook 0.3  | ?               | ?               | ✓               | ?               | ?               |
-| kubewebhook HEAD | ?               | ?               | ✓?              | ✓?              | ✓?              |
+| kubewebhook 0.4  | ?               | ?               | ✓?              | ✓               | ?               |
+| kubewebhook HEAD | ?               | ?               | ?               | ✓?              | ✓?              |
 
 ## Documentation
 
