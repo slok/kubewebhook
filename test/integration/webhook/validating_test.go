@@ -29,7 +29,7 @@ func getValidatingWebhookConfig(t *testing.T, cfg helperconfig.TestEnvConfig, ru
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "integration-test-webhook",
 		},
-		Webhooks: []arv1beta1.Webhook{
+		Webhooks: []arv1beta1.ValidatingWebhook{
 			{
 				Name: "test.slok.dev",
 				ClientConfig: arv1beta1.WebhookClientConfig{
