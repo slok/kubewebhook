@@ -4,8 +4,10 @@ package webhook_test
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -75,14 +77,14 @@ func TestValidatingWebhook(t *testing.T) {
 				// Crate a pod and check expectations.
 				p := &corev1.Pod{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "test",
+						Name:      fmt.Sprintf("test-%d", time.Now().UnixNano()),
 						Namespace: "default",
 					},
 					Spec: corev1.PodSpec{
 						Containers: []corev1.Container{corev1.Container{Name: "test", Image: "wrong"}},
 					},
 				}
-				_, err := cli.CoreV1().Pods("default").Create(p)
+				_, err := cli.CoreV1().Pods(p.Namespace).Create(p)
 				if assert.Error(t, err) {
 					sErr, ok := err.(*apierrors.StatusError)
 					if assert.True(t, ok) {
@@ -91,7 +93,7 @@ func TestValidatingWebhook(t *testing.T) {
 					}
 				} else {
 					// Creation should err, if we are here then we need to clean.
-					cli.CoreV1().Pods("default").Delete(p.Name, &metav1.DeleteOptions{})
+					cli.CoreV1().Pods(p.Namespace).Delete(p.Name, &metav1.DeleteOptions{})
 				}
 			},
 		},
@@ -113,19 +115,19 @@ func TestValidatingWebhook(t *testing.T) {
 				// Crate a pod.
 				p := &corev1.Pod{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "test2",
+						Name:      fmt.Sprintf("test-%d", time.Now().UnixNano()),
 						Namespace: "default",
 					},
 					Spec: corev1.PodSpec{
 						Containers: []corev1.Container{corev1.Container{Name: "test", Image: "wrong"}},
 					},
 				}
-				_, err := cli.CoreV1().Pods("default").Create(p)
+				_, err := cli.CoreV1().Pods(p.Namespace).Create(p)
 				require.NoError(t, err)
-				defer cli.CoreV1().Pods("default").Delete(p.Name, &metav1.DeleteOptions{})
+				defer cli.CoreV1().Pods(p.Namespace).Delete(p.Name, &metav1.DeleteOptions{})
 
 				// Check expectations.
-				_, err = cli.CoreV1().Pods("default").Get("test2", metav1.GetOptions{})
+				_, err = cli.CoreV1().Pods(p.Namespace).Get(p.Name, metav1.GetOptions{})
 				assert.NoError(t, err, "pod should be present")
 			},
 		},

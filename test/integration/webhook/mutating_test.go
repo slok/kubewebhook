@@ -4,8 +4,10 @@ package webhook_test
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -88,7 +90,7 @@ func TestMutatingWebhook(t *testing.T) {
 				// Try creating a pod.
 				p := &corev1.Pod{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "test",
+						Name:      fmt.Sprintf("test-%d", time.Now().UnixNano()),
 						Namespace: "default",
 						Labels: map[string]string{
 							"nickname": "Dark-knight",
@@ -104,9 +106,9 @@ func TestMutatingWebhook(t *testing.T) {
 						},
 					},
 				}
-				_, err := cli.CoreV1().Pods("default").Create(p)
+				_, err := cli.CoreV1().Pods(p.Namespace).Create(p)
 				require.NoError(t, err)
-				defer cli.CoreV1().Pods("default").Delete(p.Name, &metav1.DeleteOptions{})
+				defer cli.CoreV1().Pods(p.Namespace).Delete(p.Name, &metav1.DeleteOptions{})
 
 				// Check expectations.
 				expLabels := map[string]string{
@@ -115,7 +117,7 @@ func TestMutatingWebhook(t *testing.T) {
 					"nickname": "Batman",
 					"city":     "Gotham",
 				}
-				pod, err := cli.CoreV1().Pods("default").Get("test", metav1.GetOptions{})
+				pod, err := cli.CoreV1().Pods(p.Namespace).Get(p.Name, metav1.GetOptions{})
 				if assert.NoError(t, err) {
 					assert.Equal(t, expLabels, pod.Labels)
 				}
@@ -154,7 +156,7 @@ func TestMutatingWebhook(t *testing.T) {
 				// Create a pod.
 				p := &corev1.Pod{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "test2",
+						Name:      fmt.Sprintf("test-%d", time.Now().UnixNano()),
 						Namespace: "default",
 					},
 					Spec: corev1.PodSpec{
@@ -172,9 +174,9 @@ func TestMutatingWebhook(t *testing.T) {
 						},
 					},
 				}
-				_, err := cli.CoreV1().Pods("default").Create(p)
+				_, err := cli.CoreV1().Pods(p.Namespace).Create(p)
 				require.NoError(t, err)
-				defer cli.CoreV1().Pods("default").Delete(p.Name, &metav1.DeleteOptions{})
+				defer cli.CoreV1().Pods(p.Namespace).Delete(p.Name, &metav1.DeleteOptions{})
 
 				// Check expectations.
 				expContainers := []corev1.Container{
@@ -190,7 +192,7 @@ func TestMutatingWebhook(t *testing.T) {
 						},
 					},
 				}
-				pod, err := cli.CoreV1().Pods("default").Get("test2", metav1.GetOptions{})
+				pod, err := cli.CoreV1().Pods(p.Namespace).Get(p.Name, metav1.GetOptions{})
 				if assert.NoError(t, err) {
 					// Sanitize default settings on containers before checking expectations.
 					for i, container := range pod.Spec.Containers {
