@@ -6,8 +6,9 @@ set -euo pipefail
 CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 TUNNEL_INFO_PATH="/tmp/$(openssl rand -hex 12)-ngrok-tcp-tunnel"
 LOCAL_PORT=8080
-KUBERNETES_VERSION=v${KUBERNETES_VERSION:-1.13.6}
+KUBERNETES_VERSION=v${KUBERNETES_VERSION:-1.14.10}
 K3S=${K3S:-false}
+PREVIOUS_KUBECTL_CONTEXT=$(kubectl config current-context) || PREVIOUS_KUBECTL_CONTEXT=""
 
 SUDO=''
 if [[ $(id -u) -ne 0 ]]; then
@@ -21,11 +22,15 @@ function cleanup {
         $SUDO killall containerd-shim
     else
         echo "=> Removing kind cluster"
-        $SUDO kind delete cluster
+        kind delete cluster
+        if [ ! -z ${PREVIOUS_KUBECTL_CONTEXT} ]; then 
+            echo "=> Setting previous kubectl context"
+            kubectl config use-context ${PREVIOUS_KUBECTL_CONTEXT}
+        fi
     fi
 
     echo "=> Removing SSH tunnel"
-    $SUDO kill ${TCP_SSH_TUNNEL_PID}
+    kill ${TCP_SSH_TUNNEL_PID}
 }
 trap cleanup EXIT
 
@@ -35,10 +40,13 @@ if [ "${K3S}" = true ]; then
     $SUDO k3s server &
     K3S_PID=$!
     export KUBECONFIG="/etc/rancher/k3s/k3s.yaml"
+    $SUDO chmod a+rw ${KUBECONFIG}
 else
     echo "Start Kind Kubernetes ${KUBERNETES_VERSION} cluster..."
-    $SUDO kind create cluster --image kindest/node:${KUBERNETES_VERSION}
-    export KUBECONFIG="$(kind get kubeconfig-path)"
+    kind create cluster --image kindest/node:${KUBERNETES_VERSION}
+    export KUBECONFIG="${HOME}/.kube/config"
+    chmod a+rw ${KUBECONFIG}
+    kubectl config use-context kind-kind
 fi
 
 # Sleep a bit so the cluster can start correctly.
@@ -60,8 +68,6 @@ echo "Created tunnel on ${TCP_SSH_TUNNEL_ADDRESS}..."
 # Sleep a bit so the cluster can start correctly.
 echo "Sleeping 5s to give the SSH tunnel time to connect..."
 sleep 5
-
-$SUDO chmod a+rw ${KUBECONFIG}
 
 # Run tests.
 echo "Run tests..."
