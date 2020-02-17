@@ -11,7 +11,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	arv1beta1 "k8s.io/api/admissionregistration/v1beta1"
+	arv1 "k8s.io/api/admissionregistration/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -24,15 +24,20 @@ import (
 	helperconfig "github.com/slok/kubewebhook/test/integration/helper/config"
 )
 
-func getValidatingWebhookConfig(t *testing.T, cfg helperconfig.TestEnvConfig, rules []arv1beta1.RuleWithOperations) *arv1beta1.ValidatingWebhookConfiguration {
-	return &arv1beta1.ValidatingWebhookConfiguration{
+func getValidatingWebhookConfig(t *testing.T, cfg helperconfig.TestEnvConfig, rules []arv1.RuleWithOperations) *arv1.ValidatingWebhookConfiguration {
+	whSideEffect := arv1.SideEffectClassNone
+	var timeoutSecs int32 = 30
+	return &arv1.ValidatingWebhookConfiguration{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "integration-test-webhook",
 		},
-		Webhooks: []arv1beta1.ValidatingWebhook{
+		Webhooks: []arv1.ValidatingWebhook{
 			{
-				Name: "test.slok.dev",
-				ClientConfig: arv1beta1.WebhookClientConfig{
+				Name:                    "test.slok.dev",
+				AdmissionReviewVersions: []string{"v1beta1"},
+				TimeoutSeconds:          &timeoutSecs,
+				SideEffects:             &whSideEffect,
+				ClientConfig: arv1.WebhookClientConfig{
 					URL:      &cfg.WebhookURL,
 					CABundle: []byte(cfg.WebhookCert),
 				},
@@ -52,12 +57,12 @@ func TestValidatingWebhook(t *testing.T) {
 	require.NoError(t, err, "error getting kubernetes client")
 
 	tests := map[string]struct {
-		webhookRegisterCfg *arv1beta1.ValidatingWebhookConfiguration
+		webhookRegisterCfg *arv1.ValidatingWebhookConfiguration
 		webhook            func() webhook.Webhook
 		execTest           func(t *testing.T, cli kubernetes.Interface)
 	}{
 		"A validating webhook should not allow creating the pod and return a message.": {
-			webhookRegisterCfg: getValidatingWebhookConfig(t, cfg, []arv1beta1.RuleWithOperations{webhookRulesPod}),
+			webhookRegisterCfg: getValidatingWebhookConfig(t, cfg, []arv1.RuleWithOperations{webhookRulesPod}),
 			webhook: func() webhook.Webhook {
 				// Our validator logic.
 				val := validating.ValidatorFunc(func(ctx context.Context, obj metav1.Object) (bool, validating.ValidatorResult, error) {
@@ -99,7 +104,7 @@ func TestValidatingWebhook(t *testing.T) {
 		},
 
 		"A validating webhook should allow creating the pod.": {
-			webhookRegisterCfg: getValidatingWebhookConfig(t, cfg, []arv1beta1.RuleWithOperations{webhookRulesPod}),
+			webhookRegisterCfg: getValidatingWebhookConfig(t, cfg, []arv1.RuleWithOperations{webhookRulesPod}),
 			webhook: func() webhook.Webhook {
 				// Our validator logic.
 				val := validating.ValidatorFunc(func(ctx context.Context, obj metav1.Object) (bool, validating.ValidatorResult, error) {
@@ -136,11 +141,11 @@ func TestValidatingWebhook(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			// Register webhooks.
-			_, err := cli.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations().Create(test.webhookRegisterCfg)
+			_, err := cli.AdmissionregistrationV1().ValidatingWebhookConfigurations().Create(test.webhookRegisterCfg)
 			if err != nil {
 				assert.FailNow(t, "error registering webhooks kubernetes client", err.Error())
 			}
-			defer cli.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations().Delete(test.webhookRegisterCfg.Name, &metav1.DeleteOptions{})
+			defer cli.AdmissionregistrationV1().ValidatingWebhookConfigurations().Delete(test.webhookRegisterCfg.Name, &metav1.DeleteOptions{})
 
 			// Start mutating webhook server.
 			wh := test.webhook()
@@ -156,6 +161,9 @@ func TestValidatingWebhook(t *testing.T) {
 				}
 			}()
 			defer srv.Shutdown(context.TODO())
+
+			// Wait a bit to get ready with the webhook server goroutine.
+			time.Sleep(2 * time.Second)
 
 			// Execute the tests.
 			test.execTest(t, cli)

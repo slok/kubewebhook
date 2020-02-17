@@ -1,6 +1,9 @@
 
 ## [Unreleased]
 
+### Changed
+- Update to Kubernetes v1.16.
+
 ## [0.6.0] - 2020-02-16
 ### Changed
 - Update to Kubernetes v1.15.
@@ -49,7 +52,7 @@ Breaking: Webhook constructors now need a tracer.
 - Handler creator for webhooks.
 
 [Unreleased]: https://github.com/slok/kubewebhook/compare/v0.6.0...HEAD
-[0.5.0]: https://github.com/slok/kubewebhook/compare/v0.5.0...v0.6.0
+[0.6.0]: https://github.com/slok/kubewebhook/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/slok/kubewebhook/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/slok/kubewebhook/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/slok/kubewebhook/compare/v0.2.0...v0.3.0
