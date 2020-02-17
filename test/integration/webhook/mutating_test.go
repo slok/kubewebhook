@@ -11,7 +11,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	arv1beta1 "k8s.io/api/admissionregistration/v1beta1"
+	arv1 "k8s.io/api/admissionregistration/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -23,15 +23,20 @@ import (
 	helperconfig "github.com/slok/kubewebhook/test/integration/helper/config"
 )
 
-func getMutatingWebhookConfig(t *testing.T, cfg helperconfig.TestEnvConfig, rules []arv1beta1.RuleWithOperations) *arv1beta1.MutatingWebhookConfiguration {
-	return &arv1beta1.MutatingWebhookConfiguration{
+func getMutatingWebhookConfig(t *testing.T, cfg helperconfig.TestEnvConfig, rules []arv1.RuleWithOperations) *arv1.MutatingWebhookConfiguration {
+	whSideEffect := arv1.SideEffectClassNone
+	var timeoutSecs int32 = 30
+	return &arv1.MutatingWebhookConfiguration{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "integration-test-webhook",
 		},
-		Webhooks: []arv1beta1.MutatingWebhook{
+		Webhooks: []arv1.MutatingWebhook{
 			{
-				Name: "test.slok.dev",
-				ClientConfig: arv1beta1.WebhookClientConfig{
+				Name:                    "test.slok.dev",
+				AdmissionReviewVersions: []string{"v1beta1"},
+				TimeoutSeconds:          &timeoutSecs,
+				SideEffects:             &whSideEffect,
+				ClientConfig: arv1.WebhookClientConfig{
 					URL:      &cfg.WebhookURL,
 					CABundle: []byte(cfg.WebhookCert),
 				},
@@ -42,9 +47,9 @@ func getMutatingWebhookConfig(t *testing.T, cfg helperconfig.TestEnvConfig, rule
 }
 
 var (
-	webhookRulesPod = arv1beta1.RuleWithOperations{
-		Operations: []arv1beta1.OperationType{"CREATE"},
-		Rule: arv1beta1.Rule{
+	webhookRulesPod = arv1.RuleWithOperations{
+		Operations: []arv1.OperationType{"CREATE"},
+		Rule: arv1.Rule{
 			APIGroups:   []string{""},
 			APIVersions: []string{"v1"},
 			Resources:   []string{"pods"},
@@ -62,12 +67,12 @@ func TestMutatingWebhook(t *testing.T) {
 	require.NoError(t, err, "error getting kubernetes client")
 
 	tests := map[string]struct {
-		webhookRegisterCfg *arv1beta1.MutatingWebhookConfiguration
+		webhookRegisterCfg *arv1.MutatingWebhookConfiguration
 		webhook            func() webhook.Webhook
 		execTest           func(t *testing.T, cli kubernetes.Interface)
 	}{
 		"A mutation on a pod creation should mutate the pod labels, rewrite the existing ones, and add the missing ones.": {
-			webhookRegisterCfg: getMutatingWebhookConfig(t, cfg, []arv1beta1.RuleWithOperations{webhookRulesPod}),
+			webhookRegisterCfg: getMutatingWebhookConfig(t, cfg, []arv1.RuleWithOperations{webhookRulesPod}),
 			webhook: func() webhook.Webhook {
 				// Our mutator logic.
 				mut := mutating.MutatorFunc(func(ctx context.Context, obj metav1.Object) (bool, error) {
@@ -125,7 +130,7 @@ func TestMutatingWebhook(t *testing.T) {
 		},
 
 		"A mutation on a pod creation should mutate the containers, mutate one of them and add a new one.": {
-			webhookRegisterCfg: getMutatingWebhookConfig(t, cfg, []arv1beta1.RuleWithOperations{webhookRulesPod}),
+			webhookRegisterCfg: getMutatingWebhookConfig(t, cfg, []arv1.RuleWithOperations{webhookRulesPod}),
 			webhook: func() webhook.Webhook {
 				// Our mutator logic.
 				mut := mutating.MutatorFunc(func(ctx context.Context, obj metav1.Object) (bool, error) {
@@ -211,9 +216,9 @@ func TestMutatingWebhook(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			// Register webhooks.
-			_, err := cli.AdmissionregistrationV1beta1().MutatingWebhookConfigurations().Create(test.webhookRegisterCfg)
+			_, err := cli.AdmissionregistrationV1().MutatingWebhookConfigurations().Create(test.webhookRegisterCfg)
 			require.NoError(t, err, "error registering webhooks kubernetes client")
-			defer cli.AdmissionregistrationV1beta1().MutatingWebhookConfigurations().Delete(test.webhookRegisterCfg.Name, &metav1.DeleteOptions{})
+			defer cli.AdmissionregistrationV1().MutatingWebhookConfigurations().Delete(test.webhookRegisterCfg.Name, &metav1.DeleteOptions{})
 
 			// Start mutating webhook server.
 			wh := test.webhook()
@@ -229,6 +234,9 @@ func TestMutatingWebhook(t *testing.T) {
 				}
 			}()
 			defer srv.Shutdown(context.TODO())
+
+			// Wait a bit to get ready with the webhook server goroutine.
+			time.Sleep(2 * time.Second)
 
 			// Execute test.
 			test.execTest(t, cli)
