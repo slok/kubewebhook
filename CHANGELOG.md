@@ -4,6 +4,14 @@
 ### Changed
 - Update to Kubernetes v1.16.
 
+### Fixed
+- Use mutation request raw json to create the json patch instead of an unmarshaled object of the raw json. In the
+  past we got marshaled the raw into an object, create a deepcopy of the object that would be the mutator, then
+  marshal both objects and get the patch.
+  This on some cases caused some defaulting on the fields that were not present on the raw json when marshaling/unmarshaling
+  process, so when generating the patch the fields that were defaulted acted as if already existed on the original object and
+  if modified on the mutated object patch on these field were "modifications" instead of "additions".
+
 ## [0.6.0] - 2020-02-16
 ### Changed
 - Update to Kubernetes v1.15.

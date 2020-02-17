@@ -113,38 +113,31 @@ func (w *staticWebhook) Review(ctx context.Context, ar *admissionv1beta1.Admissi
 	}
 
 	// Copy the object to have the original and be able to get the patch.
-	objCopy := runtimeObj.DeepCopyObject()
-	mutatingObj, ok := objCopy.(metav1.Object)
+	mutatingObj, ok := runtimeObj.(metav1.Object)
 	if !ok {
 		err := fmt.Errorf("impossible to type assert the deep copy to metav1.Object")
 		return w.toAdmissionErrorResponse(ar, err)
 	}
 
-	return w.mutatingAdmissionReview(ctx, ar, obj, mutatingObj)
+	return w.mutatingAdmissionReview(ctx, ar, mutatingObj)
 
 }
 
-func (w *staticWebhook) mutatingAdmissionReview(ctx context.Context, ar *admissionv1beta1.AdmissionReview, obj, copyObj metav1.Object) *admissionv1beta1.AdmissionResponse {
+func (w *staticWebhook) mutatingAdmissionReview(ctx context.Context, ar *admissionv1beta1.AdmissionReview, obj metav1.Object) *admissionv1beta1.AdmissionResponse {
 	auid := ar.Request.UID
 
 	// Mutate the object.
-	_, err := w.mutator.Mutate(ctx, copyObj)
+	_, err := w.mutator.Mutate(ctx, obj)
 	if err != nil {
 		return w.toAdmissionErrorResponse(ar, err)
 	}
 
-	// Get the diff patch of the original and mutated object.
-	origJSON, err := json.Marshal(obj)
-	if err != nil {
-		return w.toAdmissionErrorResponse(ar, err)
-
-	}
-	mutatedJSON, err := json.Marshal(copyObj)
+	mutatedJSON, err := json.Marshal(obj)
 	if err != nil {
 		return w.toAdmissionErrorResponse(ar, err)
 	}
 
-	patch, err := jsonpatch.CreatePatch(origJSON, mutatedJSON)
+	patch, err := jsonpatch.CreatePatch(ar.Request.Object.Raw, mutatedJSON)
 	if err != nil {
 		return w.toAdmissionErrorResponse(ar, err)
 	}
