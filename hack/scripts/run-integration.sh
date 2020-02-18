@@ -6,7 +6,7 @@ set -euo pipefail
 CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 TUNNEL_INFO_PATH="/tmp/$(openssl rand -hex 12)-ngrok-tcp-tunnel"
 LOCAL_PORT=8080
-KUBERNETES_VERSION=v${KUBERNETES_VERSION:-1.16.4}
+KUBERNETES_VERSION=v${KUBERNETES_VERSION:-1.17.0}
 K3S=${K3S:-false}
 PREVIOUS_KUBECTL_CONTEXT=$(kubectl config current-context) || PREVIOUS_KUBECTL_CONTEXT=""
 

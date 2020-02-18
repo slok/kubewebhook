@@ -1,6 +1,10 @@
 
 ## [Unreleased]
 
+### Changed
+- Update to Kubernetes v1.17.
+
+
 ## [0.7.0] - 2020-02-17
 ### Changed
 - Update to Kubernetes v1.16.
