@@ -70,17 +70,25 @@ You can get more examples in [here](examples)
 
 ## Compatibility matrix
 
-|                  | K8s 1.10 | K8s 1.11 | K8s 1.12 | K8s 1.13 | K8s 1.14 | K8s 1.15 | K8s 1.16 | K8s 1.17 |
-| ---------------- | -------- | -------- | -------- | -------- | -------- | -------- | -------- | -------- |
-| kubewebhook 0.1  | ✓        | ✓        | ?        | ?        | ?        | ?        | ?        | ?        |
-| kubewebhook 0.2  | ✓        | ✓        | ?        | ?        | ?        | ?        | ?        | ?        |
-| kubewebhook 0.3  | ?        | ?        | ✓        | ?        | ?        | ?        | ?        | ?        |
-| kubewebhook 0.4  | ?        | ?        | ✓?       | ✓        | ?        | ?        | ?        | ?        |
-| kubewebhook 0.5  | ?        | ?        | ?        | ?        | ✓        | ?        | ?        | ?        |
-| kubewebhook 0.6  | ?        | ?        | ?        | ?        | ?        | ✓        | ?        | ?        |
-| kubewebhook 0.7  | ?        | ?        | ?        | ?        | ?        | ?        | ✓        | ?        |
-| kubewebhook 0.8  | ?        | ?        | ?        | ?        | ?        | ?        | ?        | ✓        |
-| kubewebhook HEAD | ?        | ?        | ?        | ?        | ?        | ?        | ?        | ✓        |
+Depending on your Kubernetes cluster version, you should select the Kubewebhook version.
+
+This Matrix ensures that Kubernetes libs are used with the described versions and the
+integration tests have been tested against this Kubernetes cluster versions, this doesn't mean
+that other Kubewebhook versions different to the matched ones to Kubernetes versions don't
+work (e.g k8s v1.15 with Kubewebhook v0.3). You can try it and check if they work for you.
+
+| k8s version | Kubewebhook version | Supported admission reviews |
+| ------------| ------------------- | --------------------------- |
+| 1.10        | v0.2                | v1beta1                     |
+| 1.11        | v0.2                | v1beta1                     |
+| 1.12        | v0.3                | v1beta1                     |
+| 1.13        | v0.4                | v1beta1                     |
+| 1.14        | v0.5                | v1beta1                     |
+| 1.15        | v0.6                | v1beta1                     |
+| 1.16        | v0.7                | v1beta1                     |
+| 1.17        | v0.8                | v1beta1                     |
+| 1.18        | HEAD?               | v1beta1                     |
+
 
 ## Documentation
 
