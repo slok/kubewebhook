@@ -32,7 +32,6 @@ SET_K8S_DEPS_CMD := GO111MODULE=on go mod edit \
 	-require=k8s.io/apimachinery@kubernetes-${K8S_VERSION} \
 	-require=k8s.io/api@kubernetes-${K8S_VERSION} \
 	-require=k8s.io/client-go@kubernetes-${K8S_VERSION} \
-	-require=k8s.io/api@kubernetes-${K8S_VERSION} \
 	&& \
 	$(DEPS_CMD)
 
