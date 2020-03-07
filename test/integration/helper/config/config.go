@@ -36,7 +36,7 @@ type TestEnvConfig struct {
 // and :8080 address:
 // 	ssh -R 0:localhost:8080 tunnel.us.ngrok.com tcp 22
 func GetTestDevelopmentEnvConfig(t *testing.T) TestEnvConfig {
-	os.Setenv(envVarWebhookURL, "https://0.tcp.ngrok.io:10699") // CHANGE ME!
+	os.Setenv(envVarWebhookURL, "https://0.tcp.ngrok.io:17661") // CHANGE ME!
 	os.Setenv(envVarListenPort, "8080")
 	os.Setenv(envKubeConfig, "/etc/rancher/k3s/k3s.yaml")
 
