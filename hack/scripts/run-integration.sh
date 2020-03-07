@@ -69,6 +69,10 @@ echo "Created tunnel on ${TCP_SSH_TUNNEL_ADDRESS}..."
 echo "Sleeping 5s to give the SSH tunnel time to connect..."
 sleep 5
 
+# Register CRDs.
+echo "Registering CRDs..."
+kubectl apply -f ${CURRENT_DIR}/../../test/integration/crd/manifests
+
 # Run tests.
 echo "Run tests..."
 export TEST_WEBHOOK_URL="https://${TCP_SSH_TUNNEL_ADDRESS}"

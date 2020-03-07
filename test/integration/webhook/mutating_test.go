@@ -19,57 +19,32 @@ import (
 	whhttp "github.com/slok/kubewebhook/pkg/http"
 	"github.com/slok/kubewebhook/pkg/webhook"
 	"github.com/slok/kubewebhook/pkg/webhook/mutating"
+	buildingv1 "github.com/slok/kubewebhook/test/integration/crd/apis/building/v1"
+	kubewebhookcrd "github.com/slok/kubewebhook/test/integration/crd/client/clientset/versioned"
 	helpercli "github.com/slok/kubewebhook/test/integration/helper/cli"
 	helperconfig "github.com/slok/kubewebhook/test/integration/helper/config"
 )
 
-func getMutatingWebhookConfig(t *testing.T, cfg helperconfig.TestEnvConfig, rules []arv1.RuleWithOperations) *arv1.MutatingWebhookConfiguration {
-	whSideEffect := arv1.SideEffectClassNone
-	var timeoutSecs int32 = 30
-	return &arv1.MutatingWebhookConfiguration{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "integration-test-webhook",
-		},
-		Webhooks: []arv1.MutatingWebhook{
-			{
-				Name:                    "test.slok.dev",
-				AdmissionReviewVersions: []string{"v1beta1"},
-				TimeoutSeconds:          &timeoutSecs,
-				SideEffects:             &whSideEffect,
-				ClientConfig: arv1.WebhookClientConfig{
-					URL:      &cfg.WebhookURL,
-					CABundle: []byte(cfg.WebhookCert),
-				},
-				Rules: rules,
-			},
-		},
-	}
-}
-
-var (
-	webhookRulesPod = arv1.RuleWithOperations{
-		Operations: []arv1.OperationType{"CREATE"},
-		Rule: arv1.Rule{
-			APIGroups:   []string{""},
-			APIVersions: []string{"v1"},
-			Resources:   []string{"pods"},
-		},
-	}
-)
-
 func TestMutatingWebhook(t *testing.T) {
+	var (
+		trueBool  = true
+		falseBool = false
+	)
+
 	cfg := helperconfig.GetTestEnvConfig(t)
 	// Use this configuration if you are developing the tests and you are
-	// using a local k3s + serveo stack (check /test/integration/helper/config).
+	// using a local k3s + ngrok stack (check /test/integration/helper/config).
 	//cfg = helperconfig.GetTestDevelopmentEnvConfig(t)
 
-	cli, err := helpercli.GetK8sClients(cfg.KubeConfigPath)
+	cli, err := helpercli.GetK8sSTDClients(cfg.KubeConfigPath)
 	require.NoError(t, err, "error getting kubernetes client")
+	crdcli, err := helpercli.GetK8sCRDClients(cfg.KubeConfigPath)
+	require.NoError(t, err, "error getting kubernetes CRD client")
 
 	tests := map[string]struct {
 		webhookRegisterCfg *arv1.MutatingWebhookConfiguration
 		webhook            func() webhook.Webhook
-		execTest           func(t *testing.T, cli kubernetes.Interface)
+		execTest           func(t *testing.T, cli kubernetes.Interface, crdcli kubewebhookcrd.Interface)
 	}{
 		"A mutation on a pod creation should mutate the pod labels, rewrite the existing ones, and add the missing ones.": {
 			webhookRegisterCfg: getMutatingWebhookConfig(t, cfg, []arv1.RuleWithOperations{webhookRulesPod}),
@@ -91,7 +66,7 @@ func TestMutatingWebhook(t *testing.T) {
 				}, mut, nil, nil, nil)
 				return mwh
 			},
-			execTest: func(t *testing.T, cli kubernetes.Interface) {
+			execTest: func(t *testing.T, cli kubernetes.Interface, _ kubewebhookcrd.Interface) {
 				// Try creating a pod.
 				p := &corev1.Pod{
 					ObjectMeta: metav1.ObjectMeta{
@@ -157,7 +132,7 @@ func TestMutatingWebhook(t *testing.T) {
 				}, mut, nil, nil, nil)
 				return mwh
 			},
-			execTest: func(t *testing.T, cli kubernetes.Interface) {
+			execTest: func(t *testing.T, cli kubernetes.Interface, _ kubewebhookcrd.Interface) {
 				// Create a pod.
 				p := &corev1.Pod{
 					ObjectMeta: metav1.ObjectMeta{
@@ -211,6 +186,120 @@ func TestMutatingWebhook(t *testing.T) {
 				}
 			},
 		},
+
+		"A mutation on a CRD creation should mutate the the CRD labels, rewrite the existing ones, and add the missing ones.": {
+			webhookRegisterCfg: getMutatingWebhookConfig(t, cfg, []arv1.RuleWithOperations{webhookRulesHouseCRD}),
+			webhook: func() webhook.Webhook {
+				// Our mutator logic.
+				mut := mutating.MutatorFunc(func(ctx context.Context, obj metav1.Object) (bool, error) {
+					house := obj.(*buildingv1.House)
+					if house.Labels == nil {
+						house.Labels = map[string]string{}
+					}
+					house.Labels["city"] = "Madrid"
+					house.Labels["type"] = "Flat"
+					house.Labels["rooms"] = "3"
+					return false, nil
+				})
+				mwh, _ := mutating.NewWebhook(mutating.WebhookConfig{
+					Name: "house-mutator-label",
+					Obj:  &buildingv1.House{},
+				}, mut, nil, nil, nil)
+				return mwh
+			},
+			execTest: func(t *testing.T, _ kubernetes.Interface, crdcli kubewebhookcrd.Interface) {
+				// Try creating a house.
+				h := &buildingv1.House{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      fmt.Sprintf("test-%d", time.Now().UnixNano()),
+						Namespace: "default",
+						Labels: map[string]string{
+							"city":      "Bilbo",
+							"bathrooms": "2",
+						},
+					},
+					Spec: buildingv1.HouseSpec{
+						Name:    "newHouse",
+						Address: "whatever 42",
+						Owners: []buildingv1.User{
+							{Name: "user1", Email: "user1@kubebwehook.slok.dev"},
+							{Name: "user2", Email: "user2@kubebwehook.slok.dev"},
+						},
+					},
+				}
+				_, err := crdcli.BuildingV1().Houses(h.Namespace).Create(h)
+				require.NoError(t, err)
+				defer crdcli.BuildingV1().Houses(h.Namespace).Delete(h.Name, &metav1.DeleteOptions{})
+
+				// Check expectations.
+				expLabels := map[string]string{
+					"city":      "Madrid",
+					"bathrooms": "2",
+					"rooms":     "3",
+					"type":      "Flat",
+				}
+				house, err := crdcli.BuildingV1().Houses(h.Namespace).Get(h.Name, metav1.GetOptions{})
+				if assert.NoError(t, err) {
+					assert.Equal(t, expLabels, house.Labels)
+				}
+			},
+		},
+
+		"A mutation on a CRD creation should mutate the the CRD fields, rewrite the existing ones, and add the missing ones.": {
+			webhookRegisterCfg: getMutatingWebhookConfig(t, cfg, []arv1.RuleWithOperations{webhookRulesHouseCRD}),
+			webhook: func() webhook.Webhook {
+				// Our mutator logic.
+				mut := mutating.MutatorFunc(func(ctx context.Context, obj metav1.Object) (bool, error) {
+					house := obj.(*buildingv1.House)
+					house.Spec.Name = "changed-name"
+					house.Spec.Active = &trueBool
+					house.Spec.Address = ""
+					house.Spec.Owners = []buildingv1.User{
+						{Name: "user1", Email: "user1@kubebwehook.slok.dev"},
+					}
+					return false, nil
+				})
+				mwh, _ := mutating.NewWebhook(mutating.WebhookConfig{
+					Name: "house-mutator-label",
+					Obj:  &buildingv1.House{},
+				}, mut, nil, nil, nil)
+				return mwh
+			},
+			execTest: func(t *testing.T, _ kubernetes.Interface, crdcli kubewebhookcrd.Interface) {
+				// Try creating a house.
+				h := &buildingv1.House{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      fmt.Sprintf("test-%d", time.Now().UnixNano()),
+						Namespace: "default",
+						Labels:    map[string]string{},
+					},
+					Spec: buildingv1.HouseSpec{
+						Name:    "newHouse",
+						Address: "whatever 42",
+						Active:  &falseBool,
+						Owners:  nil,
+					},
+				}
+				_, err := crdcli.BuildingV1().Houses(h.Namespace).Create(h)
+				require.NoError(t, err)
+				defer crdcli.BuildingV1().Houses(h.Namespace).Delete(h.Name, &metav1.DeleteOptions{})
+
+				// Check expectations.
+				expHouseSpec := buildingv1.HouseSpec{
+					Name:    "changed-name",
+					Active:  &trueBool,
+					Address: "",
+					Owners: []buildingv1.User{
+						{Name: "user1", Email: "user1@kubebwehook.slok.dev"},
+					},
+				}
+
+				house, err := crdcli.BuildingV1().Houses(h.Namespace).Get(h.Name, metav1.GetOptions{})
+				if assert.NoError(t, err) {
+					assert.Equal(t, expHouseSpec, house.Spec)
+				}
+			},
+		},
 	}
 
 	for name, test := range tests {
@@ -239,7 +328,7 @@ func TestMutatingWebhook(t *testing.T) {
 			time.Sleep(2 * time.Second)
 
 			// Execute test.
-			test.execTest(t, cli)
+			test.execTest(t, cli, crdcli)
 		})
 	}
 }
