@@ -10,7 +10,7 @@ With Kubewebhook you can make validating and mutating webhooks very fast and foc
 
 ## Features
 
-- Ready for mutating and validating webhook kinds.
+- Ready for mutating and validating webhook kinds (compatible with CRDs).
 - Easy and testable API.
 - Simple, extensible and flexible.
 - Multiple webhooks on the same server.

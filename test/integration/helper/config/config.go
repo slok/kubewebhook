@@ -32,11 +32,11 @@ type TestEnvConfig struct {
 // To create the test development environment do:
 // Run k3s:
 //	sudo k3s server
-// Run serveo on a random serveo subdomain (this example `slok-kubewebhook)
+// Run Ngrok on a port (this example `17661`)
 // and :8080 address:
-// 	ssh -R slok-kubewebhook:1987:localhost:8080 serveo.net
+// 	ssh -R 0:localhost:8080 tunnel.us.ngrok.com tcp 22
 func GetTestDevelopmentEnvConfig(t *testing.T) TestEnvConfig {
-	os.Setenv(envVarWebhookURL, "https://slok-kubewebhook.serveo.net:1987")
+	os.Setenv(envVarWebhookURL, "https://0.tcp.ngrok.io:10699") // CHANGE ME!
 	os.Setenv(envVarListenPort, "8080")
 	os.Setenv(envKubeConfig, "/etc/rancher/k3s/k3s.yaml")
 
