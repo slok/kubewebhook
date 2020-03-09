@@ -1,4 +1,4 @@
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: pod-annotate-webhook
@@ -6,6 +6,9 @@ metadata:
     app: pod-annotate-webhook
 spec:
   replicas: 1
+  selector:
+    matchLabels:
+      app: pod-annotate-webhook
   template:
     metadata:
       labels:
