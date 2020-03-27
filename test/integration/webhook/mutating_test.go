@@ -86,9 +86,9 @@ func TestMutatingWebhook(t *testing.T) {
 						},
 					},
 				}
-				_, err := cli.CoreV1().Pods(p.Namespace).Create(p)
+				_, err := cli.CoreV1().Pods(p.Namespace).Create(context.TODO(), p, metav1.CreateOptions{})
 				require.NoError(t, err)
-				defer cli.CoreV1().Pods(p.Namespace).Delete(p.Name, &metav1.DeleteOptions{})
+				defer cli.CoreV1().Pods(p.Namespace).Delete(context.TODO(), p.Name, metav1.DeleteOptions{})
 
 				// Check expectations.
 				expLabels := map[string]string{
@@ -97,7 +97,7 @@ func TestMutatingWebhook(t *testing.T) {
 					"nickname": "Batman",
 					"city":     "Gotham",
 				}
-				pod, err := cli.CoreV1().Pods(p.Namespace).Get(p.Name, metav1.GetOptions{})
+				pod, err := cli.CoreV1().Pods(p.Namespace).Get(context.TODO(), p.Name, metav1.GetOptions{})
 				if assert.NoError(t, err) {
 					assert.Equal(t, expLabels, pod.Labels)
 				}
@@ -154,9 +154,9 @@ func TestMutatingWebhook(t *testing.T) {
 						},
 					},
 				}
-				_, err := cli.CoreV1().Pods(p.Namespace).Create(p)
+				_, err := cli.CoreV1().Pods(p.Namespace).Create(context.TODO(), p, metav1.CreateOptions{})
 				require.NoError(t, err)
-				defer cli.CoreV1().Pods(p.Namespace).Delete(p.Name, &metav1.DeleteOptions{})
+				defer cli.CoreV1().Pods(p.Namespace).Delete(context.TODO(), p.Name, metav1.DeleteOptions{})
 
 				// Check expectations.
 				expContainers := []corev1.Container{
@@ -172,7 +172,7 @@ func TestMutatingWebhook(t *testing.T) {
 						},
 					},
 				}
-				pod, err := cli.CoreV1().Pods(p.Namespace).Get(p.Name, metav1.GetOptions{})
+				pod, err := cli.CoreV1().Pods(p.Namespace).Get(context.TODO(), p.Name, metav1.GetOptions{})
 				if assert.NoError(t, err) {
 					// Sanitize default settings on containers before checking expectations.
 					for i, container := range pod.Spec.Containers {
@@ -227,9 +227,9 @@ func TestMutatingWebhook(t *testing.T) {
 						},
 					},
 				}
-				_, err := crdcli.BuildingV1().Houses(h.Namespace).Create(h)
+				_, err := crdcli.BuildingV1().Houses(h.Namespace).Create(context.TODO(), h, metav1.CreateOptions{})
 				require.NoError(t, err)
-				defer crdcli.BuildingV1().Houses(h.Namespace).Delete(h.Name, &metav1.DeleteOptions{})
+				defer crdcli.BuildingV1().Houses(h.Namespace).Delete(context.TODO(), h.Name, metav1.DeleteOptions{})
 
 				// Check expectations.
 				expLabels := map[string]string{
@@ -238,7 +238,7 @@ func TestMutatingWebhook(t *testing.T) {
 					"rooms":     "3",
 					"type":      "Flat",
 				}
-				house, err := crdcli.BuildingV1().Houses(h.Namespace).Get(h.Name, metav1.GetOptions{})
+				house, err := crdcli.BuildingV1().Houses(h.Namespace).Get(context.TODO(), h.Name, metav1.GetOptions{})
 				if assert.NoError(t, err) {
 					assert.Equal(t, expLabels, house.Labels)
 				}
@@ -280,9 +280,9 @@ func TestMutatingWebhook(t *testing.T) {
 						Owners:  nil,
 					},
 				}
-				_, err := crdcli.BuildingV1().Houses(h.Namespace).Create(h)
+				_, err := crdcli.BuildingV1().Houses(h.Namespace).Create(context.TODO(), h, metav1.CreateOptions{})
 				require.NoError(t, err)
-				defer crdcli.BuildingV1().Houses(h.Namespace).Delete(h.Name, &metav1.DeleteOptions{})
+				defer crdcli.BuildingV1().Houses(h.Namespace).Delete(context.TODO(), h.Name, metav1.DeleteOptions{})
 
 				// Check expectations.
 				expHouseSpec := buildingv1.HouseSpec{
@@ -294,7 +294,7 @@ func TestMutatingWebhook(t *testing.T) {
 					},
 				}
 
-				house, err := crdcli.BuildingV1().Houses(h.Namespace).Get(h.Name, metav1.GetOptions{})
+				house, err := crdcli.BuildingV1().Houses(h.Namespace).Get(context.TODO(), h.Name, metav1.GetOptions{})
 				if assert.NoError(t, err) {
 					assert.Equal(t, expHouseSpec, house.Spec)
 				}
@@ -305,9 +305,9 @@ func TestMutatingWebhook(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			// Register webhooks.
-			_, err := cli.AdmissionregistrationV1().MutatingWebhookConfigurations().Create(test.webhookRegisterCfg)
+			_, err := cli.AdmissionregistrationV1().MutatingWebhookConfigurations().Create(context.TODO(), test.webhookRegisterCfg, metav1.CreateOptions{})
 			require.NoError(t, err, "error registering webhooks kubernetes client")
-			defer cli.AdmissionregistrationV1().MutatingWebhookConfigurations().Delete(test.webhookRegisterCfg.Name, &metav1.DeleteOptions{})
+			defer cli.AdmissionregistrationV1().MutatingWebhookConfigurations().Delete(context.TODO(), test.webhookRegisterCfg.Name, metav1.DeleteOptions{})
 
 			// Start mutating webhook server.
 			wh := test.webhook()

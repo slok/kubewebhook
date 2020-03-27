@@ -93,7 +93,7 @@ func TestValidatingWebhook(t *testing.T) {
 						Containers: []corev1.Container{corev1.Container{Name: "test", Image: "wrong"}},
 					},
 				}
-				_, err := cli.CoreV1().Pods(p.Namespace).Create(p)
+				_, err := cli.CoreV1().Pods(p.Namespace).Create(context.TODO(), p, metav1.CreateOptions{})
 				if assert.Error(t, err) {
 					sErr, ok := err.(*apierrors.StatusError)
 					if assert.True(t, ok) {
@@ -102,7 +102,7 @@ func TestValidatingWebhook(t *testing.T) {
 					}
 				} else {
 					// Creation should err, if we are here then we need to clean.
-					cli.CoreV1().Pods(p.Namespace).Delete(p.Name, &metav1.DeleteOptions{})
+					cli.CoreV1().Pods(p.Namespace).Delete(context.TODO(), p.Name, metav1.DeleteOptions{})
 				}
 			},
 		},
@@ -131,12 +131,12 @@ func TestValidatingWebhook(t *testing.T) {
 						Containers: []corev1.Container{corev1.Container{Name: "test", Image: "wrong"}},
 					},
 				}
-				_, err := cli.CoreV1().Pods(p.Namespace).Create(p)
+				_, err := cli.CoreV1().Pods(p.Namespace).Create(context.TODO(), p, metav1.CreateOptions{})
 				require.NoError(t, err)
-				defer cli.CoreV1().Pods(p.Namespace).Delete(p.Name, &metav1.DeleteOptions{})
+				defer cli.CoreV1().Pods(p.Namespace).Delete(context.TODO(), p.Name, metav1.DeleteOptions{})
 
 				// Check expectations.
-				_, err = cli.CoreV1().Pods(p.Namespace).Get(p.Name, metav1.GetOptions{})
+				_, err = cli.CoreV1().Pods(p.Namespace).Get(context.TODO(), p.Name, metav1.GetOptions{})
 				assert.NoError(t, err, "pod should be present")
 			},
 		},
@@ -182,7 +182,7 @@ func TestValidatingWebhook(t *testing.T) {
 						},
 					},
 				}
-				_, err := crdcli.BuildingV1().Houses(h.Namespace).Create(h)
+				_, err := crdcli.BuildingV1().Houses(h.Namespace).Create(context.TODO(), h, metav1.CreateOptions{})
 				if assert.Error(t, err) {
 					sErr, ok := err.(*apierrors.StatusError)
 					if assert.True(t, ok) {
@@ -191,7 +191,7 @@ func TestValidatingWebhook(t *testing.T) {
 					}
 				} else {
 					// Creation should err, if we are here then we need to clean.
-					crdcli.BuildingV1().Houses(h.Namespace).Delete(h.Name, &metav1.DeleteOptions{})
+					crdcli.BuildingV1().Houses(h.Namespace).Delete(context.TODO(), h.Name, metav1.DeleteOptions{})
 				}
 			},
 		},
@@ -234,12 +234,12 @@ func TestValidatingWebhook(t *testing.T) {
 						},
 					},
 				}
-				_, err := crdcli.BuildingV1().Houses(h.Namespace).Create(h)
+				_, err := crdcli.BuildingV1().Houses(h.Namespace).Create(context.TODO(), h, metav1.CreateOptions{})
 				require.NoError(t, err)
-				defer crdcli.BuildingV1().Houses(h.Namespace).Delete(h.Name, &metav1.DeleteOptions{})
+				defer crdcli.BuildingV1().Houses(h.Namespace).Delete(context.TODO(), h.Name, metav1.DeleteOptions{})
 
 				// Check expectations.
-				_, err = crdcli.BuildingV1().Houses(h.Namespace).Get(h.Name, metav1.GetOptions{})
+				_, err = crdcli.BuildingV1().Houses(h.Namespace).Get(context.TODO(), h.Name, metav1.GetOptions{})
 				assert.NoError(t, err, "house should be present")
 			},
 		},
@@ -248,11 +248,11 @@ func TestValidatingWebhook(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			// Register webhooks.
-			_, err := cli.AdmissionregistrationV1().ValidatingWebhookConfigurations().Create(test.webhookRegisterCfg)
+			_, err := cli.AdmissionregistrationV1().ValidatingWebhookConfigurations().Create(context.TODO(), test.webhookRegisterCfg, metav1.CreateOptions{})
 			if err != nil {
 				assert.FailNow(t, "error registering webhooks kubernetes client", err.Error())
 			}
-			defer cli.AdmissionregistrationV1().ValidatingWebhookConfigurations().Delete(test.webhookRegisterCfg.Name, &metav1.DeleteOptions{})
+			defer cli.AdmissionregistrationV1().ValidatingWebhookConfigurations().Delete(context.TODO(), test.webhookRegisterCfg.Name, metav1.DeleteOptions{})
 
 			// Start mutating webhook server.
 			wh := test.webhook()

@@ -10,7 +10,7 @@ GROUPS_VERSION="building:v1"
 # custom informer/listerwatchers.
 TARGETS="deepcopy,client"
 
-IMAGE=quay.io/slok/kube-code-generator
+IMAGE=quay.io/slok/kube-code-generator:v1.18.0
 DIR="$( cd "$( dirname "${0}" )" && pwd )"
 ROOT_DIR=${DIR}/../..
 PROJECT_PACKAGE=github.com/slok/kubewebhook
@@ -31,4 +31,4 @@ docker run -it --rm \
         -e GO_PROJECT_ROOT=/src \
 	-e CRD_TYPES_PATH=/src/test/integration/crd/apis \
 	-e CRD_OUT_PATH=/src/test/integration/crd/manifests \
-	quay.io/slok/kube-code-generator update-crd.sh
+	${IMAGE} update-crd.sh
