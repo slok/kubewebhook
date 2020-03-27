@@ -27,7 +27,7 @@ MOCKS_CMD := ./hack/scripts/mockgen.sh
 DOCKER_RUN_CMD := docker run -v ${PWD}:$(DOCKER_GO_SERVICE_PATH) --rm -it $(SERVICE_NAME)
 DOCKER_DOCS_RUN_CMD := docker run -v ${PWD}/docs:/docs --rm -it -p 1313:1313 $(SERVICE_NAME)-docs
 DEPS_CMD := GO111MODULE=on go mod tidy
-K8S_VERSION := "1.17.3"
+K8S_VERSION := "1.18.0"
 SET_K8S_DEPS_CMD := GO111MODULE=on go mod edit \
 	-require=k8s.io/apimachinery@kubernetes-${K8S_VERSION} \
 	-require=k8s.io/api@kubernetes-${K8S_VERSION} \
@@ -119,3 +119,8 @@ set-k8s-deps:
 .PHONY: create-integration-test-certs
 create-integration-test-certs:
 	./hack/scripts/integration-test-certs.sh
+
+# Generates CRDs for the integration test.
+.PHONY: generate-integration-test-crd
+generate-integration-test-crd:
+	./hack/scripts/integration-test-crd.sh

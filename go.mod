@@ -12,7 +12,7 @@ require (
 	github.com/uber/jaeger-client-go v2.16.0+incompatible
 	github.com/uber/jaeger-lib v2.2.0+incompatible // indirect
 	go.uber.org/atomic v1.5.1 // indirect
-	k8s.io/api v0.17.3
-	k8s.io/apimachinery v0.17.4-beta.0
-	k8s.io/client-go v0.17.3
+	k8s.io/api v0.18.0
+	k8s.io/apimachinery v0.18.1-beta.0
+	k8s.io/client-go v0.18.0
 )

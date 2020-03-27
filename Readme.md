@@ -87,7 +87,7 @@ work (e.g k8s v1.15 with Kubewebhook v0.3). You can try it and check if they wor
 | 1.15        | v0.6                | v1beta1                     |
 | 1.16        | v0.7                | v1beta1                     |
 | 1.17        | v0.8                | v1beta1                     |
-| 1.18        | HEAD?               | v1beta1                     |
+| 1.18        | HEAD                | v1beta1                     |
 
 
 ## Documentation
