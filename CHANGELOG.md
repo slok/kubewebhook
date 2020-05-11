@@ -1,6 +1,10 @@
 
 ## [Unreleased]
 
+### Added
+- Dynamic type webhooks without the need to a specific type (can use as multitype webhook).
+
+
 ## [0.9.1] - 2020-04-09
 ### Changed
 - Update all dependencies including jsonpatch library.

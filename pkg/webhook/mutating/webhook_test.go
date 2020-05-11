@@ -112,14 +112,14 @@ func getPodResourceLimitDeletorMutator() mutating.Mutator {
 }
 
 func TestPodAdmissionReviewMutation(t *testing.T) {
-	tests := []struct {
-		name     string
+	tests := map[string]struct {
+		cfg      mutating.WebhookConfig
 		mutator  mutating.Mutator
 		review   *admissionv1beta1.AdmissionReview
 		expPatch []string
 	}{
-		{
-			name:    "a review of a Pod with an ns mutator should mutate the ns",
+		"A static webhook review of a Pod with an ns mutator should mutate the ns.": {
+			cfg:     mutating.WebhookConfig{Name: "test", Obj: &corev1.Pod{}},
 			mutator: getPodNSMutator("myChangedNS"),
 			review: &admissionv1beta1.AdmissionReview{
 				Request: &admissionv1beta1.AdmissionRequest{
@@ -133,8 +133,9 @@ func TestPodAdmissionReviewMutation(t *testing.T) {
 				`{"op":"replace","path":"/metadata/namespace","value":"myChangedNS"}`,
 			},
 		},
-		{
-			name: "a review of a Pod with an annotations mutator should mutate the annotations",
+
+		"A static webhook review of a Pod with an annotations mutator should mutate the annotations.": {
+			cfg: mutating.WebhookConfig{Name: "test", Obj: &corev1.Pod{}},
 			mutator: getPodAnnotationsReplacerMutator(map[string]string{
 				"key1": "val1_mutated",
 				"key2": "val2",
@@ -155,8 +156,65 @@ func TestPodAdmissionReviewMutation(t *testing.T) {
 				`{"op":"remove","path":"/metadata/annotations/key3"}`,
 			},
 		},
-		{
-			name:    "a review of a Pod with an limit deletion mutator should delete the limi resources from a pod",
+
+		"A static webhook review of a Pod with an limit deletion mutator should delete the limi resources from a pod.": {
+			cfg:     mutating.WebhookConfig{Name: "test", Obj: &corev1.Pod{}},
+			mutator: getPodResourceLimitDeletorMutator(),
+			review: &admissionv1beta1.AdmissionReview{
+				Request: &admissionv1beta1.AdmissionRequest{
+					UID: "test",
+					Object: runtime.RawExtension{
+						Raw: getPodJSON(),
+					},
+				},
+			},
+			expPatch: []string{
+				`{"op":"remove","path":"/spec/containers/0/resources/limits"}`,
+				`{"op":"remove","path":"/spec/containers/1/resources/limits"}`,
+			},
+		},
+
+		"A dynamic webhook review of a Pod with an ns mutator should mutate the ns.": {
+			cfg:     mutating.WebhookConfig{Name: "test"},
+			mutator: getPodNSMutator("myChangedNS"),
+			review: &admissionv1beta1.AdmissionReview{
+				Request: &admissionv1beta1.AdmissionRequest{
+					UID: "test",
+					Object: runtime.RawExtension{
+						Raw: getPodJSON(),
+					},
+				},
+			},
+			expPatch: []string{
+				`{"op":"replace","path":"/metadata/namespace","value":"myChangedNS"}`,
+			},
+		},
+
+		"A dynamic webhook review of a Pod with an annotations mutator should mutate the annotations.": {
+			cfg: mutating.WebhookConfig{Name: "test"},
+			mutator: getPodAnnotationsReplacerMutator(map[string]string{
+				"key1": "val1_mutated",
+				"key2": "val2",
+				"key4": "val4",
+				"key5": "val5",
+			}),
+			review: &admissionv1beta1.AdmissionReview{
+				Request: &admissionv1beta1.AdmissionRequest{
+					UID: "test",
+					Object: runtime.RawExtension{
+						Raw: getPodJSON(),
+					},
+				},
+			},
+			expPatch: []string{
+				`{"op":"replace","path":"/metadata/annotations/key1","value":"val1_mutated"}`,
+				`{"op":"add","path":"/metadata/annotations/key5","value":"val5"}`,
+				`{"op":"remove","path":"/metadata/annotations/key3"}`,
+			},
+		},
+
+		"A dynamic webhook review of a Pod with an limit deletion mutator should delete the limi resources from a pod.": {
+			cfg:     mutating.WebhookConfig{Name: "test"},
 			mutator: getPodResourceLimitDeletorMutator(),
 			review: &admissionv1beta1.AdmissionReview{
 				Request: &admissionv1beta1.AdmissionRequest{
@@ -173,15 +231,11 @@ func TestPodAdmissionReviewMutation(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			cfg := mutating.WebhookConfig{
-				Name: "test",
-				Obj:  &corev1.Pod{},
-			}
-			wh, err := mutating.NewWebhook(cfg, test.mutator, nil, nil, log.Dummy)
+			wh, err := mutating.NewWebhook(test.cfg, test.mutator, nil, nil, log.Dummy)
 			assert.NoError(err)
 
 			gotResponse := wh.Review(context.TODO(), test.review)

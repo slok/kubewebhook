@@ -1,12 +1,16 @@
 package helpers
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/types"
+	clientsetscheme "k8s.io/client-go/kubernetes/scheme"
 
 	"github.com/slok/kubewebhook/pkg/log"
 )
@@ -45,3 +49,52 @@ func GetK8sObjType(obj metav1.Object) reflect.Type {
 func GroupVersionResourceToString(gvr metav1.GroupVersionResource) string {
 	return strings.Join([]string{gvr.Group, "/", gvr.Version, "/", gvr.Resource}, "")
 }
+
+// ObjectCreator knows how to create objects from Raw JSON data into specific types.
+type ObjectCreator interface {
+	NewObject(rawJSON []byte) (runtime.Object, error)
+}
+
+type staticObjectCreator struct {
+	objType      reflect.Type
+	deserializer runtime.Decoder
+}
+
+// NewStaticObjectCreator doesn't need to infer the type, it will create a new schema and create a new
+// object with the same type from the received object type.
+func NewStaticObjectCreator(obj metav1.Object) ObjectCreator {
+	codecs := serializer.NewCodecFactory(runtime.NewScheme())
+	return staticObjectCreator{
+		objType:      GetK8sObjType(obj),
+		deserializer: codecs.UniversalDeserializer(),
+	}
+}
+
+func (s staticObjectCreator) NewObject(rawJSON []byte) (runtime.Object, error) {
+	runtimeObj, ok := NewK8sObj(s.objType).(runtime.Object)
+	if !ok {
+		return nil, fmt.Errorf("could not type assert metav1.Object to runtime.Object")
+	}
+
+	_, _, err := s.deserializer.Decode(rawJSON, nil, runtimeObj)
+	if err != nil {
+		return nil, fmt.Errorf("error deseralizing request raw object: %s", err)
+	}
+
+	return runtimeObj, nil
+}
+
+// DynamicObjectCreator knows how to return objects from raw JSON data without the need of
+// knowing the type.
+//
+// Useful to make dynamic webhooks that expect multiple types.
+const DynamicObjectCreator = dynamicObjectCreator(0)
+
+type dynamicObjectCreator int
+
+func (dynamicObjectCreator) NewObject(rawJSON []byte) (runtime.Object, error) {
+	runtimeObj, _, err := clientsetscheme.Codecs.UniversalDeserializer().Decode(rawJSON, nil, nil)
+	return runtimeObj, err
+}
+
+var _ ObjectCreator = DynamicObjectCreator
