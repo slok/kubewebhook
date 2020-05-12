@@ -29,18 +29,15 @@ Here is a simple example of mutating webhook that will add `mutated=true` and `m
 ```go
 func main() {
     logger := &log.Std{Debug: true}
-
     cfg := initFlags()
 
-    // Create our mutator
+    // Mutator.
     mt := mutatingwh.MutatorFunc(func(_ context.Context, obj metav1.Object) (bool, error) {
         pod, ok := obj.(*corev1.Pod)
         if !ok {
-            // If not a pod just continue the mutation chain(if there is one) and don't do nothing.
             return false, nil
         }
 
-        // Mutate our object with the required annotations.
         if pod.Annotations == nil {
             pod.Annotations = make(map[string]string)
         }
@@ -50,7 +47,11 @@ func main() {
         return false, nil
     })
 
-    wh, err := mutatingwh.NewStaticWebhook(mt, &corev1.Pod{}, logger)
+    mcfg := mutatingwh.WebhookConfig{
+        Name: "podAnnotate",
+        Obj:  &corev1.Pod{},
+    }
+    wh, err := mutatingwh.NewWebhook(mcfg, mt, nil, nil, logger)
     if err != nil {
         fmt.Fprintf(os.Stderr, "error creating webhook: %s", err)
         os.Exit(1)
@@ -68,6 +69,21 @@ func main() {
 ```
 
 You can get more examples in [here](examples)
+
+## Static and dynamic webhooks
+
+We have 2 kinds of webhooks:
+
+- Static: Common one, is a single resource type webhook.
+  - Use [`mutating.WebhookConfig.Obj`][mutating-cfg] to configure.
+  - Use [`validating.WebhookConfig.Obj`][validating-cfg] to configure.
+- Dynamic: Used when the same webhook act on multiple types, unknown types and/or is used for generic stuff (e.g labels).
+  - To use this kind of webhook, don't set the type on the configuration or set to `nil`.
+  - If a request for an unknown type is not known by the webhook libraries, it will fallback to [`runtime.Unstructured`][runtime-unstructured] object type.
+  - Very useful to manipulate multiple resources on the same webhook (e.g `Deployments`, `Statfulsets`).
+  - CRDs are unknown types so they will fallback to [`runtime.Unstructured`][runtime-unstructured]`.
+  - If using CRDs, better use `Static` webhooks.
+  - Very useful to maniputale any `metadata` based validation or mutations (e.g `Labels, annotations...`)
 
 ## Compatibility matrix
 
@@ -153,3 +169,6 @@ To develop integration test is handy to run a k3s cluster and a serveo tunnel, t
 [kind]: https://github.com/kubernetes-sigs/kind
 [k3s]: https://k3s.io
 [ngrok]: https://ngrok.com/
+[mutating-cfg]: https://pkg.go.dev/github.com/slok/kubewebhook/pkg/webhook/mutating?tab=doc#WebhookConfig
+[validating-cfg]: https://pkg.go.dev/github.com/slok/kubewebhook/pkg/webhook/validating?tab=doc#WebhookConfig
+[runtime-unstructured]: https://pkg.go.dev/k8s.io/apimachinery/pkg/runtime?tab=doc#Unstructured
