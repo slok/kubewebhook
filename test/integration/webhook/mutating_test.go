@@ -46,65 +46,7 @@ func TestMutatingWebhook(t *testing.T) {
 		webhook            func() webhook.Webhook
 		execTest           func(t *testing.T, cli kubernetes.Interface, crdcli kubewebhookcrd.Interface)
 	}{
-		"A mutation on a pod creation should mutate the pod labels, rewrite the existing ones, and add the missing ones.": {
-			webhookRegisterCfg: getMutatingWebhookConfig(t, cfg, []arv1.RuleWithOperations{webhookRulesPod}),
-			webhook: func() webhook.Webhook {
-				// Our mutator logic.
-				mut := mutating.MutatorFunc(func(ctx context.Context, obj metav1.Object) (bool, error) {
-					pod := obj.(*corev1.Pod)
-					if pod.Labels == nil {
-						pod.Labels = map[string]string{}
-					}
-					pod.Labels["name"] = "Bruce"
-					pod.Labels["lastName"] = "Wayne"
-					pod.Labels["nickname"] = "Batman"
-					return false, nil
-				})
-				mwh, _ := mutating.NewWebhook(mutating.WebhookConfig{
-					Name: "pod-mutator-label",
-					Obj:  &corev1.Pod{},
-				}, mut, nil, nil, nil)
-				return mwh
-			},
-			execTest: func(t *testing.T, cli kubernetes.Interface, _ kubewebhookcrd.Interface) {
-				// Try creating a pod.
-				p := &corev1.Pod{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      fmt.Sprintf("test-%d", time.Now().UnixNano()),
-						Namespace: "default",
-						Labels: map[string]string{
-							"nickname": "Dark-knight",
-							"city":     "Gotham",
-						},
-					},
-					Spec: corev1.PodSpec{
-						Containers: []corev1.Container{
-							corev1.Container{
-								Name:  "test",
-								Image: "wrong",
-							},
-						},
-					},
-				}
-				_, err := cli.CoreV1().Pods(p.Namespace).Create(context.TODO(), p, metav1.CreateOptions{})
-				require.NoError(t, err)
-				defer cli.CoreV1().Pods(p.Namespace).Delete(context.TODO(), p.Name, metav1.DeleteOptions{})
-
-				// Check expectations.
-				expLabels := map[string]string{
-					"name":     "Bruce",
-					"lastName": "Wayne",
-					"nickname": "Batman",
-					"city":     "Gotham",
-				}
-				pod, err := cli.CoreV1().Pods(p.Namespace).Get(context.TODO(), p.Name, metav1.GetOptions{})
-				if assert.NoError(t, err) {
-					assert.Equal(t, expLabels, pod.Labels)
-				}
-			},
-		},
-
-		"A mutation on a pod creation should mutate the containers, mutate one of them and add a new one.": {
+		"Having a static webhook, a mutation on a pod creation should mutate the containers, mutate one of them and add a new one.": {
 			webhookRegisterCfg: getMutatingWebhookConfig(t, cfg, []arv1.RuleWithOperations{webhookRulesPod}),
 			webhook: func() webhook.Webhook {
 				// Our mutator logic.
@@ -187,65 +129,64 @@ func TestMutatingWebhook(t *testing.T) {
 			},
 		},
 
-		"A mutation on a CRD creation should mutate the the CRD labels, rewrite the existing ones, and add the missing ones.": {
-			webhookRegisterCfg: getMutatingWebhookConfig(t, cfg, []arv1.RuleWithOperations{webhookRulesHouseCRD}),
+		"Having a dynamic webhook, a mutation on a pod creation should mutate the pod labels, rewrite the existing ones, and add the missing ones.": {
+			webhookRegisterCfg: getMutatingWebhookConfig(t, cfg, []arv1.RuleWithOperations{webhookRulesPod}),
 			webhook: func() webhook.Webhook {
 				// Our mutator logic.
 				mut := mutating.MutatorFunc(func(ctx context.Context, obj metav1.Object) (bool, error) {
-					house := obj.(*buildingv1.House)
-					if house.Labels == nil {
-						house.Labels = map[string]string{}
+					pod := obj.(*corev1.Pod)
+
+					if pod.Labels == nil {
+						pod.Labels = map[string]string{}
 					}
-					house.Labels["city"] = "Madrid"
-					house.Labels["type"] = "Flat"
-					house.Labels["rooms"] = "3"
+					pod.Labels["name"] = "Bruce"
+					pod.Labels["lastName"] = "Wayne"
+					pod.Labels["nickname"] = "Batman"
+
 					return false, nil
 				})
-				mwh, _ := mutating.NewWebhook(mutating.WebhookConfig{
-					Name: "house-mutator-label",
-					Obj:  &buildingv1.House{},
-				}, mut, nil, nil, nil)
+				mwh, _ := mutating.NewWebhook(mutating.WebhookConfig{Name: "pod-mutator-label"}, mut, nil, nil, nil)
 				return mwh
 			},
-			execTest: func(t *testing.T, _ kubernetes.Interface, crdcli kubewebhookcrd.Interface) {
-				// Try creating a house.
-				h := &buildingv1.House{
+			execTest: func(t *testing.T, cli kubernetes.Interface, _ kubewebhookcrd.Interface) {
+				// Try creating a pod.
+				p := &corev1.Pod{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      fmt.Sprintf("test-%d", time.Now().UnixNano()),
 						Namespace: "default",
 						Labels: map[string]string{
-							"city":      "Bilbo",
-							"bathrooms": "2",
+							"nickname": "Dark-knight",
+							"city":     "Gotham",
 						},
 					},
-					Spec: buildingv1.HouseSpec{
-						Name:    "newHouse",
-						Address: "whatever 42",
-						Owners: []buildingv1.User{
-							{Name: "user1", Email: "user1@kubebwehook.slok.dev"},
-							{Name: "user2", Email: "user2@kubebwehook.slok.dev"},
+					Spec: corev1.PodSpec{
+						Containers: []corev1.Container{
+							corev1.Container{
+								Name:  "test",
+								Image: "wrong",
+							},
 						},
 					},
 				}
-				_, err := crdcli.BuildingV1().Houses(h.Namespace).Create(context.TODO(), h, metav1.CreateOptions{})
+				_, err := cli.CoreV1().Pods(p.Namespace).Create(context.TODO(), p, metav1.CreateOptions{})
 				require.NoError(t, err)
-				defer crdcli.BuildingV1().Houses(h.Namespace).Delete(context.TODO(), h.Name, metav1.DeleteOptions{})
+				defer cli.CoreV1().Pods(p.Namespace).Delete(context.TODO(), p.Name, metav1.DeleteOptions{})
 
 				// Check expectations.
 				expLabels := map[string]string{
-					"city":      "Madrid",
-					"bathrooms": "2",
-					"rooms":     "3",
-					"type":      "Flat",
+					"name":     "Bruce",
+					"lastName": "Wayne",
+					"nickname": "Batman",
+					"city":     "Gotham",
 				}
-				house, err := crdcli.BuildingV1().Houses(h.Namespace).Get(context.TODO(), h.Name, metav1.GetOptions{})
+				pod, err := cli.CoreV1().Pods(p.Namespace).Get(context.TODO(), p.Name, metav1.GetOptions{})
 				if assert.NoError(t, err) {
-					assert.Equal(t, expLabels, house.Labels)
+					assert.Equal(t, expLabels, pod.Labels)
 				}
 			},
 		},
 
-		"A mutation on a CRD creation should mutate the the CRD fields, rewrite the existing ones, and add the missing ones.": {
+		"Having a static webhook, a mutation on a CRD creation should mutate the the CRD fields, rewrite the existing ones, and add the missing ones.": {
 			webhookRegisterCfg: getMutatingWebhookConfig(t, cfg, []arv1.RuleWithOperations{webhookRulesHouseCRD}),
 			webhook: func() webhook.Webhook {
 				// Our mutator logic.
@@ -297,6 +238,64 @@ func TestMutatingWebhook(t *testing.T) {
 				house, err := crdcli.BuildingV1().Houses(h.Namespace).Get(context.TODO(), h.Name, metav1.GetOptions{})
 				if assert.NoError(t, err) {
 					assert.Equal(t, expHouseSpec, house.Spec)
+				}
+			},
+		},
+
+		"Having a dynamic webhook, a mutation on a CRD creation should mutate the the CRD labels, rewrite the existing ones, and add the missing ones.": {
+			webhookRegisterCfg: getMutatingWebhookConfig(t, cfg, []arv1.RuleWithOperations{webhookRulesHouseCRD}),
+			webhook: func() webhook.Webhook {
+				// Our mutator logic.
+				mut := mutating.MutatorFunc(func(ctx context.Context, obj metav1.Object) (bool, error) {
+					// Mutate.
+					labels := obj.GetLabels()
+					if labels == nil {
+						labels = map[string]string{}
+					}
+					labels["city"] = "Madrid"
+					labels["type"] = "Flat"
+					labels["rooms"] = "3"
+					obj.SetLabels(labels)
+
+					return false, nil
+				})
+				mwh, _ := mutating.NewWebhook(mutating.WebhookConfig{Name: "house-mutator-label"}, mut, nil, nil, nil)
+				return mwh
+			},
+			execTest: func(t *testing.T, _ kubernetes.Interface, crdcli kubewebhookcrd.Interface) {
+				// Try creating a house.
+				h := &buildingv1.House{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      fmt.Sprintf("test-%d", time.Now().UnixNano()),
+						Namespace: "default",
+						Labels: map[string]string{
+							"city":      "Bilbo",
+							"bathrooms": "2",
+						},
+					},
+					Spec: buildingv1.HouseSpec{
+						Name:    "newHouse",
+						Address: "whatever 42",
+						Owners: []buildingv1.User{
+							{Name: "user1", Email: "user1@kubebwehook.slok.dev"},
+							{Name: "user2", Email: "user2@kubebwehook.slok.dev"},
+						},
+					},
+				}
+				_, err := crdcli.BuildingV1().Houses(h.Namespace).Create(context.TODO(), h, metav1.CreateOptions{})
+				require.NoError(t, err)
+				defer crdcli.BuildingV1().Houses(h.Namespace).Delete(context.TODO(), h.Name, metav1.DeleteOptions{})
+
+				// Check expectations.
+				expLabels := map[string]string{
+					"city":      "Madrid",
+					"bathrooms": "2",
+					"rooms":     "3",
+					"type":      "Flat",
+				}
+				house, err := crdcli.BuildingV1().Houses(h.Namespace).Get(context.TODO(), h.Name, metav1.GetOptions{})
+				if assert.NoError(t, err) {
+					assert.Equal(t, expLabels, house.Labels)
 				}
 			},
 		},
