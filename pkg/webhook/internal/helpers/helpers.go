@@ -7,6 +7,7 @@ import (
 
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/types"
@@ -84,17 +85,32 @@ func (s staticObjectCreator) NewObject(rawJSON []byte) (runtime.Object, error) {
 	return runtimeObj, nil
 }
 
-// DynamicObjectCreator knows how to return objects from raw JSON data without the need of
-// knowing the type.
-//
-// Useful to make dynamic webhooks that expect multiple types.
-const DynamicObjectCreator = dynamicObjectCreator(0)
-
-type dynamicObjectCreator int
-
-func (dynamicObjectCreator) NewObject(rawJSON []byte) (runtime.Object, error) {
-	runtimeObj, _, err := clientsetscheme.Codecs.UniversalDeserializer().Decode(rawJSON, nil, nil)
-	return runtimeObj, err
+type dynamicObjectCreator struct {
+	universalDecoder    runtime.Decoder
+	unstructuredDecoder runtime.Decoder
 }
 
-var _ ObjectCreator = DynamicObjectCreator
+// NewDynamicObjectCreator returns a object creator that knows how to return objects from raw
+// JSON data without the need of knowing the type.
+//
+// To be able to infer the types the types need to be registered on the global client Scheme.
+// Normally when a user tries casting the metav1.Object to a specific type, the object is already
+// registered. In case the type is not registered and the object can't be created it will fallback
+// to an Unstructured type.
+//
+// Useful to make dynamic webhooks that expect multiple or unknown types.
+func NewDynamicObjectCreator() ObjectCreator {
+	return dynamicObjectCreator{
+		universalDecoder:    clientsetscheme.Codecs.UniversalDeserializer(),
+		unstructuredDecoder: unstructured.UnstructuredJSONScheme,
+	}
+}
+
+func (d dynamicObjectCreator) NewObject(rawJSON []byte) (runtime.Object, error) {
+	runtimeObj, _, err := d.universalDecoder.Decode(rawJSON, nil, nil)
+	// Fallback to unstructured.
+	if err != nil {
+		runtimeObj, _, err = d.unstructuredDecoder.Decode(rawJSON, nil, nil)
+	}
+	return runtimeObj, err
+}

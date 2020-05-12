@@ -3,6 +3,7 @@ package validating_test
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"testing"
 	"time"
 
@@ -128,6 +129,51 @@ func TestPodAdmissionReviewValidation(t *testing.T) {
 				Allowed: false,
 				Result: &metav1.Status{
 					Message: "invalid test chain",
+				},
+			},
+		},
+
+		"A dynamic webhook review of a an unknown type should check that a label is present.": {
+			cfg: validating.WebhookConfig{Name: "test"},
+			validator: validating.ValidatorFunc(func(_ context.Context, obj metav1.Object) (bool, validating.ValidatorResult, error) {
+				// Just a check to validate that is unstructured.
+				if _, ok := obj.(runtime.Unstructured); !ok {
+					return true, validating.ValidatorResult{}, fmt.Errorf("not unstructured")
+				}
+
+				// Validate.
+				labels := obj.GetLabels()
+				_, ok := labels["test1"]
+				return false, validating.ValidatorResult{
+					Valid:   ok,
+					Message: "label present",
+				}, nil
+			}),
+			review: &admissionv1beta1.AdmissionReview{
+				Request: &admissionv1beta1.AdmissionRequest{
+					UID: "test",
+					Object: runtime.RawExtension{
+						Raw: []byte(`
+						{
+							"kind": "whatever",
+							"apiVersion": "v42",
+							"metadata": {
+								"name":"something",
+								"namespace":"someplace",
+								"labels": {
+									"test1": "value1"
+								}
+							}
+						}`),
+					},
+				},
+			},
+			expResponse: &admissionv1beta1.AdmissionResponse{
+				UID:     "test",
+				Allowed: true,
+				Result: &metav1.Status{
+					Status:  metav1.StatusSuccess,
+					Message: "label present",
 				},
 			},
 		},

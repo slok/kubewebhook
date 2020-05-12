@@ -59,11 +59,13 @@ func NewWebhook(cfg WebhookConfig, validator Validator, ot opentracing.Tracer, r
 		ot = &opentracing.NoopTracer{}
 	}
 
-	// If we don't have the type of the object, use a dynamic object creator that will
+	// If we don't have the type of the object create a dynamic object creator that will
 	// infer the type.
-	var oc helpers.ObjectCreator = helpers.DynamicObjectCreator
+	var oc helpers.ObjectCreator
 	if cfg.Obj != nil {
 		oc = helpers.NewStaticObjectCreator(cfg.Obj)
+	} else {
+		oc = helpers.NewDynamicObjectCreator()
 	}
 
 	// Create our webhook and wrap for instrumentation (metrics and tracing).
