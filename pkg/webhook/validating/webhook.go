@@ -3,13 +3,10 @@ package validating
 import (
 	"context"
 	"fmt"
-	"reflect"
 
 	opentracing "github.com/opentracing/opentracing-go"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/serializer"
 
 	"github.com/slok/kubewebhook/pkg/log"
 	"github.com/slok/kubewebhook/pkg/observability/metrics"
@@ -20,8 +17,11 @@ import (
 
 // WebhookConfig is the Validating webhook configuration.
 type WebhookConfig struct {
+	// Name is the name of the webhook.
 	Name string
-	Obj  metav1.Object
+	// Object is the object of the webhook, to use multiple types on the same webhook or
+	// type inference, don't set this field (will be `nil`).
+	Obj metav1.Object
 }
 
 func (c *WebhookConfig) validate() error {
@@ -29,10 +29,6 @@ func (c *WebhookConfig) validate() error {
 
 	if c.Name == "" {
 		errs = errs + "name can't be empty"
-	}
-
-	if c.Obj == nil {
-		errs = errs + "; obj can't be nil"
 	}
 
 	if errs != "" {
@@ -63,18 +59,22 @@ func NewWebhook(cfg WebhookConfig, validator Validator, ot opentracing.Tracer, r
 		ot = &opentracing.NoopTracer{}
 	}
 
-	// Create a custom deserializer for the received admission review request.
-	runtimeScheme := runtime.NewScheme()
-	codecs := serializer.NewCodecFactory(runtimeScheme)
+	// If we don't have the type of the object create a dynamic object creator that will
+	// infer the type.
+	var oc helpers.ObjectCreator
+	if cfg.Obj != nil {
+		oc = helpers.NewStaticObjectCreator(cfg.Obj)
+	} else {
+		oc = helpers.NewDynamicObjectCreator()
+	}
 
 	// Create our webhook and wrap for instrumentation (metrics and tracing).
 	return &instrumenting.Webhook{
-		Webhook: &staticWebhook{
-			objType:      helpers.GetK8sObjType(cfg.Obj),
-			deserializer: codecs.UniversalDeserializer(),
-			validator:    validator,
-			cfg:          cfg,
-			logger:       logger,
+		Webhook: &validateWebhook{
+			objectCreator: oc,
+			validator:     validator,
+			cfg:           cfg,
+			logger:        logger,
 		},
 		ReviewKind:      metrics.ValidatingReviewKind,
 		WebhookName:     cfg.Name,
@@ -83,33 +83,30 @@ func NewWebhook(cfg WebhookConfig, validator Validator, ot opentracing.Tracer, r
 	}, nil
 }
 
-// staticWebhook it's a validating webhook implementation for a  specific statuc object type.
-type staticWebhook struct {
-	objType      reflect.Type
-	deserializer runtime.Decoder
-	validator    Validator
-	cfg          WebhookConfig
-	logger       log.Logger
+type validateWebhook struct {
+	objectCreator helpers.ObjectCreator
+	validator     Validator
+	cfg           WebhookConfig
+	logger        log.Logger
 }
 
-func (w *staticWebhook) Review(ctx context.Context, ar *admissionv1beta1.AdmissionReview) *admissionv1beta1.AdmissionResponse {
+func (w validateWebhook) Review(ctx context.Context, ar *admissionv1beta1.AdmissionReview) *admissionv1beta1.AdmissionResponse {
 	w.logger.Debugf("reviewing request %s, named: %s/%s", ar.Request.UID, ar.Request.Namespace, ar.Request.Name)
 
-	obj := helpers.NewK8sObj(w.objType)
-	runtimeObj, ok := obj.(runtime.Object)
-	if !ok {
-		err := fmt.Errorf("could not type assert metav1.Object to runtime.Object")
-		return w.toAdmissionErrorResponse(ar, err)
-	}
-
-	// Get the object.
-	_, _, err := w.deserializer.Decode(ar.Request.Object.Raw, nil, runtimeObj)
+	// Create a new object from the raw type.
+	runtimeObj, err := w.objectCreator.NewObject(ar.Request.Object.Raw)
 	if err != nil {
-		err = fmt.Errorf("error deseralizing request raw object: %s", err)
 		return w.toAdmissionErrorResponse(ar, err)
 	}
 
-	_, res, err := w.validator.Validate(ctx, obj)
+	validatingObj, ok := runtimeObj.(metav1.Object)
+	// Get the object.
+	if !ok {
+		err := fmt.Errorf("impossible to type assert the deep copy to metav1.Object")
+		return w.toAdmissionErrorResponse(ar, err)
+	}
+
+	_, res, err := w.validator.Validate(ctx, validatingObj)
 	if err != nil {
 		return w.toAdmissionErrorResponse(ar, err)
 	}
@@ -130,6 +127,6 @@ func (w *staticWebhook) Review(ctx context.Context, ar *admissionv1beta1.Admissi
 	}
 }
 
-func (w *staticWebhook) toAdmissionErrorResponse(ar *admissionv1beta1.AdmissionReview, err error) *admissionv1beta1.AdmissionResponse {
+func (w validateWebhook) toAdmissionErrorResponse(ar *admissionv1beta1.AdmissionReview, err error) *admissionv1beta1.AdmissionResponse {
 	return helpers.ToAdmissionErrorResponse(ar.Request.UID, err, w.logger)
 }

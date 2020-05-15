@@ -35,7 +35,7 @@ type User struct {
 
 // HouseList is a list of House resources.
 type HouseList struct {
-	metav1.TypeMeta `json:",inl	ine"`
+	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
 
 	Items []House `json:"items"`

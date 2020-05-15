@@ -65,7 +65,7 @@ func TestValidatingWebhook(t *testing.T) {
 		webhook            func() webhook.Webhook
 		execTest           func(t *testing.T, cli kubernetes.Interface, crdcli kubewebhookcrd.Interface)
 	}{
-		"A validating webhook should not allow creating the pod and return a message.": {
+		"Having a static webhook, a validating webhook should not allow creating the pod and return a message.": {
 			webhookRegisterCfg: getValidatingWebhookConfig(t, cfg, []arv1.RuleWithOperations{webhookRulesPod}),
 			webhook: func() webhook.Webhook {
 				// Our validator logic.
@@ -107,7 +107,45 @@ func TestValidatingWebhook(t *testing.T) {
 			},
 		},
 
-		"A validating webhook should allow creating the pod.": {
+		"Having a dynamic webhook, a validating webhook should not allow creating the pod and return a message.": {
+			webhookRegisterCfg: getValidatingWebhookConfig(t, cfg, []arv1.RuleWithOperations{webhookRulesPod}),
+			webhook: func() webhook.Webhook {
+				// Our validator logic.
+				val := validating.ValidatorFunc(func(ctx context.Context, obj metav1.Object) (bool, validating.ValidatorResult, error) {
+					return true, validating.ValidatorResult{
+						Valid:   false,
+						Message: "test message from validator",
+					}, nil
+				})
+				vwh, _ := validating.NewWebhook(validating.WebhookConfig{Name: "pod-validating-label"}, val, nil, nil, nil)
+				return vwh
+			},
+			execTest: func(t *testing.T, cli kubernetes.Interface, _ kubewebhookcrd.Interface) {
+				// Crate a pod and check expectations.
+				p := &corev1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      fmt.Sprintf("test-%d", time.Now().UnixNano()),
+						Namespace: "default",
+					},
+					Spec: corev1.PodSpec{
+						Containers: []corev1.Container{corev1.Container{Name: "test", Image: "wrong"}},
+					},
+				}
+				_, err := cli.CoreV1().Pods(p.Namespace).Create(context.TODO(), p, metav1.CreateOptions{})
+				if assert.Error(t, err) {
+					sErr, ok := err.(*apierrors.StatusError)
+					if assert.True(t, ok) {
+						assert.Equal(t, `admission webhook "test.slok.dev" denied the request: test message from validator`, sErr.ErrStatus.Message)
+						assert.Equal(t, metav1.StatusFailure, sErr.ErrStatus.Status)
+					}
+				} else {
+					// Creation should err, if we are here then we need to clean.
+					cli.CoreV1().Pods(p.Namespace).Delete(context.TODO(), p.Name, metav1.DeleteOptions{})
+				}
+			},
+		},
+
+		"Having a static webhook, a validating webhook should allow creating the pod.": {
 			webhookRegisterCfg: getValidatingWebhookConfig(t, cfg, []arv1.RuleWithOperations{webhookRulesPod}),
 			webhook: func() webhook.Webhook {
 				// Our validator logic.
@@ -141,7 +179,7 @@ func TestValidatingWebhook(t *testing.T) {
 			},
 		},
 
-		"A validating webhook should not allow creating the CRD and return a message.": {
+		"Having a static webhook, a validating webhook should not allow creating the CRD and return a message.": {
 			webhookRegisterCfg: getValidatingWebhookConfig(t, cfg, []arv1.RuleWithOperations{webhookRulesHouseCRD}),
 			webhook: func() webhook.Webhook {
 				// Our validator logic.
@@ -196,7 +234,54 @@ func TestValidatingWebhook(t *testing.T) {
 			},
 		},
 
-		"A validating webhook should allow creating the CRD and return a message.": {
+		"Having a dynamic webhook, a validating webhook should not allow creating the CRD and return a message.": {
+			webhookRegisterCfg: getValidatingWebhookConfig(t, cfg, []arv1.RuleWithOperations{webhookRulesHouseCRD}),
+			webhook: func() webhook.Webhook {
+				// Our validator logic.
+				val := validating.ValidatorFunc(func(ctx context.Context, obj metav1.Object) (bool, validating.ValidatorResult, error) {
+					return true, validating.ValidatorResult{
+						Valid:   false,
+						Message: "test message from validator",
+					}, nil
+				})
+				vwh, _ := validating.NewWebhook(validating.WebhookConfig{Name: "crd-validating-label"}, val, nil, nil, nil)
+				return vwh
+			},
+			execTest: func(t *testing.T, _ kubernetes.Interface, crdcli kubewebhookcrd.Interface) {
+				// Crate a house and check expectations.
+				h := &buildingv1.House{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      fmt.Sprintf("test-%d", time.Now().UnixNano()),
+						Namespace: "default",
+						Labels: map[string]string{
+							"city":      "Bilbo",
+							"bathrooms": "2",
+						},
+					},
+					Spec: buildingv1.HouseSpec{
+						Name:    "newHouse",
+						Address: "whatever 42",
+						Owners: []buildingv1.User{
+							{Name: "user1", Email: "user1@kubebwehook.slok.dev"},
+							{Name: "user2", Email: "user2@kubebwehook.slok.dev"},
+						},
+					},
+				}
+				_, err := crdcli.BuildingV1().Houses(h.Namespace).Create(context.TODO(), h, metav1.CreateOptions{})
+				if assert.Error(t, err) {
+					sErr, ok := err.(*apierrors.StatusError)
+					if assert.True(t, ok) {
+						assert.Equal(t, `admission webhook "test.slok.dev" denied the request: test message from validator`, sErr.ErrStatus.Message)
+						assert.Equal(t, metav1.StatusFailure, sErr.ErrStatus.Status)
+					}
+				} else {
+					// Creation should err, if we are here then we need to clean.
+					crdcli.BuildingV1().Houses(h.Namespace).Delete(context.TODO(), h.Name, metav1.DeleteOptions{})
+				}
+			},
+		},
+
+		"Having a static webhook, a validating webhook should allow creating the CRD and return a message.": {
 			webhookRegisterCfg: getValidatingWebhookConfig(t, cfg, []arv1.RuleWithOperations{webhookRulesHouseCRD}),
 			webhook: func() webhook.Webhook {
 				// Our validator logic.

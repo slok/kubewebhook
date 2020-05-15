@@ -4,14 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"reflect"
 
 	opentracing "github.com/opentracing/opentracing-go"
 	"gomodules.xyz/jsonpatch/v3"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/serializer"
 
 	"github.com/slok/kubewebhook/pkg/log"
 	"github.com/slok/kubewebhook/pkg/observability/metrics"
@@ -22,19 +19,18 @@ import (
 
 // WebhookConfig is the Mutating webhook configuration.
 type WebhookConfig struct {
+	// Name is the name of the webhook.
 	Name string
-	Obj  metav1.Object
+	// Object is the object of the webhook, to use multiple types on the same webhook or
+	// type inference, don't set this field (will be `nil`).
+	Obj metav1.Object
 }
 
-func (c *WebhookConfig) validate() error {
+func (c WebhookConfig) validate() error {
 	errs := ""
 
 	if c.Name == "" {
 		errs = errs + "name can't be empty"
-	}
-
-	if c.Obj == nil {
-		errs = errs + "; obj can't be nil"
 	}
 
 	if errs != "" {
@@ -44,12 +40,11 @@ func (c *WebhookConfig) validate() error {
 	return nil
 }
 
-type staticWebhook struct {
-	objType      reflect.Type
-	deserializer runtime.Decoder
-	mutator      Mutator
-	cfg          WebhookConfig
-	logger       log.Logger
+type mutationWebhook struct {
+	objectCreator helpers.ObjectCreator
+	mutator       Mutator
+	cfg           WebhookConfig
+	logger        log.Logger
 }
 
 // NewWebhook is a mutating webhook and will return a webhook ready for a type of resource.
@@ -74,18 +69,22 @@ func NewWebhook(cfg WebhookConfig, mutator Mutator, ot opentracing.Tracer, recor
 		ot = &opentracing.NoopTracer{}
 	}
 
-	// Create a custom deserializer for the received admission review request.
-	runtimeScheme := runtime.NewScheme()
-	codecs := serializer.NewCodecFactory(runtimeScheme)
+	// If we don't have the type of the object create a dynamic object creator that will
+	// infer the type.
+	var oc helpers.ObjectCreator
+	if cfg.Obj != nil {
+		oc = helpers.NewStaticObjectCreator(cfg.Obj)
+	} else {
+		oc = helpers.NewDynamicObjectCreator()
+	}
 
 	// Create our webhook and wrap for instrumentation (metrics and tracing).
 	return &instrumenting.Webhook{
-		Webhook: &staticWebhook{
-			objType:      helpers.GetK8sObjType(cfg.Obj),
-			deserializer: codecs.UniversalDeserializer(),
-			mutator:      mutator,
-			cfg:          cfg,
-			logger:       logger,
+		Webhook: &mutationWebhook{
+			objectCreator: oc,
+			mutator:       mutator,
+			cfg:           cfg,
+			logger:        logger,
 		},
 		ReviewKind:      metrics.MutatingReviewKind,
 		WebhookName:     cfg.Name,
@@ -94,25 +93,17 @@ func NewWebhook(cfg WebhookConfig, mutator Mutator, ot opentracing.Tracer, recor
 	}, nil
 }
 
-func (w *staticWebhook) Review(ctx context.Context, ar *admissionv1beta1.AdmissionReview) *admissionv1beta1.AdmissionResponse {
+func (w mutationWebhook) Review(ctx context.Context, ar *admissionv1beta1.AdmissionReview) *admissionv1beta1.AdmissionResponse {
 	auid := ar.Request.UID
 
 	w.logger.Debugf("reviewing request %s, named: %s/%s", auid, ar.Request.Namespace, ar.Request.Name)
-	obj := helpers.NewK8sObj(w.objType)
-	runtimeObj, ok := obj.(runtime.Object)
-	if !ok {
-		err := fmt.Errorf("could not type assert metav1.Object to runtime.Object")
-		return w.toAdmissionErrorResponse(ar, err)
-	}
 
-	// Get the object.
-	_, _, err := w.deserializer.Decode(ar.Request.Object.Raw, nil, runtimeObj)
+	// Create a new object from the raw type.
+	runtimeObj, err := w.objectCreator.NewObject(ar.Request.Object.Raw)
 	if err != nil {
-		err = fmt.Errorf("error deseralizing request raw object: %s", err)
 		return w.toAdmissionErrorResponse(ar, err)
 	}
 
-	// Copy the object to have the original and be able to get the patch.
 	mutatingObj, ok := runtimeObj.(metav1.Object)
 	if !ok {
 		err := fmt.Errorf("impossible to type assert the deep copy to metav1.Object")
@@ -123,7 +114,7 @@ func (w *staticWebhook) Review(ctx context.Context, ar *admissionv1beta1.Admissi
 
 }
 
-func (w *staticWebhook) mutatingAdmissionReview(ctx context.Context, ar *admissionv1beta1.AdmissionReview, obj metav1.Object) *admissionv1beta1.AdmissionResponse {
+func (w mutationWebhook) mutatingAdmissionReview(ctx context.Context, ar *admissionv1beta1.AdmissionReview, obj metav1.Object) *admissionv1beta1.AdmissionResponse {
 	auid := ar.Request.UID
 
 	// Mutate the object.
@@ -157,7 +148,7 @@ func (w *staticWebhook) mutatingAdmissionReview(ctx context.Context, ar *admissi
 	}
 }
 
-func (w *staticWebhook) toAdmissionErrorResponse(ar *admissionv1beta1.AdmissionReview, err error) *admissionv1beta1.AdmissionResponse {
+func (w mutationWebhook) toAdmissionErrorResponse(ar *admissionv1beta1.AdmissionReview, err error) *admissionv1beta1.AdmissionResponse {
 	return helpers.ToAdmissionErrorResponse(ar.Request.UID, err, w.logger)
 }
 
