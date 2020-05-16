@@ -174,7 +174,7 @@ func TestPodAdmissionReviewMutation(t *testing.T) {
 			},
 		},
 
-		"A static webhook review of delete operation in a Pod should not fail.": {
+		"A static webhook review of delete operation in a Pod should mutate the pod correctly.": {
 			cfg:     mutating.WebhookConfig{Name: "test", Obj: &corev1.Pod{}},
 			mutator: getPodResourceLimitDeletorMutator(),
 			review: &admissionv1beta1.AdmissionReview{
@@ -299,7 +299,7 @@ func TestPodAdmissionReviewMutation(t *testing.T) {
 			},
 		},
 
-		"A dynamic webhook delete operaiton review of a an unknown type should be able to mutate with the common object attributes (check unstructured object mutation).": {
+		"A dynamic webhook delete operation review of an unknown type should be able to mutate with the common object attributes (check unstructured object mutation).": {
 			cfg: mutating.WebhookConfig{Name: "test"},
 			mutator: mutating.MutatorFunc(func(_ context.Context, obj metav1.Object) (bool, error) {
 				// Just a check to validate that is unstructured.

@@ -354,7 +354,6 @@ func TestValidatingWebhook(t *testing.T) {
 				assert := assert.New(t)
 				require := require.New(t)
 
-				// Crate a pod and check expectations.
 				p := &corev1.Pod{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      fmt.Sprintf("test-%d", time.Now().UnixNano()),
@@ -371,7 +370,7 @@ func TestValidatingWebhook(t *testing.T) {
 				err = cli.CoreV1().Pods(p.Namespace).Delete(context.TODO(), p.Name, metav1.DeleteOptions{})
 				require.NoError(err)
 
-				// Give time so deletin takes place.
+				// Give time so deleting takes place.
 				time.Sleep(5 * time.Second)
 
 				// Check expectations.
@@ -403,7 +402,6 @@ func TestValidatingWebhook(t *testing.T) {
 				assert := assert.New(t)
 				require := require.New(t)
 
-				// Crate a pod and check expectations.
 				h := &buildingv1.House{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      fmt.Sprintf("test-%d", time.Now().UnixNano()),
@@ -419,7 +417,7 @@ func TestValidatingWebhook(t *testing.T) {
 				err = crdcli.BuildingV1().Houses(h.Namespace).Delete(context.TODO(), h.Name, metav1.DeleteOptions{})
 				require.NoError(err)
 
-				// Give time so deletin takes place.
+				// Give time so deleting takes place.
 				time.Sleep(5 * time.Second)
 
 				// Check expectations.
