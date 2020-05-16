@@ -42,6 +42,15 @@ var (
 		},
 	}
 
+	webhookRulesDeletePod = arv1.RuleWithOperations{
+		Operations: []arv1.OperationType{"DELETE"},
+		Rule: arv1.Rule{
+			APIGroups:   []string{""},
+			APIVersions: []string{"v1"},
+			Resources:   []string{"pods"},
+		},
+	}
+
 	webhookRulesHouseCRD = arv1.RuleWithOperations{
 		Operations: []arv1.OperationType{"CREATE"},
 		Rule: arv1.Rule{

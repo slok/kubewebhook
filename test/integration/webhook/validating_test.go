@@ -28,6 +28,7 @@ import (
 
 func getValidatingWebhookConfig(t *testing.T, cfg helperconfig.TestEnvConfig, rules []arv1.RuleWithOperations) *arv1.ValidatingWebhookConfiguration {
 	whSideEffect := arv1.SideEffectClassNone
+	whFailurePolicy := arv1.Fail
 	var timeoutSecs int32 = 30
 	return &arv1.ValidatingWebhookConfiguration{
 		ObjectMeta: metav1.ObjectMeta{
@@ -37,6 +38,7 @@ func getValidatingWebhookConfig(t *testing.T, cfg helperconfig.TestEnvConfig, ru
 			{
 				Name:                    "test.slok.dev",
 				AdmissionReviewVersions: []string{"v1beta1"},
+				FailurePolicy:           &whFailurePolicy,
 				TimeoutSeconds:          &timeoutSecs,
 				SideEffects:             &whSideEffect,
 				ClientConfig: arv1.WebhookClientConfig{
@@ -74,7 +76,6 @@ func TestValidatingWebhook(t *testing.T) {
 						Valid:   false,
 						Message: "test message from validator",
 					}, nil
-
 				})
 				vwh, _ := validating.NewWebhook(validating.WebhookConfig{
 					Name: "pod-validating-label",
@@ -90,7 +91,7 @@ func TestValidatingWebhook(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: corev1.PodSpec{
-						Containers: []corev1.Container{corev1.Container{Name: "test", Image: "wrong"}},
+						Containers: []corev1.Container{{Name: "test", Image: "wrong"}},
 					},
 				}
 				_, err := cli.CoreV1().Pods(p.Namespace).Create(context.TODO(), p, metav1.CreateOptions{})
@@ -128,7 +129,7 @@ func TestValidatingWebhook(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: corev1.PodSpec{
-						Containers: []corev1.Container{corev1.Container{Name: "test", Image: "wrong"}},
+						Containers: []corev1.Container{{Name: "test", Image: "wrong"}},
 					},
 				}
 				_, err := cli.CoreV1().Pods(p.Namespace).Create(context.TODO(), p, metav1.CreateOptions{})
@@ -166,7 +167,7 @@ func TestValidatingWebhook(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: corev1.PodSpec{
-						Containers: []corev1.Container{corev1.Container{Name: "test", Image: "wrong"}},
+						Containers: []corev1.Container{{Name: "test", Image: "wrong"}},
 					},
 				}
 				_, err := cli.CoreV1().Pods(p.Namespace).Create(context.TODO(), p, metav1.CreateOptions{})
@@ -326,6 +327,104 @@ func TestValidatingWebhook(t *testing.T) {
 				// Check expectations.
 				_, err = crdcli.BuildingV1().Houses(h.Namespace).Get(context.TODO(), h.Name, metav1.GetOptions{})
 				assert.NoError(t, err, "house should be present")
+			},
+		},
+
+		"Having a static webhook, a validating webhook should allow deleting the pod.": {
+			webhookRegisterCfg: getValidatingWebhookConfig(t, cfg, []arv1.RuleWithOperations{webhookRulesDeletePod}),
+			webhook: func() webhook.Webhook {
+				val := validating.ValidatorFunc(func(ctx context.Context, obj metav1.Object) (bool, validating.ValidatorResult, error) {
+					// Allow if it has our label.
+					if l := obj.GetLabels()["kubewebhook"]; l == "test" {
+						return true, validating.ValidatorResult{Valid: true}, nil
+					}
+
+					return true, validating.ValidatorResult{
+						Valid:   false,
+						Message: "test message from validator",
+					}, nil
+				})
+				vwh, _ := validating.NewWebhook(validating.WebhookConfig{
+					Name: "pod-validating-delete",
+					Obj:  &corev1.Pod{},
+				}, val, nil, nil, nil)
+				return vwh
+			},
+			execTest: func(t *testing.T, cli kubernetes.Interface, _ kubewebhookcrd.Interface) {
+				assert := assert.New(t)
+				require := require.New(t)
+
+				// Crate a pod and check expectations.
+				p := &corev1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      fmt.Sprintf("test-%d", time.Now().UnixNano()),
+						Namespace: "default",
+						Labels:    map[string]string{"kubewebhook": "test"},
+					},
+					Spec: corev1.PodSpec{
+						Containers: []corev1.Container{{Name: "test", Image: "wrong"}},
+					},
+				}
+				_, err := cli.CoreV1().Pods(p.Namespace).Create(context.TODO(), p, metav1.CreateOptions{})
+				require.NoError(err)
+
+				err = cli.CoreV1().Pods(p.Namespace).Delete(context.TODO(), p.Name, metav1.DeleteOptions{})
+				require.NoError(err)
+
+				// Give time so deletin takes place.
+				time.Sleep(5 * time.Second)
+
+				// Check expectations.
+				_, err = cli.CoreV1().Pods(p.Namespace).Get(context.TODO(), p.Name, metav1.GetOptions{})
+				assert.Error(err, "pod shouldn't be present")
+			},
+		},
+
+		"Having a dynamic webhook, a validating webhook should allow deleting the CRD.": {
+			webhookRegisterCfg: getValidatingWebhookConfig(t, cfg, []arv1.RuleWithOperations{webhookRulesDeletePod}),
+			webhook: func() webhook.Webhook {
+				val := validating.ValidatorFunc(func(ctx context.Context, obj metav1.Object) (bool, validating.ValidatorResult, error) {
+					// Allow if it has our label.
+					if l := obj.GetLabels()["city"]; l == "Bilbo" {
+						return true, validating.ValidatorResult{Valid: true}, nil
+					}
+
+					return true, validating.ValidatorResult{
+						Valid:   false,
+						Message: "test message from validator",
+					}, nil
+				})
+				vwh, _ := validating.NewWebhook(validating.WebhookConfig{
+					Name: "pod-dynamic-validating-delete",
+				}, val, nil, nil, nil)
+				return vwh
+			},
+			execTest: func(t *testing.T, _ kubernetes.Interface, crdcli kubewebhookcrd.Interface) {
+				assert := assert.New(t)
+				require := require.New(t)
+
+				// Crate a pod and check expectations.
+				h := &buildingv1.House{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      fmt.Sprintf("test-%d", time.Now().UnixNano()),
+						Namespace: "default",
+						Labels:    map[string]string{"city": "Bilbo"},
+					},
+					Spec: buildingv1.HouseSpec{Name: "newHouse"},
+				}
+
+				_, err := crdcli.BuildingV1().Houses(h.Namespace).Create(context.TODO(), h, metav1.CreateOptions{})
+				require.NoError(err)
+
+				err = crdcli.BuildingV1().Houses(h.Namespace).Delete(context.TODO(), h.Name, metav1.DeleteOptions{})
+				require.NoError(err)
+
+				// Give time so deletin takes place.
+				time.Sleep(5 * time.Second)
+
+				// Check expectations.
+				_, err = cli.CoreV1().Pods(h.Namespace).Get(context.TODO(), h.Name, metav1.GetOptions{})
+				assert.Error(err, "house shouldn't be present")
 			},
 		},
 	}

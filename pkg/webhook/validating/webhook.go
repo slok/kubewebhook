@@ -93,8 +93,15 @@ type validateWebhook struct {
 func (w validateWebhook) Review(ctx context.Context, ar *admissionv1beta1.AdmissionReview) *admissionv1beta1.AdmissionResponse {
 	w.logger.Debugf("reviewing request %s, named: %s/%s", ar.Request.UID, ar.Request.Namespace, ar.Request.Name)
 
+	// Delete operations don't have body because should be gone on the deletion, instead they have the body
+	// of the object we want to delete as an old object.
+	raw := ar.Request.Object.Raw
+	if ar.Request.Operation == admissionv1beta1.Delete {
+		raw = ar.Request.OldObject.Raw
+	}
+
 	// Create a new object from the raw type.
-	runtimeObj, err := w.objectCreator.NewObject(ar.Request.Object.Raw)
+	runtimeObj, err := w.objectCreator.NewObject(raw)
 	if err != nil {
 		return w.toAdmissionErrorResponse(ar, err)
 	}
