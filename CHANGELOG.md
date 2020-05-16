@@ -4,6 +4,9 @@
 ### Added
 - Dynamic type webhooks without the need to a specific type (can use as multitype webhook).
 
+### Changed
+- Fixed on `DELETE` operations static webhooks not receiving object unmarshalled (#41)
+- Fixed on `DELETE` operations dynamic webhooks having unmarshaling errors (#63)
 
 ## [0.9.1] - 2020-04-09
 ### Changed

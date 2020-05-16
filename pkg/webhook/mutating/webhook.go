@@ -98,8 +98,15 @@ func (w mutationWebhook) Review(ctx context.Context, ar *admissionv1beta1.Admiss
 
 	w.logger.Debugf("reviewing request %s, named: %s/%s", auid, ar.Request.Namespace, ar.Request.Name)
 
+	// Delete operations don't have body because should be gone on the deletion, instead they have the body
+	// of the object we want to delete as an old object.
+	raw := ar.Request.Object.Raw
+	if ar.Request.Operation == admissionv1beta1.Delete {
+		raw = ar.Request.OldObject.Raw
+	}
+
 	// Create a new object from the raw type.
-	runtimeObj, err := w.objectCreator.NewObject(ar.Request.Object.Raw)
+	runtimeObj, err := w.objectCreator.NewObject(raw)
 	if err != nil {
 		return w.toAdmissionErrorResponse(ar, err)
 	}
@@ -110,11 +117,11 @@ func (w mutationWebhook) Review(ctx context.Context, ar *admissionv1beta1.Admiss
 		return w.toAdmissionErrorResponse(ar, err)
 	}
 
-	return w.mutatingAdmissionReview(ctx, ar, mutatingObj)
+	return w.mutatingAdmissionReview(ctx, ar, raw, mutatingObj)
 
 }
 
-func (w mutationWebhook) mutatingAdmissionReview(ctx context.Context, ar *admissionv1beta1.AdmissionReview, obj metav1.Object) *admissionv1beta1.AdmissionResponse {
+func (w mutationWebhook) mutatingAdmissionReview(ctx context.Context, ar *admissionv1beta1.AdmissionReview, rawObj []byte, obj metav1.Object) *admissionv1beta1.AdmissionResponse {
 	auid := ar.Request.UID
 
 	// Mutate the object.
@@ -128,7 +135,7 @@ func (w mutationWebhook) mutatingAdmissionReview(ctx context.Context, ar *admiss
 		return w.toAdmissionErrorResponse(ar, err)
 	}
 
-	patch, err := jsonpatch.CreatePatch(ar.Request.Object.Raw, mutatedJSON)
+	patch, err := jsonpatch.CreatePatch(rawObj, mutatedJSON)
 	if err != nil {
 		return w.toAdmissionErrorResponse(ar, err)
 	}

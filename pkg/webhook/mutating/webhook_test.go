@@ -174,6 +174,24 @@ func TestPodAdmissionReviewMutation(t *testing.T) {
 			},
 		},
 
+		"A static webhook review of delete operation in a Pod should mutate the pod correctly.": {
+			cfg:     mutating.WebhookConfig{Name: "test", Obj: &corev1.Pod{}},
+			mutator: getPodResourceLimitDeletorMutator(),
+			review: &admissionv1beta1.AdmissionReview{
+				Request: &admissionv1beta1.AdmissionRequest{
+					Operation: admissionv1beta1.Delete,
+					UID:       "test",
+					OldObject: runtime.RawExtension{
+						Raw: getPodJSON(),
+					},
+				},
+			},
+			expPatch: []string{
+				`{"op":"remove","path":"/spec/containers/0/resources/limits"}`,
+				`{"op":"remove","path":"/spec/containers/1/resources/limits"}`,
+			},
+		},
+
 		"A dynamic webhook review of a Pod with an ns mutator should mutate the ns.": {
 			cfg:     mutating.WebhookConfig{Name: "test"},
 			mutator: getPodNSMutator("myChangedNS"),
@@ -253,6 +271,58 @@ func TestPodAdmissionReviewMutation(t *testing.T) {
 				Request: &admissionv1beta1.AdmissionRequest{
 					UID: "test",
 					Object: runtime.RawExtension{
+						Raw: []byte(`
+						{
+							"kind": "whatever",
+							"apiVersion": "v42",
+							"metadata": {
+								"name":"something",
+								"namespace":"someplace",
+								"labels": {
+									"test1": "value1"
+								},
+								"annotations":{
+									"key1":"val1",
+									"key2":"val2"
+								}
+							},
+							"spec": {
+								"n": 42 
+							}
+						}`),
+					},
+				},
+			},
+			expPatch: []string{
+				`{"op":"replace","path":"/metadata/labels/test1","value":"mutated-value1"}`,
+				`{"op":"add","path":"/metadata/labels/test2","value":"mutated-value2"}`,
+			},
+		},
+
+		"A dynamic webhook delete operation review of an unknown type should be able to mutate with the common object attributes (check unstructured object mutation).": {
+			cfg: mutating.WebhookConfig{Name: "test"},
+			mutator: mutating.MutatorFunc(func(_ context.Context, obj metav1.Object) (bool, error) {
+				// Just a check to validate that is unstructured.
+				if _, ok := obj.(runtime.Unstructured); !ok {
+					return true, fmt.Errorf("not unstructured")
+				}
+
+				// Mutate.
+				labels := obj.GetLabels()
+				if labels == nil {
+					labels = map[string]string{}
+				}
+				labels["test1"] = "mutated-value1"
+				labels["test2"] = "mutated-value2"
+				obj.SetLabels(labels)
+
+				return false, nil
+			}),
+			review: &admissionv1beta1.AdmissionReview{
+				Request: &admissionv1beta1.AdmissionRequest{
+					UID:       "test",
+					Operation: admissionv1beta1.Delete,
+					OldObject: runtime.RawExtension{
 						Raw: []byte(`
 						{
 							"kind": "whatever",

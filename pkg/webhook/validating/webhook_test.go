@@ -28,6 +28,9 @@ func getPodJSON() []byte {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "testPod",
 			Namespace: "testNS",
+			Labels: map[string]string{
+				"test1": "value1",
+			},
 		},
 	}
 	bs, _ := json.Marshal(pod)
@@ -88,6 +91,41 @@ func TestPodAdmissionReviewValidation(t *testing.T) {
 				Allowed: false,
 				Result: &metav1.Status{
 					Message: "invalid test chain",
+				},
+			},
+		},
+
+		"A static webhook review of a delete operation on a Pod should allow.": {
+			cfg: validating.WebhookConfig{Name: "test", Obj: &corev1.Pod{}},
+			validator: validating.ValidatorFunc(func(_ context.Context, obj metav1.Object) (bool, validating.ValidatorResult, error) {
+				// Just a check to validate that is unstructured.
+				pod, ok := obj.(*corev1.Pod)
+				if !ok {
+					return true, validating.ValidatorResult{}, fmt.Errorf("not unstructured")
+				}
+
+				// Validate.
+				_, ok = pod.Labels["test1"]
+				return false, validating.ValidatorResult{
+					Valid:   ok,
+					Message: "label present",
+				}, nil
+			}),
+			review: &admissionv1beta1.AdmissionReview{
+				Request: &admissionv1beta1.AdmissionRequest{
+					Operation: admissionv1beta1.Delete,
+					UID:       "test",
+					OldObject: runtime.RawExtension{
+						Raw: getPodJSON(),
+					},
+				},
+			},
+			expResponse: &admissionv1beta1.AdmissionResponse{
+				UID:     "test",
+				Allowed: true,
+				Result: &metav1.Status{
+					Status:  metav1.StatusSuccess,
+					Message: "label present",
 				},
 			},
 		},
@@ -153,6 +191,52 @@ func TestPodAdmissionReviewValidation(t *testing.T) {
 				Request: &admissionv1beta1.AdmissionRequest{
 					UID: "test",
 					Object: runtime.RawExtension{
+						Raw: []byte(`
+						{
+							"kind": "whatever",
+							"apiVersion": "v42",
+							"metadata": {
+								"name":"something",
+								"namespace":"someplace",
+								"labels": {
+									"test1": "value1"
+								}
+							}
+						}`),
+					},
+				},
+			},
+			expResponse: &admissionv1beta1.AdmissionResponse{
+				UID:     "test",
+				Allowed: true,
+				Result: &metav1.Status{
+					Status:  metav1.StatusSuccess,
+					Message: "label present",
+				},
+			},
+		},
+
+		"A dynamic webhook review of a delete operation on a unknown type should check that a label is present.": {
+			cfg: validating.WebhookConfig{Name: "test"},
+			validator: validating.ValidatorFunc(func(_ context.Context, obj metav1.Object) (bool, validating.ValidatorResult, error) {
+				// Just a check to validate that is unstructured.
+				if _, ok := obj.(runtime.Unstructured); !ok {
+					return true, validating.ValidatorResult{}, fmt.Errorf("not unstructured")
+				}
+
+				// Validate.
+				labels := obj.GetLabels()
+				_, ok := labels["test1"]
+				return false, validating.ValidatorResult{
+					Valid:   ok,
+					Message: "label present",
+				}, nil
+			}),
+			review: &admissionv1beta1.AdmissionReview{
+				Request: &admissionv1beta1.AdmissionRequest{
+					UID:       "test",
+					Operation: admissionv1beta1.Delete,
+					OldObject: runtime.RawExtension{
 						Raw: []byte(`
 						{
 							"kind": "whatever",
