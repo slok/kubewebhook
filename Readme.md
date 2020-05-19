@@ -70,6 +70,12 @@ func main() {
 
 You can get more examples in [here](examples)
 
+## Production ready example
+
+This repository is a production ready webhook app: https://github.com/slok/k8s-webhook-example
+
+It shows, different webhook use cases, app structure, testing domain logic, kubewebhook use case, how to deploy...
+
 ## Static and dynamic webhooks
 
 We have 2 kinds of webhooks:
@@ -94,17 +100,18 @@ integration tests have been tested against this Kubernetes cluster versions, thi
 that other Kubewebhook versions different to the matched ones to Kubernetes versions don't
 work (e.g k8s v1.15 with Kubewebhook v0.3). You can try it and check if they work for you.
 
-| k8s version | Kubewebhook version | Supported admission reviews |
-| ------------| ------------------- | --------------------------- |
-| 1.18        | v0.9                | v1beta1                     |
-| 1.17        | v0.8                | v1beta1                     |
-| 1.16        | v0.7                | v1beta1                     |
-| 1.15        | v0.6                | v1beta1                     |
-| 1.14        | v0.5                | v1beta1                     |
-| 1.13        | v0.4                | v1beta1                     |
-| 1.12        | v0.3                | v1beta1                     |
-| 1.11        | v0.2                | v1beta1                     |
-| 1.10        | v0.2                | v1beta1                     |
+| k8s version | Kubewebhook version | Supported admission reviews | Support dynamic webhooks |
+| ------------| ------------------- | --------------------------- | ------------------------ |
+| 1.18        | v0.10               | v1beta1                     | ✔                        |
+| 1.18        | v0.9                | v1beta1                     | ✖                        |
+| 1.17        | v0.8                | v1beta1                     | ✖                        |
+| 1.16        | v0.7                | v1beta1                     | ✖                        |
+| 1.15        | v0.6                | v1beta1                     | ✖                        |
+| 1.14        | v0.5                | v1beta1                     | ✖                        |
+| 1.13        | v0.4                | v1beta1                     | ✖                        |
+| 1.12        | v0.3                | v1beta1                     | ✖                        |
+| 1.11        | v0.2                | v1beta1                     | ✖                        |
+| 1.10        | v0.2                | v1beta1                     | ✖                        |
 
 ## Documentation
 
