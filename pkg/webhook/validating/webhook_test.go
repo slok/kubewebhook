@@ -8,12 +8,14 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
+	mmetrics "github.com/slok/kubewebhook/mocks/observability/metrics"
 	"github.com/slok/kubewebhook/pkg/log"
 	"github.com/slok/kubewebhook/pkg/observability/metrics"
 	"github.com/slok/kubewebhook/pkg/webhook/validating"
@@ -268,6 +270,10 @@ func TestPodAdmissionReviewValidation(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
+			mm := &mmetrics.Recorder{}
+			if test.expResponse.Allowed {
+				mm.On("IncValidationReviewAllowed", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Once()
+			}
 			wh, err := validating.NewWebhook(test.cfg, test.validator, nil, nil, log.Dummy)
 			require.NoError(err)
 			gotResponse := wh.Review(context.TODO(), test.review)
