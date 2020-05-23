@@ -55,7 +55,7 @@ func NewPrometheus(registry prometheus.Registerer) *Prometheus {
 			Subsystem: promWebhookSubsystem,
 			Name:      "validation_review_allowed_total",
 			Help:      "Total number of validation reviews succesfully validated.",
-		}, []string{"webhook", "namespace", "resource", "operation", "kind"}),
+		}, []string{"webhook", "namespace", "resource", "operation"}),
 	}
 
 	p.registerMetrics()
