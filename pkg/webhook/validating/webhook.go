@@ -71,10 +71,12 @@ func NewWebhook(cfg WebhookConfig, validator Validator, ot opentracing.Tracer, r
 	// Create our webhook and wrap for instrumentation (metrics and tracing).
 	return &instrumenting.Webhook{
 		Webhook: &validateWebhook{
-			objectCreator: oc,
-			validator:     validator,
-			cfg:           cfg,
-			logger:        logger,
+			objectCreator:   oc,
+			validator:       validator,
+			cfg:             cfg,
+			logger:          logger,
+			metricsRecorder: recorder,
+			webhookName:     cfg.Name,
 		},
 		ReviewKind:      metrics.ValidatingReviewKind,
 		WebhookName:     cfg.Name,
@@ -84,10 +86,12 @@ func NewWebhook(cfg WebhookConfig, validator Validator, ot opentracing.Tracer, r
 }
 
 type validateWebhook struct {
-	objectCreator helpers.ObjectCreator
-	validator     Validator
-	cfg           WebhookConfig
-	logger        log.Logger
+	objectCreator   helpers.ObjectCreator
+	validator       Validator
+	cfg             WebhookConfig
+	logger          log.Logger
+	metricsRecorder metrics.Recorder
+	webhookName     string
 }
 
 func (w validateWebhook) Review(ctx context.Context, ar *admissionv1beta1.AdmissionReview) *admissionv1beta1.AdmissionResponse {
@@ -120,6 +124,13 @@ func (w validateWebhook) Review(ctx context.Context, ar *admissionv1beta1.Admiss
 
 	var status string
 	if res.Valid {
+		w.metricsRecorder.IncValidationReviewAllowed(
+			w.webhookName,
+			ar.Request.Namespace,
+			helpers.GroupVersionResourceToString(ar.Request.Resource),
+			ar.Request.Operation,
+			w.reviewKind,
+		)
 		status = metav1.StatusSuccess
 	}
 
