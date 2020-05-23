@@ -103,13 +103,13 @@ func (p *Prometheus) ObserveAdmissionReviewDuration(webhook, namespace, resource
 }
 
 // IncValidationReviewAllowed satisfies Recorder interface.
-func (p *Prometheus) IncValidationReviewAllowed(webhook, namespace, resource string, operation Operation, kind ReviewKind) {
+func (p *Prometheus) IncValidationReviewAllowed(webhook, namespace, resource string, operation Operation) {
 	p.validationReviewAllowed.WithLabelValues(
 		webhook,
 		namespace,
 		string(resource),
 		string(operation),
-		string(kind)).Inc()
+	).Inc()
 }
 
 func (p *Prometheus) getDuration(start time.Time) time.Duration {

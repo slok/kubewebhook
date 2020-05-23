@@ -129,7 +129,6 @@ func (w validateWebhook) Review(ctx context.Context, ar *admissionv1beta1.Admiss
 			ar.Request.Namespace,
 			helpers.GroupVersionResourceToString(ar.Request.Resource),
 			ar.Request.Operation,
-			w.reviewKind,
 		)
 		status = metav1.StatusSuccess
 	}

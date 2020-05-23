@@ -130,6 +130,7 @@ func TestPodAdmissionReviewValidation(t *testing.T) {
 			},
 		},
 
+<<<<<<< HEAD
 		"A dynamic webhook review of a Pod with a valid validator result should return allowed.": {
 			cfg:       validating.WebhookConfig{Name: "test"},
 			validator: getFakeValidator(true, "valid test chain"),
@@ -150,6 +151,11 @@ func TestPodAdmissionReviewValidation(t *testing.T) {
 				},
 			},
 		},
+=======
+			if test.expResponse.Allowed {
+				mm.On("IncValidationReviewAllowed", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Once()
+			}
+>>>>>>> 5f05448... Actually, we don't need the kind anymore, its always a validating webhook
 
 		"A dynamic webhook review of a Pod with a invalid validator result should return not allowed.": {
 			cfg:       validating.WebhookConfig{Name: "test"},
