@@ -31,6 +31,6 @@ func (_m *Recorder) ObserveAdmissionReviewDuration(webhook string, namespace str
 }
 
 // IncAdmissionReviewAllowed provides a mock function with given fields: webhook, namespace, resource, operation, kind
-func (_m *Recorder) IncValidationReviewAllowed(webhook string, namespace string, resource string, operation v1beta1.Operation) {
-	_m.Called(webhook, namespace, resource, operation)
+func (_m *Recorder) IncValidationReviewAllowed(webhook string, namespace string, resource string, operation v1beta1.Operation, allowed bool) {
+	_m.Called(webhook, namespace, resource, operation, allowed)
 }

@@ -68,13 +68,13 @@ func TestPrometheus(t *testing.T) {
 		{
 			name: "Record validation review allowed counts should set the correct metrics",
 			recordMetrics: func(m metrics.Recorder) {
-				m.IncValidationReviewAllowed("testWH", "test", "v1/pods", admissionv1beta1.Create)
-				m.IncValidationReviewAllowed("testWH", "test", "v1/pods", admissionv1beta1.Create)
-				m.IncValidationReviewAllowed("testWH2", "test", "v1/ingress", admissionv1beta1.Update)
+				m.IncValidationReviewAllowed("testWH", "test", "v1/pods", admissionv1beta1.Create, true)
+				m.IncValidationReviewAllowed("testWH", "test", "v1/pods", admissionv1beta1.Create, true)
+				m.IncValidationReviewAllowed("testWH2", "test", "v1/ingress", admissionv1beta1.Update, true)
 			},
 			expMetrics: []string{
-				`kubewebhook_admission_webhook_validation_review_allowed_total{namespace="test",operation="CREATE",resource="v1/pods",webhook="testWH"} 2`,
-				`kubewebhook_admission_webhook_validation_review_allowed_total{namespace="test",operation="UPDATE",resource="v1/ingress",webhook="testWH2"} 1`,
+				`kubewebhook_admission_webhook_validation_review_allowed_total{allowed="true",namespace="test",operation="CREATE",resource="v1/pods",webhook="testWH"} 2`,
+				`kubewebhook_admission_webhook_validation_review_allowed_total{allowed="true",namespace="test",operation="UPDATE",resource="v1/ingress",webhook="testWH2"} 1`,
 			},
 		},
 	}

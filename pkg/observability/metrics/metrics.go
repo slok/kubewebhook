@@ -29,7 +29,7 @@ type Recorder interface {
 	// ObserveAdmissionReviewDuration will observe the duration of a admission review.
 	ObserveAdmissionReviewDuration(webhook, namespace, resource string, operation Operation, kind ReviewKind, start time.Time)
 	// IncValidationReviewAllowed will increment in one the admission review allowed counter.
-	IncValidationReviewAllowed(webhook, namespace, resource string, operation Operation)
+	IncValidationReviewAllowed(webhook, namespace, resource string, operation Operation, allowed bool)
 }
 
 // Dummy is a dummy recorder useful for tests.
@@ -43,5 +43,5 @@ func (d *dummy) IncAdmissionReviewError(webhook, namespace, resource string, ope
 }
 func (d *dummy) ObserveAdmissionReviewDuration(webhook, namespace, resource string, operation Operation, kind ReviewKind, start time.Time) {
 }
-func (d *dummy) IncValidationReviewAllowed(webhook, namespace, resource string, operation Operation) {
+func (d *dummy) IncValidationReviewAllowed(webhook, namespace, resource string, operation Operation, allowed bool) {
 }

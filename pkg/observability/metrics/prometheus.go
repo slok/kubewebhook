@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"strconv"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -55,7 +56,7 @@ func NewPrometheus(registry prometheus.Registerer) *Prometheus {
 			Subsystem: promWebhookSubsystem,
 			Name:      "validation_review_allowed_total",
 			Help:      "Total number of validation reviews succesfully validated.",
-		}, []string{"webhook", "namespace", "resource", "operation"}),
+		}, []string{"webhook", "namespace", "resource", "operation", "allowed"}),
 	}
 
 	p.registerMetrics()
@@ -103,12 +104,13 @@ func (p *Prometheus) ObserveAdmissionReviewDuration(webhook, namespace, resource
 }
 
 // IncValidationReviewAllowed satisfies Recorder interface.
-func (p *Prometheus) IncValidationReviewAllowed(webhook, namespace, resource string, operation Operation) {
+func (p *Prometheus) IncValidationReviewAllowed(webhook, namespace, resource string, operation Operation, allowed bool) {
 	p.validationReviewAllowed.WithLabelValues(
 		webhook,
 		namespace,
 		string(resource),
 		string(operation),
+		strconv.FormatBool(allowed),
 	).Inc()
 }
 
