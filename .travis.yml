@@ -8,10 +8,8 @@ go:
   - "1.13"
 
 before_install:
-  # Prepare for SSH tunnels with Ngrok so we can expose the webhooks on integration tests.
-  - echo -e "Host tunnel.us.ngrok.com\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
-  - echo -e ${NGROK_SSH_PRIVATE_KEY_B64} | base64 -d > ~/.ssh/id_ed25519
-  - chmod 400 ~/.ssh/id_ed25519
+  # Prepare for SSH tunnels with Serveo so we can expose the webhooks on integration tests.
+  - echo -e "Host serveo.net\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
   # Install tooling for integration tests.
   - curl -Lo kind https://github.com/kubernetes-sigs/kind/releases/download/${KIND_VERSION}/kind-linux-amd64 && chmod +x kind && sudo mv kind /usr/local/bin/
   - curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/v${KUBERNETES_VERSION}/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
@@ -24,7 +22,6 @@ env:
     - GO111MODULE=on
     - KIND_VERSION=v0.7.0
     - KUBERNETES_VERSION=1.17.0
-    # - NGROK_SSH_PRIVATE_KEY_B64
 
 matrix:
   include:
