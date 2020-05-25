@@ -65,6 +65,18 @@ func TestPrometheus(t *testing.T) {
 				`kubewebhook_admission_webhook_admission_review_duration_seconds_count{kind="validating",namespace="test",operation="CREATE",resource="v1/pods",webhook="testWH"} 4`,
 			},
 		},
+		{
+			name: "Record validation review allowed counts should set the correct metrics",
+			recordMetrics: func(m metrics.Recorder) {
+				m.IncValidationReviewResult("testWH", "test", "v1/pods", admissionv1beta1.Create, true)
+				m.IncValidationReviewResult("testWH", "test", "v1/pods", admissionv1beta1.Create, true)
+				m.IncValidationReviewResult("testWH2", "test", "v1/ingress", admissionv1beta1.Update, true)
+			},
+			expMetrics: []string{
+				`kubewebhook_admission_webhook_validation_review_results_total{allowed="true",namespace="test",operation="CREATE",resource="v1/pods",webhook="testWH"} 2`,
+				`kubewebhook_admission_webhook_validation_review_results_total{allowed="true",namespace="test",operation="UPDATE",resource="v1/ingress",webhook="testWH2"} 1`,
+			},
+		},
 	}
 
 	for _, test := range tests {

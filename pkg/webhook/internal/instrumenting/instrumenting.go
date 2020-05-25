@@ -52,6 +52,11 @@ func (w *Webhook) Review(ctx context.Context, ar *admissionv1beta1.AdmissionRevi
 		return resp
 	}
 
+	// If its a validating response then increase our metric counter
+	if resp.PatchType == nil {
+		w.incValidationReviewResultMetric(ar, resp.Allowed)
+	}
+
 	var msg, status string
 	if resp.Result != nil {
 		msg = resp.Result.Message
@@ -94,6 +99,16 @@ func (w *Webhook) observeAdmissionReviewDuration(ar *admissionv1beta1.AdmissionR
 		ar.Request.Operation,
 		w.ReviewKind,
 		start)
+}
+
+func (w *Webhook) incValidationReviewResultMetric(ar *admissionv1beta1.AdmissionReview, allowed bool) {
+	w.MetricsRecorder.IncValidationReviewResult(
+		w.WebhookName,
+		ar.Request.Namespace,
+		helpers.GroupVersionResourceToString(ar.Request.Resource),
+		ar.Request.Operation,
+		allowed,
+	)
 }
 
 func (w *Webhook) createReviewSpan(ctx context.Context, ar *admissionv1beta1.AdmissionReview) opentracing.Span {

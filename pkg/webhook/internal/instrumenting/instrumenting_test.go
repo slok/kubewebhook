@@ -66,6 +66,9 @@ func TestInstrumentedMetricsWebhook(t *testing.T) {
 			if test.expErr {
 				mm.On("IncAdmissionReviewError", test.whName, mock.Anything, mock.Anything, mock.Anything, test.whKind).Once()
 			}
+			if !test.expErr && test.aResp.PatchType == nil {
+				mm.On("IncValidationReviewResult", test.whName, mock.Anything, mock.Anything, mock.Anything, false).Once()
+			}
 
 			wh := instrumenting.Webhook{
 				Webhook:         mwh,

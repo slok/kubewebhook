@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"strconv"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -18,6 +19,8 @@ type Prometheus struct {
 	admissionReview         *prometheus.CounterVec
 	admissionReviewErr      *prometheus.CounterVec
 	admissionReviewDuration *prometheus.HistogramVec
+	// Validation Metrics
+	validationReviewResult *prometheus.CounterVec
 
 	reg prometheus.Registerer
 }
@@ -47,6 +50,13 @@ func NewPrometheus(registry prometheus.Registerer) *Prometheus {
 			Name:      "admission_review_duration_seconds",
 			Help:      "The duration of the admission review.",
 		}, []string{"webhook", "namespace", "resource", "operation", "kind"}),
+
+		validationReviewResult: prometheus.NewCounterVec(prometheus.CounterOpts{
+			Namespace: promNamespace,
+			Subsystem: promWebhookSubsystem,
+			Name:      "validation_review_results_total",
+			Help:      "Total number of validation reviews",
+		}, []string{"webhook", "namespace", "resource", "operation", "allowed"}),
 	}
 
 	p.registerMetrics()
@@ -57,7 +67,9 @@ func (p *Prometheus) registerMetrics() {
 	p.reg.MustRegister(
 		p.admissionReview,
 		p.admissionReviewErr,
-		p.admissionReviewDuration)
+		p.admissionReviewDuration,
+		p.validationReviewResult,
+	)
 }
 
 // IncAdmissionReview satisfies Recorder interface.
@@ -91,6 +103,17 @@ func (p *Prometheus) ObserveAdmissionReviewDuration(webhook, namespace, resource
 		string(kind)).Observe(secs)
 }
 
+// IncValidationReviewResult satisfies Recorder interface.
+func (p *Prometheus) IncValidationReviewResult(webhook, namespace, resource string, operation Operation, allowed bool) {
+	p.validationReviewResult.WithLabelValues(
+		webhook,
+		namespace,
+		string(resource),
+		string(operation),
+		strconv.FormatBool(allowed),
+	).Inc()
+}
+
 func (p *Prometheus) getDuration(start time.Time) time.Duration {
-	return time.Now().Sub(start)
+	return time.Since(start)
 }
