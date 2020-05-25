@@ -54,7 +54,7 @@ func (w *Webhook) Review(ctx context.Context, ar *admissionv1beta1.AdmissionRevi
 
 	// If its a validating response then increase our metric counter
 	if resp.PatchType == nil {
-		w.incValidationReviewAllowedMetric(ar, resp.Allowed)
+		w.incValidationReviewResultMetric(ar, resp.Allowed)
 	}
 
 	var msg, status string
@@ -101,8 +101,8 @@ func (w *Webhook) observeAdmissionReviewDuration(ar *admissionv1beta1.AdmissionR
 		start)
 }
 
-func (w *Webhook) incValidationReviewAllowedMetric(ar *admissionv1beta1.AdmissionReview, allowed bool) {
-	w.MetricsRecorder.IncValidationReviewAllowed(
+func (w *Webhook) incValidationReviewResultMetric(ar *admissionv1beta1.AdmissionReview, allowed bool) {
+	w.MetricsRecorder.IncValidationReviewResult(
 		w.WebhookName,
 		ar.Request.Namespace,
 		helpers.GroupVersionResourceToString(ar.Request.Resource),
