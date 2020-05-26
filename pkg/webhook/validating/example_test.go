@@ -52,7 +52,7 @@ func ExampleValidator_ingressHostValidatingWebhook() {
 		Name: "example",
 		Obj:  &extensionsv1beta1.Ingress{},
 	}
-	validating.NewWebhook(cfg, ivh, nil, nil, nil)
+	_, _ = validating.NewWebhook(cfg, ivh, nil, nil, nil)
 }
 
 // chainValidatingWebhook shows how you would create a validating chain.
@@ -78,7 +78,7 @@ func ExampleValidator_chainValidatingWebhook() {
 		Obj:  &corev1.Pod{},
 	}
 
-	validating.NewWebhook(cfg, valChain, nil, nil, nil)
+	_, _ = validating.NewWebhook(cfg, valChain, nil, nil, nil)
 }
 
 // TracedValidatingWebhook shows how you would create a validating webhook that
@@ -104,5 +104,5 @@ func ExampleValidator_tracedValidatingWebhook() {
 	}
 
 	// Passing a valid tracer  will trace all the reviews handled by the webhook.
-	validating.NewWebhook(cfg, tracedFakeVal, tracer, nil, nil)
+	_, _ = validating.NewWebhook(cfg, tracedFakeVal, tracer, nil, nil)
 }

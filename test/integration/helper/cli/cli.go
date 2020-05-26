@@ -53,6 +53,9 @@ func GetK8sCRDClients(kubehome string) (kubewebhookcrd.Interface, error) {
 
 	// Get the client.
 	k8sCli, err := kubewebhookcrd.NewForConfig(config)
+	if err != nil {
+		return nil, fmt.Errorf("could not create crd client: %s", err)
+	}
 
 	return k8sCli, nil
 }
