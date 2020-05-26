@@ -39,9 +39,13 @@ func ExamplePrometheus_servePrometheusMetrics() {
 
 	// Run our webhook server (not checking error in this example).
 	whHandler, _ := whhttp.HandlerFor(mwh)
-	go http.ListenAndServeTLS(":8080", "file.cert", "file.key", whHandler)
+	go func() {
+		_ = http.ListenAndServeTLS(":8080", "file.cert", "file.key", whHandler)
+	}()
 
 	// Run our metrics in a separate port (not checking error in this example).
 	promHandler := promhttp.HandlerFor(reg, promhttp.HandlerOpts{})
-	go http.ListenAndServe(":8081", promHandler)
+	go func() {
+		_ = http.ListenAndServe(":8081", promHandler)
+	}()
 }

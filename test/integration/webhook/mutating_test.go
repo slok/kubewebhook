@@ -98,6 +98,7 @@ func TestMutatingWebhook(t *testing.T) {
 				}
 				_, err := cli.CoreV1().Pods(p.Namespace).Create(context.TODO(), p, metav1.CreateOptions{})
 				require.NoError(t, err)
+				// nolint: errcheck
 				defer cli.CoreV1().Pods(p.Namespace).Delete(context.TODO(), p.Name, metav1.DeleteOptions{})
 
 				// Check expectations.
@@ -170,6 +171,7 @@ func TestMutatingWebhook(t *testing.T) {
 				}
 				_, err := cli.CoreV1().Pods(p.Namespace).Create(context.TODO(), p, metav1.CreateOptions{})
 				require.NoError(t, err)
+				// nolint: errcheck
 				defer cli.CoreV1().Pods(p.Namespace).Delete(context.TODO(), p.Name, metav1.DeleteOptions{})
 
 				// Check expectations.
@@ -223,6 +225,7 @@ func TestMutatingWebhook(t *testing.T) {
 				}
 				_, err := crdcli.BuildingV1().Houses(h.Namespace).Create(context.TODO(), h, metav1.CreateOptions{})
 				require.NoError(t, err)
+				// nolint: errcheck
 				defer crdcli.BuildingV1().Houses(h.Namespace).Delete(context.TODO(), h.Name, metav1.DeleteOptions{})
 
 				// Check expectations.
@@ -284,6 +287,7 @@ func TestMutatingWebhook(t *testing.T) {
 				}
 				_, err := crdcli.BuildingV1().Houses(h.Namespace).Create(context.TODO(), h, metav1.CreateOptions{})
 				require.NoError(t, err)
+				// nolint: errcheck
 				defer crdcli.BuildingV1().Houses(h.Namespace).Delete(context.TODO(), h.Name, metav1.DeleteOptions{})
 
 				// Check expectations.
@@ -306,6 +310,7 @@ func TestMutatingWebhook(t *testing.T) {
 			// Register webhooks.
 			_, err := cli.AdmissionregistrationV1().MutatingWebhookConfigurations().Create(context.TODO(), test.webhookRegisterCfg, metav1.CreateOptions{})
 			require.NoError(t, err, "error registering webhooks kubernetes client")
+			// nolint: errcheck
 			defer cli.AdmissionregistrationV1().MutatingWebhookConfigurations().Delete(context.TODO(), test.webhookRegisterCfg.Name, metav1.DeleteOptions{})
 
 			// Start mutating webhook server.
@@ -321,6 +326,7 @@ func TestMutatingWebhook(t *testing.T) {
 					assert.FailNow(t, "error serving webhook", err.Error())
 				}
 			}()
+			// nolint: errcheck
 			defer srv.Shutdown(context.TODO())
 
 			// Wait a bit to get ready with the webhook server goroutine.

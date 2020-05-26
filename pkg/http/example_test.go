@@ -36,7 +36,7 @@ func ExampleHandlerFor_serveWebhook() {
 
 	// Get webhook handler and serve (webhooks need to be server with TLS).
 	whHandler, _ := whhttp.HandlerFor(wh)
-	http.ListenAndServeTLS(":8080", "file.cert", "file.key", whHandler)
+	_ = http.ListenAndServeTLS(":8080", "file.cert", "file.key", whHandler)
 }
 
 // ServeMultipleWebhooks shows how to serve multiple webhooks in the same server.
@@ -77,5 +77,5 @@ func ExampleHandlerFor_serveMultipleWebhooks() {
 	mux := http.NewServeMux()
 	mux.Handle("/validate-pod", vwhHandler)
 	mux.Handle("/mutate-pod", mwhHandler)
-	http.ListenAndServeTLS(":8080", "file.cert", "file.key", mux)
+	_ = http.ListenAndServeTLS(":8080", "file.cert", "file.key", mux)
 }

@@ -44,7 +44,7 @@ func ExampleMutator_podAnnotateMutatingWebhook() {
 		Name: "podAnnotateMutatingWebhook",
 		Obj:  &corev1.Pod{},
 	}
-	mutating.NewWebhook(cfg, pam, nil, nil, nil)
+	_, _ = mutating.NewWebhook(cfg, pam, nil, nil, nil)
 }
 
 // chainMutatingWebhook shows how you would create a mutator chain.
@@ -71,7 +71,7 @@ func ExampleMutator_chainMutatingWebhook() {
 		Obj:  &corev1.Pod{},
 	}
 
-	mutating.NewWebhook(cfg, mutChain, nil, nil, nil)
+	_, _ = mutating.NewWebhook(cfg, mutChain, nil, nil, nil)
 }
 
 // TracedMutatingWebhook shows how you would create a mutating webhook that
@@ -97,5 +97,5 @@ func ExampleMutator_tracedMutatingWebhook() {
 	}
 
 	// Passing a valid tracer  will trace all the reviews handled by the webhook.
-	mutating.NewWebhook(cfg, tracedFakeMut, tracer, nil, nil)
+	_, _ = mutating.NewWebhook(cfg, tracedFakeMut, tracer, nil, nil)
 }
