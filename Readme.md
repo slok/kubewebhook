@@ -2,7 +2,7 @@
     <img src="logo/kubewebhook_logo@0,5x.png" width="30%" align="center" alt="kubewebhook">
 </p>
 
-# kubewebhook [![Build Status][travis-image]][travis-url] [![Go Report Card][goreport-image]][goreport-url] [![GoDoc][godoc-image]][godoc-url]
+# kubewebhook [![Build Status][ci-image]][ci-url] [![Go Report Card][goreport-image]][goreport-url] [![GoDoc][godoc-image]][godoc-url]
 
 Kubewebhook is a small Go framework to create [external admission webhooks][aw-url] for Kubernetes.
 
@@ -160,12 +160,12 @@ This it will bootstrap a cluster with [kind] by default and a [k3s] cluster if `
 
 To develop integration test is handy to run a k3s cluster and a serveo tunnel, then check out [/tests/integration/helper/config] and use this development settings on the integration tests.
 
-[travis-image]: https://travis-ci.org/slok/kubewebhook.svg?branch=master
-[travis-url]: https://travis-ci.org/slok/kubewebhook
+[ci-image]: https://github.com/slok/kubewebhook/workflows/CI/badge.svg
+[ci-url]: https://github.com/slok/kubewebhook/actions
 [goreport-image]: https://goreportcard.com/badge/github.com/slok/kubewebhook
 [goreport-url]: https://goreportcard.com/report/github.com/slok/kubewebhook
 [godoc-image]: https://godoc.org/github.com/slok/kubewebhook?status.svg
-[godoc-url]: https://godoc.org/github.com/slok/kubewebhook
+[godoc-url]: https://pkg.go.dev/github.com/slok/kubewebhook?tab=doc
 [aw-url]: https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers
 [docs]: https://slok.github.io/kubewebhook/
 [red-metrics-url]: https://www.weave.works/blog/the-red-method-key-metrics-for-microservices-architecture/
