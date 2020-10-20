@@ -377,7 +377,7 @@ func TestValidatingWebhook(t *testing.T) {
 				require.NoError(err)
 
 				// Give time so deleting takes place.
-				time.Sleep(10 * time.Second)
+				time.Sleep(15 * time.Second)
 
 				// Check expectations.
 				_, err = cli.CoreV1().Pods(p.Namespace).Get(context.TODO(), p.Name, metav1.GetOptions{})

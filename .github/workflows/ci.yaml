@@ -7,19 +7,19 @@ jobs:
     name: Check
     runs-on: ubuntu-latest
     # Execute the checks inside the container instead the VM.
-    container: golangci/golangci-lint:v1.27.0-alpine
+    container: golangci/golangci-lint:v1.31.0-alpine
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
       - run: ./hack/scripts/check.sh
 
   unit-test:
     name: Unit test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
-      - uses: actions/setup-go@v2-beta
+      - uses: actions/checkout@v2
+      - uses: actions/setup-go@v2
         with:
-          go-version: 1.14
+          go-version: 1.15
       - run: make ci-unit-test
 
   integration-test:
@@ -27,14 +27,29 @@ jobs:
     runs-on: ubuntu-latest
     needs: [check, unit-test]
     strategy:
+      max-parallel: 1 # Due to ngrok account limits.
       matrix:
-        kubernetes: [1.16.9, 1.17.5, 1.18.2]
-    env:
-      KIND_VERSION: v0.8.1
+        kubernetes: [1.18.8, 1.19.1]
     steps:
-      - uses: actions/checkout@v1
-      # Prepare for SSH tunnels with Serveo so we can expose the webhooks on integration tests.
-      - run: mkdir -p ~/.ssh && echo -e "Host serveo.net\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
-      - run: curl -Lo kind https://github.com/kubernetes-sigs/kind/releases/download/${KIND_VERSION}/kind-linux-amd64 && chmod +x kind && sudo mv kind /usr/local/bin/
-      - run: curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/v${{ matrix.kubernetes }}/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
-      - run: KUBERNETES_VERSION=${{ matrix.kubernetes }} make ci-integration-test
+      - uses: actions/checkout@v2
+      - uses: actions/setup-go@v2
+        with:
+          go-version: 1.15
+      - name: Execute tests
+        env:
+          KIND_VERSION: v0.9.0
+          NGROK_SSH_PRIVATE_KEY_B64: ${{secrets.NGROK_SSH_PRIVATE_KEY_B64}}
+        run: |
+          # Prepare access.
+          mkdir -p ~/.ssh/
+          echo -e "Host tunnel.us.ngrok.com\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
+          echo -e ${NGROK_SSH_PRIVATE_KEY_B64} | base64 -d > ~/.ssh/id_ed25519
+          chmod 400 ~/.ssh/id_ed25519
+
+          # Download dependencies.
+          curl -Lo kind https://github.com/kubernetes-sigs/kind/releases/download/${KIND_VERSION}/kind-linux-amd64 && chmod +x kind && sudo mv kind /usr/local/bin/
+          curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/v${{ matrix.kubernetes }}/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
+          curl -Lo /tmp/ngrok.zip https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip && unzip -o /tmp/ngrok.zip -d /tmp && sudo mv /tmp/ngrok /usr/local/bin/ && rm -rf /tmp/ngrok.zip
+
+          # Execute tests.
+          KUBERNETES_VERSION=${{ matrix.kubernetes }} NGROK=true make ci-integration-test
