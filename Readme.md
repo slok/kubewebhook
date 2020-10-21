@@ -101,7 +101,8 @@ that other Kubewebhook versions different to the matched ones to Kubernetes vers
 work (e.g k8s v1.15 with Kubewebhook v0.3). You can try it and check if they work for you.
 
 | k8s version | Kubewebhook version | Supported admission reviews | Support dynamic webhooks |
-| ------------| ------------------- | --------------------------- | ------------------------ |
+| ----------- | ------------------- | --------------------------- | ------------------------ |
+| 1.19        | v0.11               | v1beta1                     | ✔                        |
 | 1.18        | v0.10               | v1beta1                     | ✔                        |
 | 1.18        | v0.9                | v1beta1                     | ✖                        |
 | 1.17        | v0.8                | v1beta1                     | ✖                        |
@@ -124,7 +125,6 @@ Tools required
 
 - [mkcert] (optional if you want to create new certificates).
 - [kind] (option1, to run the cluster).
-- [k3s] (option2, to run the cluster)
 - ssh (to expose our webhook to the internet).
 
 ### (Optional) Certificates
@@ -146,7 +146,7 @@ Go integration tests require this env vars:
 - `TEST_WEBHOOK_URL`: The url where the apiserver should make the webhook requests.
 - `TEST_LISTEN_PORT`: The port where our webhook will be listening the requests.
 
-There are 2 ways of bootstrapping the integration tests, one using kind and another using [k3s].
+Kind is what is used to bootstrap the integration tests.
 
 To run the integration tests do:
 
@@ -154,11 +154,11 @@ To run the integration tests do:
 make integration-test
 ```
 
-This it will bootstrap a cluster with [kind] by default and a [k3s] cluster if `K3S=true` env var is set. A ssh tunnel in a random address, and finally use the precreated certificates (see previous step), after this will execute the tests, and do it's best effort to tear down the clusters (on k3s could be problems, so have a check on k3s processes).
+This it will bootstrap a cluster with [kind] by default. A ssh tunnel in a random address, and finally use the precreated certificates (see previous step), after this will execute the tests, and do it's best effort to tear down the clusters.
 
 ### Developing integration tests
 
-To develop integration test is handy to run a k3s cluster and a serveo tunnel, then check out [/tests/integration/helper/config] and use this development settings on the integration tests.
+To develop integration test is handy to run a [k3s] cluster and a Ngrok tunnel, then check out [/tests/integration/helper/config] and use this development settings on the integration tests.
 
 [ci-image]: https://github.com/slok/kubewebhook/workflows/CI/badge.svg
 [ci-url]: https://github.com/slok/kubewebhook/actions
