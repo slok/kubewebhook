@@ -2,6 +2,7 @@ name: CI
 
 on:
   pull_request:
+  # Limit because of parallel ngrok max tunnels on integration tests.
   push:
     branches:
       - master

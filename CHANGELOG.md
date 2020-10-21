@@ -6,7 +6,7 @@
 
 ### Changed
 
-- Update to Kubernetes v1.18.
+- Update to Kubernetes v1.19.
 
 ## [0.10.0] - 2020-05-19
 
