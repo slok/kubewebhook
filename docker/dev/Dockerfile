@@ -1,6 +1,6 @@
-FROM golang:1.14
+FROM golang:1.15
 
-ARG GOLANGCI_LINT_VERSION="1.27.0"
+ARG GOLANGCI_LINT_VERSION="1.31.0"
 ARG ostype=Linux
 
 RUN apt-get update && apt-get install -y \

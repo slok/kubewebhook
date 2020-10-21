@@ -1,6 +1,11 @@
 name: CI
 
-on: [push, pull_request]
+on:
+  pull_request:
+  # Limit because of parallel ngrok max tunnels on integration tests.
+  push:
+    branches:
+      - master
 
 jobs:
   check:
