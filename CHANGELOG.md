@@ -116,7 +116,7 @@ Breaking: Webhook constructors now need a tracer.
 - Handler creator for webhooks.
 
 [unreleased]: https://github.com/slok/kubewebhook/compare/v0.11.0...HEAD
-[0.10.0]: https://github.com/slok/kubewebhook/compare/v0.10.0...v0.11.0
+[0.11.0]: https://github.com/slok/kubewebhook/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/slok/kubewebhook/compare/v0.9.1...v0.10.0
 [0.9.1]: https://github.com/slok/kubewebhook/compare/v0.9.0...v0.9.1
 [0.9.0]: https://github.com/slok/kubewebhook/compare/v0.8.0...v0.9.0
