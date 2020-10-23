@@ -78,9 +78,10 @@ func TestValidatingWebhook(t *testing.T) {
 					}, nil
 				})
 				vwh, _ := validating.NewWebhook(validating.WebhookConfig{
-					Name: "pod-validating-label",
-					Obj:  &corev1.Pod{},
-				}, val, nil, nil, nil)
+					Name:      "pod-validating-label",
+					Obj:       &corev1.Pod{},
+					Validator: val,
+				})
 				return vwh
 			},
 			execTest: func(t *testing.T, cli kubernetes.Interface, _ kubewebhookcrd.Interface) {
@@ -119,7 +120,10 @@ func TestValidatingWebhook(t *testing.T) {
 						Message: "test message from validator",
 					}, nil
 				})
-				vwh, _ := validating.NewWebhook(validating.WebhookConfig{Name: "pod-validating-label"}, val, nil, nil, nil)
+				vwh, _ := validating.NewWebhook(validating.WebhookConfig{
+					Name:      "pod-validating-label",
+					Validator: val,
+				})
 				return vwh
 			},
 			execTest: func(t *testing.T, cli kubernetes.Interface, _ kubewebhookcrd.Interface) {
@@ -156,9 +160,10 @@ func TestValidatingWebhook(t *testing.T) {
 					return true, validating.ValidatorResult{Valid: true}, nil
 				})
 				vwh, _ := validating.NewWebhook(validating.WebhookConfig{
-					Name: "pod-validating-label",
-					Obj:  &corev1.Pod{},
-				}, val, nil, nil, nil)
+					Name:      "pod-validating-label",
+					Obj:       &corev1.Pod{},
+					Validator: val,
+				})
 				return vwh
 			},
 			execTest: func(t *testing.T, cli kubernetes.Interface, _ kubewebhookcrd.Interface) {
@@ -199,9 +204,10 @@ func TestValidatingWebhook(t *testing.T) {
 					return true, validating.ValidatorResult{Valid: true}, nil
 				})
 				vwh, _ := validating.NewWebhook(validating.WebhookConfig{
-					Name: "crd-validating-label",
-					Obj:  &buildingv1.House{},
-				}, val, nil, nil, nil)
+					Name:      "crd-validating-label",
+					Obj:       &buildingv1.House{},
+					Validator: val,
+				})
 				return vwh
 			},
 			execTest: func(t *testing.T, _ kubernetes.Interface, crdcli kubewebhookcrd.Interface) {
@@ -249,7 +255,10 @@ func TestValidatingWebhook(t *testing.T) {
 						Message: "test message from validator",
 					}, nil
 				})
-				vwh, _ := validating.NewWebhook(validating.WebhookConfig{Name: "crd-validating-label"}, val, nil, nil, nil)
+				vwh, _ := validating.NewWebhook(validating.WebhookConfig{
+					Name:      "crd-validating-label",
+					Validator: val,
+				})
 				return vwh
 			},
 			execTest: func(t *testing.T, _ kubernetes.Interface, crdcli kubewebhookcrd.Interface) {
@@ -300,9 +309,10 @@ func TestValidatingWebhook(t *testing.T) {
 					return true, validating.ValidatorResult{Valid: false}, nil
 				})
 				vwh, _ := validating.NewWebhook(validating.WebhookConfig{
-					Name: "crd-validating-label",
-					Obj:  &buildingv1.House{},
-				}, val, nil, nil, nil)
+					Name:      "crd-validating-label",
+					Obj:       &buildingv1.House{},
+					Validator: val,
+				})
 				return vwh
 			},
 			execTest: func(t *testing.T, _ kubernetes.Interface, crdcli kubewebhookcrd.Interface) {
@@ -351,9 +361,10 @@ func TestValidatingWebhook(t *testing.T) {
 					}, nil
 				})
 				vwh, _ := validating.NewWebhook(validating.WebhookConfig{
-					Name: "pod-validating-delete",
-					Obj:  &corev1.Pod{},
-				}, val, nil, nil, nil)
+					Name:      "pod-validating-delete",
+					Obj:       &corev1.Pod{},
+					Validator: val,
+				})
 				return vwh
 			},
 			execTest: func(t *testing.T, cli kubernetes.Interface, _ kubewebhookcrd.Interface) {
@@ -400,8 +411,9 @@ func TestValidatingWebhook(t *testing.T) {
 					}, nil
 				})
 				vwh, _ := validating.NewWebhook(validating.WebhookConfig{
-					Name: "pod-dynamic-validating-delete",
-				}, val, nil, nil, nil)
+					Name:      "pod-dynamic-validating-delete",
+					Validator: val,
+				})
 				return vwh
 			},
 			execTest: func(t *testing.T, _ kubernetes.Interface, crdcli kubewebhookcrd.Interface) {

@@ -41,10 +41,11 @@ func ExampleMutator_podAnnotateMutatingWebhook() {
 
 	// Create webhook (usage of webhook not in this example).
 	cfg := mutating.WebhookConfig{
-		Name: "podAnnotateMutatingWebhook",
-		Obj:  &corev1.Pod{},
+		Name:    "podAnnotateMutatingWebhook",
+		Obj:     &corev1.Pod{},
+		Mutator: pam,
 	}
-	_, _ = mutating.NewWebhook(cfg, pam, nil, nil, nil)
+	_, _ = mutating.NewWebhook(cfg)
 }
 
 // chainMutatingWebhook shows how you would create a mutator chain.
@@ -67,11 +68,12 @@ func ExampleMutator_chainMutatingWebhook() {
 
 	// Create webhook (usage of webhook not in this example).
 	cfg := mutating.WebhookConfig{
-		Name: "podWebhook",
-		Obj:  &corev1.Pod{},
+		Name:    "podWebhook",
+		Obj:     &corev1.Pod{},
+		Mutator: mutChain,
 	}
 
-	_, _ = mutating.NewWebhook(cfg, mutChain, nil, nil, nil)
+	_, _ = mutating.NewWebhook(cfg)
 }
 
 // TracedMutatingWebhook shows how you would create a mutating webhook that
@@ -92,10 +94,12 @@ func ExampleMutator_tracedMutatingWebhook() {
 
 	// Create webhook (usage of webhook not in this example).
 	cfg := mutating.WebhookConfig{
-		Name: "podWebhook",
-		Obj:  &corev1.Pod{},
+		Name:    "podWebhook",
+		Obj:     &corev1.Pod{},
+		Mutator: tracedFakeMut,
+		Tracer:  tracer,
 	}
 
 	// Passing a valid tracer  will trace all the reviews handled by the webhook.
-	_, _ = mutating.NewWebhook(cfg, tracedFakeMut, tracer, nil, nil)
+	_, _ = mutating.NewWebhook(cfg)
 }

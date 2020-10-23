@@ -29,10 +29,11 @@ func ExampleHandlerFor_serveWebhook() {
 
 	// Create webhook (don't check error).
 	cfg := validating.WebhookConfig{
-		Name: "serveWebhook",
-		Obj:  &corev1.Pod{},
+		Name:      "serveWebhook",
+		Obj:       &corev1.Pod{},
+		Validator: v,
 	}
-	wh, _ := validating.NewWebhook(cfg, v, nil, nil, nil)
+	wh, _ := validating.NewWebhook(cfg)
 
 	// Get webhook handler and serve (webhooks need to be server with TLS).
 	whHandler, _ := whhttp.HandlerFor(wh)
@@ -60,17 +61,19 @@ func ExampleHandlerFor_serveMultipleWebhooks() {
 
 	// Create webhooks (don't check error).
 	vcfg := validating.WebhookConfig{
-		Name: "validatingServeWebhook",
-		Obj:  &corev1.Pod{},
+		Name:      "validatingServeWebhook",
+		Obj:       &corev1.Pod{},
+		Validator: v,
 	}
-	vwh, _ := validating.NewWebhook(vcfg, v, nil, nil, nil)
+	vwh, _ := validating.NewWebhook(vcfg)
 	vwhHandler, _ := whhttp.HandlerFor(vwh)
 
 	mcfg := mutating.WebhookConfig{
-		Name: "muratingServeWebhook",
-		Obj:  &corev1.Pod{},
+		Name:    "muratingServeWebhook",
+		Obj:     &corev1.Pod{},
+		Mutator: m,
 	}
-	mwh, _ := mutating.NewWebhook(mcfg, m, nil, nil, nil)
+	mwh, _ := mutating.NewWebhook(mcfg)
 	mwhHandler, _ := whhttp.HandlerFor(mwh)
 
 	// Create a muxer and handle different webhooks in different paths of the server.

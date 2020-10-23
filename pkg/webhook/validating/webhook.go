@@ -22,17 +22,35 @@ type WebhookConfig struct {
 	// Object is the object of the webhook, to use multiple types on the same webhook or
 	// type inference, don't set this field (will be `nil`).
 	Obj metav1.Object
+	// Validator is the webhook validator.
+	Validator Validator
+	// Tracer is the open tracing Tracer.
+	Tracer opentracing.Tracer
+	// MetricsRecorder is the metrics recorder.
+	MetricsRecorder metrics.Recorder
+	// Logger is the app logger.
+	Logger log.Logger
 }
 
-func (c *WebhookConfig) validate() error {
-	errs := ""
-
+func (c *WebhookConfig) defaults() error {
 	if c.Name == "" {
-		errs = errs + "name can't be empty"
+		return fmt.Errorf("name is required")
 	}
 
-	if errs != "" {
-		return fmt.Errorf("invalid configuration: %s", errs)
+	if c.Validator == nil {
+		return fmt.Errorf("validator is required")
+	}
+
+	if c.Logger == nil {
+		c.Logger = log.Dummy
+	}
+
+	if c.MetricsRecorder == nil {
+		c.MetricsRecorder = metrics.Dummy
+	}
+
+	if c.Tracer == nil {
+		c.Tracer = &opentracing.NoopTracer{}
 	}
 
 	return nil
@@ -40,23 +58,9 @@ func (c *WebhookConfig) validate() error {
 
 // NewWebhook is a validating webhook and will return a webhook ready for a type of resource
 // it will validate the received resources.
-func NewWebhook(cfg WebhookConfig, validator Validator, ot opentracing.Tracer, recorder metrics.Recorder, logger log.Logger) (webhook.Webhook, error) {
-	if err := cfg.validate(); err != nil {
-		return nil, err
-	}
-
-	if logger == nil {
-		logger = log.Dummy
-	}
-
-	if recorder == nil {
-		logger.Warningf("no metrics recorder active")
-		recorder = metrics.Dummy
-	}
-
-	if ot == nil {
-		logger.Warningf("no tracer active")
-		ot = &opentracing.NoopTracer{}
+func NewWebhook(cfg WebhookConfig) (webhook.Webhook, error) {
+	if err := cfg.defaults(); err != nil {
+		return nil, fmt.Errorf("invalid configuration: %w", err)
 	}
 
 	// If we don't have the type of the object create a dynamic object creator that will
@@ -72,14 +76,14 @@ func NewWebhook(cfg WebhookConfig, validator Validator, ot opentracing.Tracer, r
 	return &instrumenting.Webhook{
 		Webhook: &validateWebhook{
 			objectCreator: oc,
-			validator:     validator,
+			validator:     cfg.Validator,
 			cfg:           cfg,
-			logger:        logger,
+			logger:        cfg.Logger,
 		},
 		ReviewKind:      metrics.ValidatingReviewKind,
 		WebhookName:     cfg.Name,
-		MetricsRecorder: recorder,
-		Tracer:          ot,
+		MetricsRecorder: cfg.MetricsRecorder,
+		Tracer:          cfg.Tracer,
 	}, nil
 }
 

@@ -25,9 +25,12 @@ func NewPodWebhook(labels map[string]string, ot opentracing.Tracer, mrec metrics
 
 	mc := mutating.NewChain(logger, mutators...)
 	cfg := mutating.WebhookConfig{
-		Name: "multiwebhook-podMutator",
-		Obj:  &corev1.Pod{},
+		Name:            "multiwebhook-podMutator",
+		Obj:             &corev1.Pod{},
+		Mutator:         mc,
+		Tracer:          ot,
+		MetricsRecorder: mrec,
+		Logger:          logger,
 	}
-
-	return mutating.NewWebhook(cfg, mc, ot, mrec, logger)
+	return mutating.NewWebhook(cfg)
 }

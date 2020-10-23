@@ -48,8 +48,12 @@ func main() {
 	})
 
 	// We don't use any type, it works for any type.
-	mcfg := mutatingwh.WebhookConfig{Name: "labeler"}
-	wh, err := mutatingwh.NewWebhook(mcfg, mt, nil, nil, logger)
+	mcfg := mutatingwh.WebhookConfig{
+		Name:    "labeler",
+		Mutator: mt,
+		Logger:  logger,
+	}
+	wh, err := mutatingwh.NewWebhook(mcfg)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error creating webhook: %s", err)
 		os.Exit(1)

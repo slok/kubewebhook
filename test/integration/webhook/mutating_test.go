@@ -69,9 +69,10 @@ func TestMutatingWebhook(t *testing.T) {
 					return false, nil
 				})
 				mwh, _ := mutating.NewWebhook(mutating.WebhookConfig{
-					Name: "pod-mutator-test2",
-					Obj:  &corev1.Pod{},
-				}, mut, nil, nil, nil)
+					Name:    "pod-mutator-test2",
+					Obj:     &corev1.Pod{},
+					Mutator: mut,
+				})
 				return mwh
 			},
 			execTest: func(t *testing.T, cli kubernetes.Interface, _ kubewebhookcrd.Interface) {
@@ -146,7 +147,10 @@ func TestMutatingWebhook(t *testing.T) {
 
 					return false, nil
 				})
-				mwh, _ := mutating.NewWebhook(mutating.WebhookConfig{Name: "pod-mutator-label"}, mut, nil, nil, nil)
+				mwh, _ := mutating.NewWebhook(mutating.WebhookConfig{
+					Name:    "pod-mutator-label",
+					Mutator: mut,
+				})
 				return mwh
 			},
 			execTest: func(t *testing.T, cli kubernetes.Interface, _ kubewebhookcrd.Interface) {
@@ -203,9 +207,10 @@ func TestMutatingWebhook(t *testing.T) {
 					return false, nil
 				})
 				mwh, _ := mutating.NewWebhook(mutating.WebhookConfig{
-					Name: "house-mutator-label",
-					Obj:  &buildingv1.House{},
-				}, mut, nil, nil, nil)
+					Name:    "house-mutator-label",
+					Obj:     &buildingv1.House{},
+					Mutator: mut,
+				})
 				return mwh
 			},
 			execTest: func(t *testing.T, _ kubernetes.Interface, crdcli kubewebhookcrd.Interface) {
@@ -262,7 +267,10 @@ func TestMutatingWebhook(t *testing.T) {
 
 					return false, nil
 				})
-				mwh, _ := mutating.NewWebhook(mutating.WebhookConfig{Name: "house-mutator-label"}, mut, nil, nil, nil)
+				mwh, _ := mutating.NewWebhook(mutating.WebhookConfig{
+					Name:    "house-mutator-label",
+					Mutator: mut,
+				})
 				return mwh
 			},
 			execTest: func(t *testing.T, _ kubernetes.Interface, crdcli kubewebhookcrd.Interface) {

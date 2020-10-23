@@ -32,10 +32,12 @@ func ExamplePrometheus_servePrometheusMetrics() {
 
 	// Create webhooks (don't check error).
 	mcfg := mutating.WebhookConfig{
-		Name: "instrucmentedWebhook",
-		Obj:  &corev1.Pod{},
+		Name:            "instrucmentedWebhook",
+		Obj:             &corev1.Pod{},
+		Mutator:         m,
+		MetricsRecorder: metricsRec,
 	}
-	mwh, _ := mutating.NewWebhook(mcfg, m, nil, metricsRec, nil)
+	mwh, _ := mutating.NewWebhook(mcfg)
 
 	// Run our webhook server (not checking error in this example).
 	whHandler, _ := whhttp.HandlerFor(mwh)

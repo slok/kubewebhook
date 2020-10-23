@@ -57,10 +57,12 @@ func main() {
 	mt := mutatingwh.MutatorFunc(annotatePodMutator)
 
 	mcfg := mutatingwh.WebhookConfig{
-		Name: "podAnnotate",
-		Obj:  &corev1.Pod{},
+		Name:    "podAnnotate",
+		Obj:     &corev1.Pod{},
+		Mutator: mt,
+		Logger:  logger,
 	}
-	wh, err := mutatingwh.NewWebhook(mcfg, mt, nil, nil, logger)
+	wh, err := mutatingwh.NewWebhook(mcfg)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error creating webhook: %s", err)
 		os.Exit(1)
