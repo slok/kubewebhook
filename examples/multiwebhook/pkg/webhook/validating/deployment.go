@@ -32,9 +32,13 @@ func NewDeploymentWebhook(minReplicas, maxReplicas int, ot opentracing.Tracer, m
 	valChain := validating.NewChain(logger, vals...)
 
 	cfg := validating.WebhookConfig{
-		Name: "multiwebhook-deploymentValidator",
-		Obj:  &extensionsv1beta1.Deployment{},
+		Name:            "multiwebhook-deploymentValidator",
+		Obj:             &extensionsv1beta1.Deployment{},
+		Validator:       valChain,
+		Tracer:          ot,
+		MetricsRecorder: mrec,
+		Logger:          logger,
 	}
 
-	return validating.NewWebhook(cfg, valChain, ot, mrec, logger)
+	return validating.NewWebhook(cfg)
 }

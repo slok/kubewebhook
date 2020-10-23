@@ -13,7 +13,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
-	"github.com/slok/kubewebhook/pkg/log"
 	"github.com/slok/kubewebhook/pkg/webhook/mutating"
 )
 
@@ -356,7 +355,8 @@ func TestPodAdmissionReviewMutation(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			wh, err := mutating.NewWebhook(test.cfg, test.mutator, nil, nil, log.Dummy)
+			test.cfg.Mutator = test.mutator
+			wh, err := mutating.NewWebhook(test.cfg)
 			assert.NoError(err)
 
 			gotResponse := wh.Review(context.TODO(), test.review)
@@ -385,10 +385,11 @@ func BenchmarkPodAdmissionReviewMutation(b *testing.B) {
 		}
 
 		cfg := mutating.WebhookConfig{
-			Name: "test",
-			Obj:  &corev1.Pod{},
+			Name:    "test",
+			Obj:     &corev1.Pod{},
+			Mutator: mutator,
 		}
-		wh, err := mutating.NewWebhook(cfg, mutator, nil, nil, log.Dummy)
+		wh, err := mutating.NewWebhook(cfg)
 		assert.NoError(b, err)
 		wh.Review(context.TODO(), ar)
 	}

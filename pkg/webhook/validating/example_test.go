@@ -49,10 +49,11 @@ func ExampleValidator_ingressHostValidatingWebhook() {
 
 	// Create webhook (usage of webhook not in this example).
 	cfg := validating.WebhookConfig{
-		Name: "example",
-		Obj:  &extensionsv1beta1.Ingress{},
+		Name:      "example",
+		Obj:       &extensionsv1beta1.Ingress{},
+		Validator: ivh,
 	}
-	_, _ = validating.NewWebhook(cfg, ivh, nil, nil, nil)
+	_, _ = validating.NewWebhook(cfg)
 }
 
 // chainValidatingWebhook shows how you would create a validating chain.
@@ -74,11 +75,12 @@ func ExampleValidator_chainValidatingWebhook() {
 
 	// Create webhook (usage of webhook not in this example).
 	cfg := validating.WebhookConfig{
-		Name: "podWebhook",
-		Obj:  &corev1.Pod{},
+		Name:      "podWebhook",
+		Obj:       &corev1.Pod{},
+		Validator: valChain,
 	}
 
-	_, _ = validating.NewWebhook(cfg, valChain, nil, nil, nil)
+	_, _ = validating.NewWebhook(cfg)
 }
 
 // TracedValidatingWebhook shows how you would create a validating webhook that
@@ -99,10 +101,12 @@ func ExampleValidator_tracedValidatingWebhook() {
 
 	// Create webhook (usage of webhook not in this example).
 	cfg := validating.WebhookConfig{
-		Name: "podWebhook",
-		Obj:  &corev1.Pod{},
+		Name:      "podWebhook",
+		Obj:       &corev1.Pod{},
+		Validator: tracedFakeVal,
+		Tracer:    tracer,
 	}
 
-	// Passing a valid tracer  will trace all the reviews handled by the webhook.
-	_, _ = validating.NewWebhook(cfg, tracedFakeVal, tracer, nil, nil)
+	// Passing a valid tracer will trace all the reviews handled by the webhook.
+	_, _ = validating.NewWebhook(cfg)
 }

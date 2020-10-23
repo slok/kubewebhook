@@ -1,5 +1,9 @@
 ## [Unreleased]
 
+### Changed
+
+- Webhooks factory signatures now receive only a single configuration struct instead of multiple arguments.
+
 ## [0.11.0] - 2020-10-21
 
 ### Added

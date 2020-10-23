@@ -24,17 +24,35 @@ type WebhookConfig struct {
 	// Object is the object of the webhook, to use multiple types on the same webhook or
 	// type inference, don't set this field (will be `nil`).
 	Obj metav1.Object
+	// Mutator is the webhook mutator.
+	Mutator Mutator
+	// Tracer is the open tracing Tracer.
+	Tracer opentracing.Tracer
+	// MetricsRecorder is the metrics recorder.
+	MetricsRecorder metrics.Recorder
+	// Logger is the logger.
+	Logger log.Logger
 }
 
-func (c WebhookConfig) validate() error {
-	errs := ""
-
+func (c *WebhookConfig) defaults() error {
 	if c.Name == "" {
-		errs = errs + "name can't be empty"
+		return fmt.Errorf("name is required")
 	}
 
-	if errs != "" {
-		return fmt.Errorf("invalid configuration: %s", errs)
+	if c.Mutator == nil {
+		return fmt.Errorf("mutator is required")
+	}
+
+	if c.Logger == nil {
+		c.Logger = log.Dummy
+	}
+
+	if c.MetricsRecorder == nil {
+		c.MetricsRecorder = metrics.Dummy
+	}
+
+	if c.Tracer == nil {
+		c.Tracer = &opentracing.NoopTracer{}
 	}
 
 	return nil
@@ -50,23 +68,9 @@ type mutationWebhook struct {
 // NewWebhook is a mutating webhook and will return a webhook ready for a type of resource.
 // It will mutate the received resources.
 // This webhook will always allow the admission of the resource, only will deny in case of error.
-func NewWebhook(cfg WebhookConfig, mutator Mutator, ot opentracing.Tracer, recorder metrics.Recorder, logger log.Logger) (webhook.Webhook, error) {
-	if err := cfg.validate(); err != nil {
-		return nil, err
-	}
-
-	if logger == nil {
-		logger = log.Dummy
-	}
-
-	if recorder == nil {
-		logger.Warningf("no metrics recorder active")
-		recorder = metrics.Dummy
-	}
-
-	if ot == nil {
-		logger.Warningf("no tracer active")
-		ot = &opentracing.NoopTracer{}
+func NewWebhook(cfg WebhookConfig) (webhook.Webhook, error) {
+	if err := cfg.defaults(); err != nil {
+		return nil, fmt.Errorf("invalid configuration: %w", err)
 	}
 
 	// If we don't have the type of the object create a dynamic object creator that will
@@ -82,14 +86,14 @@ func NewWebhook(cfg WebhookConfig, mutator Mutator, ot opentracing.Tracer, recor
 	return &instrumenting.Webhook{
 		Webhook: &mutationWebhook{
 			objectCreator: oc,
-			mutator:       mutator,
+			mutator:       cfg.Mutator,
 			cfg:           cfg,
-			logger:        logger,
+			logger:        cfg.Logger,
 		},
 		ReviewKind:      metrics.MutatingReviewKind,
 		WebhookName:     cfg.Name,
-		MetricsRecorder: recorder,
-		Tracer:          ot,
+		MetricsRecorder: cfg.MetricsRecorder,
+		Tracer:          cfg.Tracer,
 	}, nil
 }
 
