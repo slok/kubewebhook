@@ -7,12 +7,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
+	"github.com/slok/kubewebhook/pkg/model"
 	"github.com/slok/kubewebhook/pkg/webhook/mutating"
 )
 
@@ -68,36 +68,40 @@ func getPodJSON() []byte {
 }
 
 func getPodNSMutator(ns string) mutating.Mutator {
-	return mutating.MutatorFunc(func(_ context.Context, obj metav1.Object) (bool, error) {
+	return mutating.MutatorFunc(func(_ context.Context, obj metav1.Object) (*mutating.MutatorResult, error) {
 		pod, ok := obj.(*corev1.Pod)
 		if !ok {
-			return true, fmt.Errorf("not a pod")
+			return nil, fmt.Errorf("not a pod")
 		}
 
 		pod.Namespace = ns
 
-		return false, nil
+		return &mutating.MutatorResult{
+			MutatedObject: pod,
+		}, nil
 	})
 }
 
 func getPodAnnotationsReplacerMutator(annotations map[string]string) mutating.Mutator {
-	return mutating.MutatorFunc(func(_ context.Context, obj metav1.Object) (bool, error) {
+	return mutating.MutatorFunc(func(_ context.Context, obj metav1.Object) (*mutating.MutatorResult, error) {
 		pod, ok := obj.(*corev1.Pod)
 		if !ok {
-			return true, fmt.Errorf("not a pod")
+			return nil, fmt.Errorf("not a pod")
 		}
 
 		pod.Annotations = annotations
 
-		return false, nil
+		return &mutating.MutatorResult{
+			MutatedObject: pod,
+		}, nil
 	})
 }
 
 func getPodResourceLimitDeletorMutator() mutating.Mutator {
-	return mutating.MutatorFunc(func(_ context.Context, obj metav1.Object) (bool, error) {
+	return mutating.MutatorFunc(func(_ context.Context, obj metav1.Object) (*mutating.MutatorResult, error) {
 		pod, ok := obj.(*corev1.Pod)
 		if !ok {
-			return true, fmt.Errorf("not a pod")
+			return nil, fmt.Errorf("not a pod")
 		}
 
 		for idx := range pod.Spec.Containers {
@@ -106,7 +110,9 @@ func getPodResourceLimitDeletorMutator() mutating.Mutator {
 			pod.Spec.Containers[idx] = c
 		}
 
-		return false, nil
+		return &mutating.MutatorResult{
+			MutatedObject: pod,
+		}, nil
 	})
 }
 
@@ -114,19 +120,50 @@ func TestPodAdmissionReviewMutation(t *testing.T) {
 	tests := map[string]struct {
 		cfg      mutating.WebhookConfig
 		mutator  mutating.Mutator
-		review   *admissionv1beta1.AdmissionReview
+		review   model.AdmissionReview
 		expPatch []string
+		expErr   bool
 	}{
+		"A webhook review with error should return an error.": {
+			cfg: mutating.WebhookConfig{ID: "test", Obj: &corev1.Pod{}},
+			mutator: mutating.MutatorFunc(func(_ context.Context, obj metav1.Object) (*mutating.MutatorResult, error) {
+				return nil, fmt.Errorf("wanted error")
+			}),
+			review: model.AdmissionReview{
+				ID:           "test",
+				NewObjectRaw: getPodJSON(),
+			},
+			expErr: true,
+		},
+
 		"A static webhook review of a Pod with an ns mutator should mutate the ns.": {
-			cfg:     mutating.WebhookConfig{Name: "test", Obj: &corev1.Pod{}},
+			cfg: mutating.WebhookConfig{ID: "test", Obj: &corev1.Pod{}},
+			mutator: mutating.MutatorFunc(func(_ context.Context, obj metav1.Object) (*mutating.MutatorResult, error) {
+				pod, ok := obj.(*corev1.Pod)
+				if !ok {
+					return nil, fmt.Errorf("not a pod")
+				}
+
+				pod.Namespace = "myChangedNS"
+
+				return &mutating.MutatorResult{}, nil
+			}),
+
+			review: model.AdmissionReview{
+				ID:           "test",
+				NewObjectRaw: getPodJSON(),
+			},
+			expPatch: []string{
+				`{"op":"replace","path":"/metadata/namespace","value":"myChangedNS"}`,
+			},
+		},
+
+		"Mutators that return nil as mutated object should get the original received object to get the patch.": {
+			cfg:     mutating.WebhookConfig{ID: "test", Obj: &corev1.Pod{}},
 			mutator: getPodNSMutator("myChangedNS"),
-			review: &admissionv1beta1.AdmissionReview{
-				Request: &admissionv1beta1.AdmissionRequest{
-					UID: "test",
-					Object: runtime.RawExtension{
-						Raw: getPodJSON(),
-					},
-				},
+			review: model.AdmissionReview{
+				ID:           "test",
+				NewObjectRaw: getPodJSON(),
 			},
 			expPatch: []string{
 				`{"op":"replace","path":"/metadata/namespace","value":"myChangedNS"}`,
@@ -134,20 +171,16 @@ func TestPodAdmissionReviewMutation(t *testing.T) {
 		},
 
 		"A static webhook review of a Pod with an annotations mutator should mutate the annotations.": {
-			cfg: mutating.WebhookConfig{Name: "test", Obj: &corev1.Pod{}},
+			cfg: mutating.WebhookConfig{ID: "test", Obj: &corev1.Pod{}},
 			mutator: getPodAnnotationsReplacerMutator(map[string]string{
 				"key1": "val1_mutated",
 				"key2": "val2",
 				"key4": "val4",
 				"key5": "val5",
 			}),
-			review: &admissionv1beta1.AdmissionReview{
-				Request: &admissionv1beta1.AdmissionRequest{
-					UID: "test",
-					Object: runtime.RawExtension{
-						Raw: getPodJSON(),
-					},
-				},
+			review: model.AdmissionReview{
+				ID:           "test",
+				NewObjectRaw: getPodJSON(),
 			},
 			expPatch: []string{
 				`{"op":"replace","path":"/metadata/annotations/key1","value":"val1_mutated"}`,
@@ -156,16 +189,12 @@ func TestPodAdmissionReviewMutation(t *testing.T) {
 			},
 		},
 
-		"A static webhook review of a Pod with an limit deletion mutator should delete the limi resources from a pod.": {
-			cfg:     mutating.WebhookConfig{Name: "test", Obj: &corev1.Pod{}},
+		"A static webhook review of a Pod with an limit deletion mutator should delete the limit resources from a pod.": {
+			cfg:     mutating.WebhookConfig{ID: "test", Obj: &corev1.Pod{}},
 			mutator: getPodResourceLimitDeletorMutator(),
-			review: &admissionv1beta1.AdmissionReview{
-				Request: &admissionv1beta1.AdmissionRequest{
-					UID: "test",
-					Object: runtime.RawExtension{
-						Raw: getPodJSON(),
-					},
-				},
+			review: model.AdmissionReview{
+				ID:           "test",
+				NewObjectRaw: getPodJSON(),
 			},
 			expPatch: []string{
 				`{"op":"remove","path":"/spec/containers/0/resources/limits"}`,
@@ -174,16 +203,12 @@ func TestPodAdmissionReviewMutation(t *testing.T) {
 		},
 
 		"A static webhook review of delete operation in a Pod should mutate the pod correctly.": {
-			cfg:     mutating.WebhookConfig{Name: "test", Obj: &corev1.Pod{}},
+			cfg:     mutating.WebhookConfig{ID: "test", Obj: &corev1.Pod{}},
 			mutator: getPodResourceLimitDeletorMutator(),
-			review: &admissionv1beta1.AdmissionReview{
-				Request: &admissionv1beta1.AdmissionRequest{
-					Operation: admissionv1beta1.Delete,
-					UID:       "test",
-					OldObject: runtime.RawExtension{
-						Raw: getPodJSON(),
-					},
-				},
+			review: model.AdmissionReview{
+				Operation:    model.OperationDelete,
+				ID:           "test",
+				OldObjectRaw: getPodJSON(),
 			},
 			expPatch: []string{
 				`{"op":"remove","path":"/spec/containers/0/resources/limits"}`,
@@ -192,15 +217,11 @@ func TestPodAdmissionReviewMutation(t *testing.T) {
 		},
 
 		"A dynamic webhook review of a Pod with an ns mutator should mutate the ns.": {
-			cfg:     mutating.WebhookConfig{Name: "test"},
+			cfg:     mutating.WebhookConfig{ID: "test"},
 			mutator: getPodNSMutator("myChangedNS"),
-			review: &admissionv1beta1.AdmissionReview{
-				Request: &admissionv1beta1.AdmissionRequest{
-					UID: "test",
-					Object: runtime.RawExtension{
-						Raw: getPodJSON(),
-					},
-				},
+			review: model.AdmissionReview{
+				ID:           "test",
+				NewObjectRaw: getPodJSON(),
 			},
 			expPatch: []string{
 				`{"op":"replace","path":"/metadata/namespace","value":"myChangedNS"}`,
@@ -208,20 +229,16 @@ func TestPodAdmissionReviewMutation(t *testing.T) {
 		},
 
 		"A dynamic webhook review of a Pod with an annotations mutator should mutate the annotations.": {
-			cfg: mutating.WebhookConfig{Name: "test"},
+			cfg: mutating.WebhookConfig{ID: "test"},
 			mutator: getPodAnnotationsReplacerMutator(map[string]string{
 				"key1": "val1_mutated",
 				"key2": "val2",
 				"key4": "val4",
 				"key5": "val5",
 			}),
-			review: &admissionv1beta1.AdmissionReview{
-				Request: &admissionv1beta1.AdmissionRequest{
-					UID: "test",
-					Object: runtime.RawExtension{
-						Raw: getPodJSON(),
-					},
-				},
+			review: model.AdmissionReview{
+				ID:           "test",
+				NewObjectRaw: getPodJSON(),
 			},
 			expPatch: []string{
 				`{"op":"replace","path":"/metadata/annotations/key1","value":"val1_mutated"}`,
@@ -231,15 +248,11 @@ func TestPodAdmissionReviewMutation(t *testing.T) {
 		},
 
 		"A dynamic webhook review of a Pod with an limit deletion mutator should delete the limi resources from a pod.": {
-			cfg:     mutating.WebhookConfig{Name: "test"},
+			cfg:     mutating.WebhookConfig{ID: "test"},
 			mutator: getPodResourceLimitDeletorMutator(),
-			review: &admissionv1beta1.AdmissionReview{
-				Request: &admissionv1beta1.AdmissionRequest{
-					UID: "test",
-					Object: runtime.RawExtension{
-						Raw: getPodJSON(),
-					},
-				},
+			review: model.AdmissionReview{
+				ID:           "test",
+				NewObjectRaw: getPodJSON(),
 			},
 			expPatch: []string{
 				`{"op":"remove","path":"/spec/containers/0/resources/limits"}`,
@@ -248,11 +261,11 @@ func TestPodAdmissionReviewMutation(t *testing.T) {
 		},
 
 		"A dynamic webhook review of a an unknown type should be able to mutate with the common object attributes (check unstructured object mutation).": {
-			cfg: mutating.WebhookConfig{Name: "test"},
-			mutator: mutating.MutatorFunc(func(_ context.Context, obj metav1.Object) (bool, error) {
+			cfg: mutating.WebhookConfig{ID: "test"},
+			mutator: mutating.MutatorFunc(func(_ context.Context, obj metav1.Object) (*mutating.MutatorResult, error) {
 				// Just a check to validate that is unstructured.
 				if _, ok := obj.(runtime.Unstructured); !ok {
-					return true, fmt.Errorf("not unstructured")
+					return nil, fmt.Errorf("not unstructured")
 				}
 
 				// Mutate.
@@ -264,33 +277,31 @@ func TestPodAdmissionReviewMutation(t *testing.T) {
 				labels["test2"] = "mutated-value2"
 				obj.SetLabels(labels)
 
-				return false, nil
+				return &mutating.MutatorResult{
+					MutatedObject: obj,
+				}, nil
 			}),
-			review: &admissionv1beta1.AdmissionReview{
-				Request: &admissionv1beta1.AdmissionRequest{
-					UID: "test",
-					Object: runtime.RawExtension{
-						Raw: []byte(`
-						{
-							"kind": "whatever",
-							"apiVersion": "v42",
-							"metadata": {
-								"name":"something",
-								"namespace":"someplace",
-								"labels": {
-									"test1": "value1"
-								},
-								"annotations":{
-									"key1":"val1",
-									"key2":"val2"
-								}
+			review: model.AdmissionReview{
+				ID: "test",
+				NewObjectRaw: []byte(`
+					{
+						"kind": "whatever",
+						"apiVersion": "v42",
+						"metadata": {
+							"name":"something",
+							"namespace":"someplace",
+							"labels": {
+								"test1": "value1"
 							},
-							"spec": {
-								"n": 42 
+							"annotations":{
+								"key1":"val1",
+								"key2":"val2"
 							}
-						}`),
-					},
-				},
+						},
+						"spec": {
+							"n": 42
+						}
+					}`),
 			},
 			expPatch: []string{
 				`{"op":"replace","path":"/metadata/labels/test1","value":"mutated-value1"}`,
@@ -299,11 +310,11 @@ func TestPodAdmissionReviewMutation(t *testing.T) {
 		},
 
 		"A dynamic webhook delete operation review of an unknown type should be able to mutate with the common object attributes (check unstructured object mutation).": {
-			cfg: mutating.WebhookConfig{Name: "test"},
-			mutator: mutating.MutatorFunc(func(_ context.Context, obj metav1.Object) (bool, error) {
+			cfg: mutating.WebhookConfig{ID: "test"},
+			mutator: mutating.MutatorFunc(func(_ context.Context, obj metav1.Object) (*mutating.MutatorResult, error) {
 				// Just a check to validate that is unstructured.
 				if _, ok := obj.(runtime.Unstructured); !ok {
-					return true, fmt.Errorf("not unstructured")
+					return nil, fmt.Errorf("not unstructured")
 				}
 
 				// Mutate.
@@ -315,34 +326,32 @@ func TestPodAdmissionReviewMutation(t *testing.T) {
 				labels["test2"] = "mutated-value2"
 				obj.SetLabels(labels)
 
-				return false, nil
+				return &mutating.MutatorResult{
+					MutatedObject: obj,
+				}, nil
 			}),
-			review: &admissionv1beta1.AdmissionReview{
-				Request: &admissionv1beta1.AdmissionRequest{
-					UID:       "test",
-					Operation: admissionv1beta1.Delete,
-					OldObject: runtime.RawExtension{
-						Raw: []byte(`
-						{
-							"kind": "whatever",
-							"apiVersion": "v42",
-							"metadata": {
-								"name":"something",
-								"namespace":"someplace",
-								"labels": {
-									"test1": "value1"
-								},
-								"annotations":{
-									"key1":"val1",
-									"key2":"val2"
-								}
+			review: model.AdmissionReview{
+				ID:        "test",
+				Operation: model.OperationDelete,
+				OldObjectRaw: []byte(`
+					{
+						"kind": "whatever",
+						"apiVersion": "v42",
+						"metadata": {
+							"name":"something",
+							"namespace":"someplace",
+							"labels": {
+								"test1": "value1"
 							},
-							"spec": {
-								"n": 42 
+							"annotations":{
+								"key1":"val1",
+								"key2":"val2"
 							}
-						}`),
-					},
-				},
+						},
+						"spec": {
+							"n": 42
+						}
+					}`),
 			},
 			expPatch: []string{
 				`{"op":"replace","path":"/metadata/labels/test1","value":"mutated-value1"}`,
@@ -359,19 +368,22 @@ func TestPodAdmissionReviewMutation(t *testing.T) {
 			wh, err := mutating.NewWebhook(test.cfg)
 			assert.NoError(err)
 
-			gotResponse := wh.Review(context.TODO(), test.review)
+			gotResponse, err := wh.Review(context.TODO(), test.review)
 
-			// Check uid, allowed and patch
-			assert.True(gotResponse.Allowed)
-			assert.Equal(test.review.Request.UID, gotResponse.UID)
-			gotPatch := string(gotResponse.Patch)
-			for _, expPatchOp := range test.expPatch {
-				assert.Contains(gotPatch, expPatchOp)
+			if test.expErr {
+				assert.Error(err)
+			} else if assert.NoError(err) {
+				got := gotResponse.(*model.MutatingAdmissionResponse)
+				gotPatch := string(got.JSONPatchPatch)
+				for _, expPatchOp := range test.expPatch {
+					assert.Contains(gotPatch, expPatchOp)
+				}
 			}
 		})
 	}
 }
 
+/*
 func BenchmarkPodAdmissionReviewMutation(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		mutator := getPodNSMutator("myChangedNS")
@@ -394,3 +406,4 @@ func BenchmarkPodAdmissionReviewMutation(b *testing.B) {
 		wh.Review(context.TODO(), ar)
 	}
 }
+*/

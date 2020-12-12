@@ -9,19 +9,33 @@ import (
 	"github.com/slok/kubewebhook/pkg/log"
 )
 
-// Mutator knows how to mutate the received kubernetes object.
-type Mutator interface {
-	// Mutate will received a pointr to an object that can be mutated
-	// mutators are grouped in chains so the mutate method can return
-	// a stop boolean to stop executing the chain and also an error.
-	Mutate(context.Context, metav1.Object) (stop bool, err error)
+// MutatorResult is the result of a mutator.
+type MutatorResult struct {
+	// StopChain will stop the chain of validators in case there is a chain set.
+	StopChain bool
+	// MutatedObject is the object that has been mutated. If is nil, it will be used the one
+	// received by the Mutator.
+	MutatedObject metav1.Object
+	// Warnings are special messages that can be set to warn the user (e.g deprecation messages, almost invalid resources...).
+	Warnings []string
 }
 
+// Mutator knows how to mutate the received kubernetes object.
+type Mutator interface {
+	// Mutate will received a Kubernetes object. What the mutator returns
+	// as result.MutatedObject is the object that will be used as the mutation
+	// it must be of the same type of the received one (if is a Pod, it must return a Pod)
+	// if no object is returned, it will be used the received one as the mutated one.
+	Mutate(context.Context, metav1.Object) (result *MutatorResult, err error)
+}
+
+//go:generate mockery --case underscore --output mutatingmock --outpkg mutatingmock --name Mutator
+
 // MutatorFunc is a helper type to create mutators from functions.
-type MutatorFunc func(context.Context, metav1.Object) (bool, error)
+type MutatorFunc func(context.Context, metav1.Object) (*MutatorResult, error)
 
 // Mutate satisfies Mutator interface.
-func (f MutatorFunc) Mutate(ctx context.Context, obj metav1.Object) (bool, error) {
+func (f MutatorFunc) Mutate(ctx context.Context, obj metav1.Object) (*MutatorResult, error) {
 	return f(ctx, obj)
 }
 
@@ -41,19 +55,37 @@ func NewChain(logger log.Logger, mutators ...Mutator) *Chain {
 }
 
 // Mutate will execute all the mutation chain.
-func (c *Chain) Mutate(ctx context.Context, obj metav1.Object) (bool, error) {
+func (c *Chain) Mutate(ctx context.Context, obj metav1.Object) (*MutatorResult, error) {
+	var warnings []string
 	for _, mt := range c.mutators {
 		select {
 		case <-ctx.Done():
-			return false, fmt.Errorf("mutator chain not finished correctly, context ended")
+			return nil, fmt.Errorf("mutator chain not finished correctly, context done")
 		default:
-			stop, err := mt.Mutate(ctx, obj)
-			if stop || err != nil {
-				return true, err
+			res, err := mt.Mutate(ctx, obj)
+			if err != nil {
+				return nil, err
+			}
+
+			if res == nil {
+				return nil, fmt.Errorf("validator result can't be `nil`")
+			}
+
+			// Don't lose the data through the chain, set warnings and pass around the mutated object.
+			warnings = append(warnings, res.Warnings...)
+			if res.MutatedObject != nil {
+				obj = res.MutatedObject
+			}
+
+			if res.StopChain {
+				res.Warnings = warnings
+				return res, nil
 			}
 		}
 	}
 
-	// Return false if used a chain of chains.
-	return false, nil
+	return &MutatorResult{
+		MutatedObject: obj,
+		Warnings:      warnings,
+	}, nil
 }

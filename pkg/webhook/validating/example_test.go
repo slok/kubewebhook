@@ -1,5 +1,6 @@
 package validating_test
 
+/*
 import (
 	"context"
 	"fmt"
@@ -110,3 +111,4 @@ func ExampleValidator_tracedValidatingWebhook() {
 	// Passing a valid tracer will trace all the reviews handled by the webhook.
 	_, _ = validating.NewWebhook(cfg)
 }
+*/

@@ -1,5 +1,6 @@
 package mutating
 
+/*
 import (
 	"context"
 
@@ -28,7 +29,7 @@ type tracedMutator struct {
 	tracer      opentracing.Tracer
 }
 
-func (m *tracedMutator) Mutate(ctx context.Context, obj metav1.Object) (bool, error) {
+func (m *tracedMutator) Mutate(ctx context.Context, obj metav1.Object) (*MutatorResult, error) {
 	span, ctx := m.createMutatorSpan(ctx)
 	defer span.Finish()
 
@@ -71,3 +72,4 @@ func (m *tracedMutator) createMutatorSpan(ctx context.Context) (opentracing.Span
 	ctx = opentracing.ContextWithSpan(ctx, span)
 	return span, ctx
 }
+*/

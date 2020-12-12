@@ -1,5 +1,6 @@
 package mutating_test
 
+/*
 import (
 	"context"
 
@@ -103,3 +104,4 @@ func ExampleMutator_tracedMutatingWebhook() {
 	// Passing a valid tracer  will trace all the reviews handled by the webhook.
 	_, _ = mutating.NewWebhook(cfg)
 }
+*/

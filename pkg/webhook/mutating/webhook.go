@@ -5,38 +5,33 @@ import (
 	"encoding/json"
 	"fmt"
 
-	opentracing "github.com/opentracing/opentracing-go"
 	"gomodules.xyz/jsonpatch/v3"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/slok/kubewebhook/pkg/log"
-	"github.com/slok/kubewebhook/pkg/observability/metrics"
+	"github.com/slok/kubewebhook/pkg/model"
 	"github.com/slok/kubewebhook/pkg/webhook"
 	"github.com/slok/kubewebhook/pkg/webhook/internal/helpers"
-	"github.com/slok/kubewebhook/pkg/webhook/internal/instrumenting"
 )
 
 // WebhookConfig is the Mutating webhook configuration.
 type WebhookConfig struct {
-	// Name is the name of the webhook.
-	Name string
+	// ID is the id of the webhook.
+	ID string
 	// Object is the object of the webhook, to use multiple types on the same webhook or
 	// type inference, don't set this field (will be `nil`).
 	Obj metav1.Object
 	// Mutator is the webhook mutator.
 	Mutator Mutator
-	// Tracer is the open tracing Tracer.
-	Tracer opentracing.Tracer
-	// MetricsRecorder is the metrics recorder.
-	MetricsRecorder metrics.Recorder
-	// Logger is the logger.
+	// Logger is the app logger.
 	Logger log.Logger
 }
 
 func (c *WebhookConfig) defaults() error {
-	if c.Name == "" {
-		return fmt.Errorf("name is required")
+	if c.ID == "" {
+		return fmt.Errorf("id is required")
 	}
 
 	if c.Mutator == nil {
@@ -47,18 +42,11 @@ func (c *WebhookConfig) defaults() error {
 		c.Logger = log.Dummy
 	}
 
-	if c.MetricsRecorder == nil {
-		c.MetricsRecorder = metrics.Dummy
-	}
-
-	if c.Tracer == nil {
-		c.Tracer = &opentracing.NoopTracer{}
-	}
-
 	return nil
 }
 
-type mutationWebhook struct {
+type mutatingWebhook struct {
+	id            string
 	objectCreator helpers.ObjectCreator
 	mutator       Mutator
 	cfg           WebhookConfig
@@ -82,89 +70,85 @@ func NewWebhook(cfg WebhookConfig) (webhook.Webhook, error) {
 		oc = helpers.NewDynamicObjectCreator()
 	}
 
-	// Create our webhook and wrap for instrumentation (metrics and tracing).
-	return &instrumenting.Webhook{
-		Webhook: &mutationWebhook{
-			objectCreator: oc,
-			mutator:       cfg.Mutator,
-			cfg:           cfg,
-			logger:        cfg.Logger,
-		},
-		ReviewKind:      metrics.MutatingReviewKind,
-		WebhookName:     cfg.Name,
-		MetricsRecorder: cfg.MetricsRecorder,
-		Tracer:          cfg.Tracer,
+	return &mutatingWebhook{
+		objectCreator: oc,
+		id:            cfg.ID,
+		mutator:       cfg.Mutator,
+		cfg:           cfg,
+		logger:        cfg.Logger,
 	}, nil
 }
 
-func (w mutationWebhook) Review(ctx context.Context, ar *admissionv1beta1.AdmissionReview) *admissionv1beta1.AdmissionResponse {
-	auid := ar.Request.UID
+func (w mutatingWebhook) ID() string { return w.id }
 
-	w.logger.Debugf("reviewing request %s, named: %s/%s", auid, ar.Request.Namespace, ar.Request.Name)
+func (w mutatingWebhook) Kind() webhook.Kind { return webhook.KindMutating }
+
+func (w mutatingWebhook) Review(ctx context.Context, ar model.AdmissionReview) (model.AdmissionResponse, error) {
+	w.logger.Debugf("reviewing request %s, named: %s/%s", ar.ID, ar.Namespace, ar.Name)
 
 	// Delete operations don't have body because should be gone on the deletion, instead they have the body
 	// of the object we want to delete as an old object.
-	raw := ar.Request.Object.Raw
-	if ar.Request.Operation == admissionv1beta1.Delete {
-		raw = ar.Request.OldObject.Raw
+	raw := ar.NewObjectRaw
+	if ar.Operation == model.OperationDelete {
+		raw = ar.OldObjectRaw
 	}
 
 	// Create a new object from the raw type.
 	runtimeObj, err := w.objectCreator.NewObject(raw)
 	if err != nil {
-		return w.toAdmissionErrorResponse(ar, err)
+		return nil, fmt.Errorf("could not create object from raw: %w", err)
 	}
 
 	mutatingObj, ok := runtimeObj.(metav1.Object)
 	if !ok {
-		err := fmt.Errorf("impossible to type assert the deep copy to metav1.Object")
-		return w.toAdmissionErrorResponse(ar, err)
+		return nil, fmt.Errorf("impossible to type assert the deep copy to metav1.Object")
 	}
 
 	return w.mutatingAdmissionReview(ctx, ar, raw, mutatingObj)
 
 }
 
-func (w mutationWebhook) mutatingAdmissionReview(ctx context.Context, ar *admissionv1beta1.AdmissionReview, rawObj []byte, obj metav1.Object) *admissionv1beta1.AdmissionResponse {
-	auid := ar.Request.UID
-
+func (w mutatingWebhook) mutatingAdmissionReview(ctx context.Context, ar model.AdmissionReview, rawObj []byte, objForMutation metav1.Object) (*model.MutatingAdmissionResponse, error) {
 	// Mutate the object.
-	_, err := w.mutator.Mutate(ctx, obj)
+	res, err := w.mutator.Mutate(ctx, objForMutation)
 	if err != nil {
-		return w.toAdmissionErrorResponse(ar, err)
+		return nil, fmt.Errorf("could not mutate object: %w", err)
 	}
 
-	mutatedJSON, err := json.Marshal(obj)
+	if res == nil {
+		return nil, fmt.Errorf("result is required, mutator result is nil")
+	}
+
+	// If the user returned a mutated object, it will not be used the one we provided to the mutator.
+	// if nil then, we use the one we provided.
+	mutatedObj := objForMutation
+	if res.MutatedObject != nil {
+		mutatedObj = res.MutatedObject
+	}
+	mutatedJSON, err := json.Marshal(mutatedObj)
 	if err != nil {
-		return w.toAdmissionErrorResponse(ar, err)
+		return nil, fmt.Errorf("could not marshal into JSON mutated object: %w", err)
 	}
 
 	patch, err := jsonpatch.CreatePatch(rawObj, mutatedJSON)
 	if err != nil {
-		return w.toAdmissionErrorResponse(ar, err)
+		return nil, fmt.Errorf("could not create JSON patch: %w", err)
 	}
 
 	marshalledPatch, err := json.Marshal(patch)
 	if err != nil {
-		return w.toAdmissionErrorResponse(ar, err)
+		return nil, fmt.Errorf("could not mashal into JSON, the JSON patch: %w", err)
 	}
-	w.logger.Debugf("json patch for request %s: %s", auid, string(marshalledPatch))
+	w.logger.Debugf("json patch for request %s: %s", ar.ID, string(marshalledPatch))
 
 	// Forge response.
-	return &admissionv1beta1.AdmissionResponse{
-		UID:       auid,
-		Allowed:   true,
-		Patch:     marshalledPatch,
-		PatchType: jsonPatchType,
-	}
+	return &model.MutatingAdmissionResponse{
+		ID:             ar.ID,
+		JSONPatchPatch: marshalledPatch,
+		Warnings:       res.Warnings,
+	}, nil
 }
 
-func (w mutationWebhook) toAdmissionErrorResponse(ar *admissionv1beta1.AdmissionReview, err error) *admissionv1beta1.AdmissionResponse {
-	return helpers.ToAdmissionErrorResponse(ar.Request.UID, err, w.logger)
+func (w mutatingWebhook) toAdmissionErrorResponse(ar model.AdmissionReview, err error) *admissionv1beta1.AdmissionResponse {
+	return helpers.ToAdmissionErrorResponse(types.UID(ar.ID), err, w.logger)
 }
-
-// jsonPatchType is the type for Kubernetes responses type.
-var jsonPatchType = func() *admissionv1beta1.PatchType {
-	pt := admissionv1beta1.PatchTypeJSONPatch
-	return &pt
-}()

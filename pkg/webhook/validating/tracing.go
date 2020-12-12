@@ -1,5 +1,6 @@
 package validating
 
+/*
 import (
 	"context"
 
@@ -28,14 +29,14 @@ type tracedValidator struct {
 	tracer        opentracing.Tracer
 }
 
-func (m *tracedValidator) Validate(ctx context.Context, obj metav1.Object) (stop bool, valid ValidatorResult, err error) {
+func (m *tracedValidator) Validate(ctx context.Context, obj metav1.Object) (*ValidatorResult, error) {
 	span, ctx := m.createValidatorSpan(ctx)
 	defer span.Finish()
 
 	span.LogKV("event", "start_validate")
 
 	// Validate.
-	stop, res, err := m.validator.Validate(ctx, obj)
+	res, err := m.validator.Validate(ctx, obj)
 
 	if err != nil {
 		opentracingext.Error.Set(span, true)
@@ -43,17 +44,17 @@ func (m *tracedValidator) Validate(ctx context.Context, obj metav1.Object) (stop
 			"event", "error",
 			"message", err,
 		)
-		return stop, res, err
+		return res, err
 	}
 
 	span.LogKV(
 		"event", "end_validate",
-		"stopChain", stop,
+		"stopChain", res.StopChain,
 		"valid", res.Valid,
 		"message", res.Message,
 	)
 
-	return stop, res, nil
+	return res, nil
 }
 
 func (m *tracedValidator) createValidatorSpan(ctx context.Context) (opentracing.Span, context.Context) {
@@ -73,3 +74,4 @@ func (m *tracedValidator) createValidatorSpan(ctx context.Context) (opentracing.
 	ctx = opentracing.ContextWithSpan(ctx, span)
 	return span, ctx
 }
+*/

@@ -11,57 +11,79 @@ import (
 
 // ValidatorResult is the result of a validator.
 type ValidatorResult struct {
-	Valid   bool
+	// StopChain will stop the chain of validators in case there is a chain set.
+	StopChain bool
+	// Valid tells the apiserver that the resource is correct and it should allow or not.
+	Valid bool
+	// Message will be used by the apiserver to give more information in case the resource is not valid.
 	Message string
+	// Warnings are special messages that can be set to warn the user (e.g deprecation messages, almost invalid resources...).
+	Warnings []string
 }
 
 // Validator knows how to validate the received kubernetes object.
 type Validator interface {
 	// Validate will received a pointer to an object, validators can be
-	// grouped in chains, that's why a stop boolean to stop executing the chain
-	// can be returned the validator, the valid parameter will denotate if the
-	// object is valid (if not valid the chain will be stopped also) and a error.
-	Validate(context.Context, metav1.Object) (stop bool, valid ValidatorResult, err error)
+	// grouped in chains, that's why we have a `StopChain` boolean in the result,
+	// to stop executing the validators chain.
+	Validate(context.Context, metav1.Object) (result *ValidatorResult, err error)
 }
 
+//go:generate mockery --case underscore --output validatingmock --outpkg validatingmock --name Validator
+
 // ValidatorFunc is a helper type to create validators from functions.
-type ValidatorFunc func(context.Context, metav1.Object) (stop bool, valid ValidatorResult, err error)
+type ValidatorFunc func(context.Context, metav1.Object) (result *ValidatorResult, err error)
 
 // Validate satisfies Validator interface.
-func (f ValidatorFunc) Validate(ctx context.Context, obj metav1.Object) (stop bool, valid ValidatorResult, err error) {
+func (f ValidatorFunc) Validate(ctx context.Context, obj metav1.Object) (result *ValidatorResult, err error) {
 	return f(ctx, obj)
 }
 
-// Chain is a chain of validators that will execute secuentially all the
-// validators that have been added to it. It satisfies Mutator interface.
-type Chain struct {
+type chain struct {
 	validators []Validator
 	logger     log.Logger
 }
 
-// NewChain returns a new chain.
-func NewChain(logger log.Logger, validators ...Validator) *Chain {
-	return &Chain{
+// NewChain returns a new chain of validators.
+// - If any of the validators returns an error, the chain will end.
+// - If any of the validators returns an stopChain == true, the chain will end.
+// - If any of the validators returns as no valid, the chain will end.
+func NewChain(logger log.Logger, validators ...Validator) Validator {
+	return chain{
 		validators: validators,
 		logger:     logger,
 	}
 }
 
 // Validate will execute all the validation chain.
-func (c *Chain) Validate(ctx context.Context, obj metav1.Object) (bool, ValidatorResult, error) {
+func (c chain) Validate(ctx context.Context, obj metav1.Object) (*ValidatorResult, error) {
+	var warnings []string
 	for _, vl := range c.validators {
 		select {
 		case <-ctx.Done():
-			return false, ValidatorResult{}, fmt.Errorf("validator chain not finished correctly, context ended")
+			return nil, fmt.Errorf("validator chain not finished correctly, context done")
 		default:
-			stop, res, err := vl.Validate(ctx, obj)
-			// If stop signal, or not valid or error return the obtained result and stop the chain.
-			if stop || !res.Valid || err != nil {
-				return true, res, err
+			res, err := vl.Validate(ctx, obj)
+			if err != nil {
+				return nil, err
+			}
+
+			if res == nil {
+				return nil, fmt.Errorf("validator result can't be `nil`")
+			}
+
+			// Don't lose the warnings through the chain.
+			warnings = append(warnings, res.Warnings...)
+
+			if res.StopChain || !res.Valid {
+				res.Warnings = warnings
+				return res, nil
 			}
 		}
 	}
 
-	// Return false if used a chain of chains.
-	return false, ValidatorResult{Valid: true}, nil
+	return &ValidatorResult{
+		Valid:    true,
+		Warnings: warnings,
+	}, nil
 }

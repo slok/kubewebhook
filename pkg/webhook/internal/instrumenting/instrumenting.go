@@ -1,14 +1,14 @@
 package instrumenting
 
+/*
 import (
 	"context"
 	"time"
 
 	opentracing "github.com/opentracing/opentracing-go"
 	opentracingext "github.com/opentracing/opentracing-go/ext"
-	admissionv1beta1 "k8s.io/api/admission/v1beta1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/slok/kubewebhook/pkg/model"
 	"github.com/slok/kubewebhook/pkg/observability/metrics"
 	"github.com/slok/kubewebhook/pkg/webhook"
 	"github.com/slok/kubewebhook/pkg/webhook/internal/helpers"
@@ -26,7 +26,7 @@ type Webhook struct {
 }
 
 // Review will review using the webhook wrapping it with instrumentation.
-func (w *Webhook) Review(ctx context.Context, ar *admissionv1beta1.AdmissionReview) *admissionv1beta1.AdmissionResponse {
+func (w *Webhook) Review(ctx context.Context, ar model.AdmissionReview) (model.AdmissionResponse, error) {
 	// Initialize metrics.
 	w.incAdmissionReviewMetric(ar, false)
 	start := time.Now()
@@ -39,79 +39,81 @@ func (w *Webhook) Review(ctx context.Context, ar *admissionv1beta1.AdmissionRevi
 
 	// Call the review process.
 	span.LogKV("event", "start_review")
-	resp := w.Webhook.Review(ctx, ar)
-
-	// Check if we had an error on the review or it ended correctly.
-	if resp.Result != nil && resp.Result.Status == metav1.StatusFailure {
+	resp, err := w.Webhook.Review(ctx, ar)
+	if err != nil {
 		w.incAdmissionReviewMetric(ar, true)
 		opentracingext.Error.Set(span, true)
 		span.LogKV(
 			"event", "error",
-			"message", resp.Result.Message,
+			// TODO(slok)
+			//"message", resp.Result.Message,
 		)
-		return resp
+		return resp, err
 	}
 
 	// If its a validating response then increase our metric counter
-	if resp.PatchType == nil {
-		w.incValidationReviewResultMetric(ar, resp.Allowed)
-	}
+	// TODO.
+	// if !resp.Mutation {
+	// 	w.incValidationReviewResultMetric(ar, resp.Allowed)
+	// }
 
-	var msg, status string
-	if resp.Result != nil {
-		msg = resp.Result.Message
-		status = resp.Result.Status
-	}
-	span.LogKV(
-		"event", "end_review",
-		"allowed", resp.Allowed,
-		"message", msg,
-		"patch", string(resp.Patch),
-		"status", status,
-	)
+	//var msg, status string
+	//if resp.Result != nil {
+	//	// TODO(slok)
+	//	msg = resp.Result.Message
+	//	status = resp.Result.Status
+	//}
+	// TODO.
+	// span.LogKV(
+	// 	"event", "end_review",
+	// 	"allowed", resp.Allowed,
+	// 	"message", msg,
+	// 	"patch", string(resp.JSONPatchPatch),
+	// 	"status", status,
+	// )
 
-	return resp
+	return resp, nil
 }
 
-func (w *Webhook) incAdmissionReviewMetric(ar *admissionv1beta1.AdmissionReview, err bool) {
+func (w *Webhook) incAdmissionReviewMetric(ar model.AdmissionReview, err bool) {
 	if err {
 		w.MetricsRecorder.IncAdmissionReviewError(
 			w.WebhookName,
-			ar.Request.Namespace,
-			helpers.GroupVersionResourceToString(ar.Request.Resource),
-			ar.Request.Operation,
+			ar.Namespace,
+			helpers.GroupVersionResourceToString(*ar.RequestGVR),
+			ar.Operation,
 			w.ReviewKind)
 	} else {
 		w.MetricsRecorder.IncAdmissionReview(
 			w.WebhookName,
-			ar.Request.Namespace,
-			helpers.GroupVersionResourceToString(ar.Request.Resource),
-			ar.Request.Operation,
+			ar.Namespace,
+			helpers.GroupVersionResourceToString(*ar.RequestGVR),
+			ar.Operation,
 			w.ReviewKind)
 	}
 }
 
-func (w *Webhook) observeAdmissionReviewDuration(ar *admissionv1beta1.AdmissionReview, start time.Time) {
+func (w *Webhook) observeAdmissionReviewDuration(ar model.AdmissionReview, start time.Time) {
 	w.MetricsRecorder.ObserveAdmissionReviewDuration(
 		w.WebhookName,
-		ar.Request.Namespace,
-		helpers.GroupVersionResourceToString(ar.Request.Resource),
-		ar.Request.Operation,
+		ar.Namespace,
+		helpers.GroupVersionResourceToString(*ar.RequestGVR),
+		ar.Operation,
 		w.ReviewKind,
 		start)
 }
 
-func (w *Webhook) incValidationReviewResultMetric(ar *admissionv1beta1.AdmissionReview, allowed bool) {
+func (w *Webhook) incValidationReviewResultMetric(ar model.AdmissionReview, allowed bool) {
 	w.MetricsRecorder.IncValidationReviewResult(
 		w.WebhookName,
-		ar.Request.Namespace,
-		helpers.GroupVersionResourceToString(ar.Request.Resource),
-		ar.Request.Operation,
+		ar.Namespace,
+		helpers.GroupVersionResourceToString(*ar.RequestGVR),
+		ar.Operation,
 		allowed,
 	)
 }
 
-func (w *Webhook) createReviewSpan(ctx context.Context, ar *admissionv1beta1.AdmissionReview) opentracing.Span {
+func (w *Webhook) createReviewSpan(ctx context.Context, ar model.AdmissionReview) opentracing.Span {
 	var spanOpts []opentracing.StartSpanOption
 
 	// Check if we receive a previous span or we are the root span.
@@ -128,10 +130,11 @@ func (w *Webhook) createReviewSpan(ctx context.Context, ar *admissionv1beta1.Adm
 	span.SetTag("kubewebhook.webhook.kind", w.ReviewKind)
 	span.SetTag("kubewebhook.webhook.name", w.WebhookName)
 
-	span.SetTag("kubernetes.review.uid", ar.Request.UID)
-	span.SetTag("kubernetes.review.namespace", ar.Request.Namespace)
-	span.SetTag("kubernetes.review.name", ar.Request.Name)
-	span.SetTag("kubernetes.review.objectKind", helpers.GroupVersionResourceToString(ar.Request.Resource))
+	span.SetTag("kubernetes.review.uid", ar.ID)
+	span.SetTag("kubernetes.review.namespace", ar.Namespace)
+	span.SetTag("kubernetes.review.name", ar.Name)
+	span.SetTag("kubernetes.review.objectKind", helpers.GroupVersionResourceToString(*ar.RequestGVR))
 
 	return span
 }
+*/

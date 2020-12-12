@@ -1,5 +1,6 @@
 package instrumenting_test
 
+/*
 import (
 	"context"
 	"testing"
@@ -86,3 +87,4 @@ func TestInstrumentedMetricsWebhook(t *testing.T) {
 		})
 	}
 }
+*/
