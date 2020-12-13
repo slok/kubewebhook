@@ -16,20 +16,19 @@ import (
 // ServeWebhook shows how to serve a validating webhook that denies all pods.
 func ExampleHandlerFor_serveWebhook() {
 	// Create (in)validator.
-	v := validating.ValidatorFunc(func(_ context.Context, obj metav1.Object) (bool, validating.ValidatorResult, error) {
+	v := validating.ValidatorFunc(func(_ context.Context, obj metav1.Object) (*validating.ValidatorResult, error) {
 		// Assume always is a pod (you should check type assertion is ok to not panic).
 		pod := obj.(*corev1.Pod)
 
-		res := validating.ValidatorResult{
+		return &validating.ValidatorResult{
 			Valid:   false,
 			Message: fmt.Sprintf("%s/%s denied because sll pods will be denied", pod.Namespace, pod.Name),
-		}
-		return false, res, nil
+		}, nil
 	})
 
 	// Create webhook (don't check error).
 	cfg := validating.WebhookConfig{
-		Name:      "serveWebhook",
+		ID:        "serveWebhook",
 		Obj:       &corev1.Pod{},
 		Validator: v,
 	}
@@ -43,25 +42,24 @@ func ExampleHandlerFor_serveWebhook() {
 // ServeMultipleWebhooks shows how to serve multiple webhooks in the same server.
 func ExampleHandlerFor_serveMultipleWebhooks() {
 	// Create (in)validator.
-	v := validating.ValidatorFunc(func(_ context.Context, obj metav1.Object) (bool, validating.ValidatorResult, error) {
+	v := validating.ValidatorFunc(func(_ context.Context, obj metav1.Object) (*validating.ValidatorResult, error) {
 		// Assume always is a pod (you should check type assertion is ok to not panic).
 		pod := obj.(*corev1.Pod)
 
-		res := validating.ValidatorResult{
+		return &validating.ValidatorResult{
 			Valid:   false,
 			Message: fmt.Sprintf("%s/%s denied because sll pods will be denied", pod.Namespace, pod.Name),
-		}
-		return false, res, nil
+		}, nil
 	})
 
 	// Create a stub mutator.
-	m := mutating.MutatorFunc(func(_ context.Context, obj metav1.Object) (bool, error) {
-		return false, nil
+	m := mutating.MutatorFunc(func(_ context.Context, obj metav1.Object) (*mutating.MutatorResult, error) {
+		return &mutating.MutatorResult{}, nil
 	})
 
 	// Create webhooks (don't check error).
 	vcfg := validating.WebhookConfig{
-		Name:      "validatingServeWebhook",
+		ID:        "validatingServeWebhook",
 		Obj:       &corev1.Pod{},
 		Validator: v,
 	}
@@ -69,7 +67,7 @@ func ExampleHandlerFor_serveMultipleWebhooks() {
 	vwhHandler, _ := whhttp.HandlerFor(vwh)
 
 	mcfg := mutating.WebhookConfig{
-		Name:    "muratingServeWebhook",
+		ID:      "muratingServeWebhook",
 		Obj:     &corev1.Pod{},
 		Mutator: m,
 	}
