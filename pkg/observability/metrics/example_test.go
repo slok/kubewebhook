@@ -1,5 +1,6 @@
 package metrics_test
 
+/*
 import (
 	"context"
 	"net/http"
@@ -51,3 +52,4 @@ func ExamplePrometheus_servePrometheusMetrics() {
 		_ = http.ListenAndServe(":8081", promHandler)
 	}()
 }
+*/

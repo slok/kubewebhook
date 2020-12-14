@@ -1,10 +1,13 @@
 package metrics
 
+/*
 import (
 	"strconv"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
+
+	"github.com/slok/kubewebhook/pkg/model"
 )
 
 const (
@@ -73,7 +76,7 @@ func (p *Prometheus) registerMetrics() {
 }
 
 // IncAdmissionReview satisfies Recorder interface.
-func (p *Prometheus) IncAdmissionReview(webhook, namespace, resource string, operation Operation, kind ReviewKind) {
+func (p *Prometheus) IncAdmissionReview(webhook, namespace, resource string, operation model.AdmissionReviewOp, kind ReviewKind) {
 	p.admissionReview.WithLabelValues(
 		webhook,
 		namespace,
@@ -83,7 +86,7 @@ func (p *Prometheus) IncAdmissionReview(webhook, namespace, resource string, ope
 }
 
 // IncAdmissionReviewError satisfies Recorder interface.
-func (p *Prometheus) IncAdmissionReviewError(webhook, namespace, resource string, operation Operation, kind ReviewKind) {
+func (p *Prometheus) IncAdmissionReviewError(webhook, namespace, resource string, operation model.AdmissionReviewOp, kind ReviewKind) {
 	p.admissionReviewErr.WithLabelValues(
 		webhook,
 		namespace,
@@ -93,7 +96,7 @@ func (p *Prometheus) IncAdmissionReviewError(webhook, namespace, resource string
 }
 
 // ObserveAdmissionReviewDuration satisfies Recorder interface.
-func (p *Prometheus) ObserveAdmissionReviewDuration(webhook, namespace, resource string, operation Operation, kind ReviewKind, start time.Time) {
+func (p *Prometheus) ObserveAdmissionReviewDuration(webhook, namespace, resource string, operation model.AdmissionReviewOp, kind ReviewKind, start time.Time) {
 	secs := p.getDuration(start).Seconds()
 	p.admissionReviewDuration.WithLabelValues(
 		webhook,
@@ -104,7 +107,7 @@ func (p *Prometheus) ObserveAdmissionReviewDuration(webhook, namespace, resource
 }
 
 // IncValidationReviewResult satisfies Recorder interface.
-func (p *Prometheus) IncValidationReviewResult(webhook, namespace, resource string, operation Operation, allowed bool) {
+func (p *Prometheus) IncValidationReviewResult(webhook, namespace, resource string, operation model.AdmissionReviewOp, allowed bool) {
 	p.validationReviewResult.WithLabelValues(
 		webhook,
 		namespace,
@@ -117,3 +120,4 @@ func (p *Prometheus) IncValidationReviewResult(webhook, namespace, resource stri
 func (p *Prometheus) getDuration(start time.Time) time.Duration {
 	return time.Since(start)
 }
+*/

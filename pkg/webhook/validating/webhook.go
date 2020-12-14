@@ -77,7 +77,7 @@ type validatingWebhook struct {
 
 func (w validatingWebhook) ID() string { return w.id }
 
-func (w validatingWebhook) Kind() webhook.Kind { return webhook.KindValidating }
+func (w validatingWebhook) Kind() model.WebhookKind { return model.WebhookKindValidating }
 
 func (w validatingWebhook) Review(ctx context.Context, ar model.AdmissionReview) (model.AdmissionResponse, error) {
 	w.logger.Debugf("reviewing request %s, named: %s/%s", ar.ID, ar.Namespace, ar.Name)
@@ -104,6 +104,10 @@ func (w validatingWebhook) Review(ctx context.Context, ar model.AdmissionReview)
 	res, err := w.validator.Validate(ctx, validatingObj)
 	if err != nil {
 		return nil, fmt.Errorf("validator error: %w", err)
+	}
+
+	if res == nil {
+		return nil, fmt.Errorf("result is required, validator result is nil")
 	}
 
 	// Forge response.

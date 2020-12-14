@@ -7,20 +7,31 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
+// AdmissionReviewVersion reprensents the version of the admission review.
+type AdmissionReviewVersion string
+
+const (
+	// AdmissionReviewVersionV1beta1 is the version of the v1beta1 webhooks admission review.
+	AdmissionReviewVersionV1beta1 AdmissionReviewVersion = "v1beta1"
+
+	// AdmissionReviewVersionV1 is the version of the v1 webhooks admission review.
+	AdmissionReviewVersionV1 AdmissionReviewVersion = "v1"
+)
+
 // AdmissionReviewOp represents an admission review operation.
 type AdmissionReviewOp string
 
 const (
 	// OperationUnknown is an unknown operation.
-	OperationUnknown AdmissionReviewOp = "UNKNOWN"
+	OperationUnknown AdmissionReviewOp = "unknown"
 	// OperationCreate is a create operation.
-	OperationCreate AdmissionReviewOp = "CREATE"
+	OperationCreate AdmissionReviewOp = "create"
 	// OperationUpdate is a update operation.
-	OperationUpdate AdmissionReviewOp = "UPDATE"
+	OperationUpdate AdmissionReviewOp = "update"
 	// OperationDelete is a delete operation.
-	OperationDelete AdmissionReviewOp = "DELETE"
+	OperationDelete AdmissionReviewOp = "delete"
 	// OperationConnect is a connect operation.
-	OperationConnect AdmissionReviewOp = "CONNECT"
+	OperationConnect AdmissionReviewOp = "connect"
 )
 
 // AdmissionReview represents a request admission review.
@@ -31,6 +42,7 @@ type AdmissionReview struct {
 	Name         string
 	Namespace    string
 	Operation    AdmissionReviewOp
+	Version      AdmissionReviewVersion
 	RequestGVR   *metav1.GroupVersionResource
 	RequestGVK   *metav1.GroupVersionKind
 	OldObjectRaw []byte
@@ -50,6 +62,7 @@ func NewAdmissionReviewV1Beta1(ar *admissionv1beta1.AdmissionReview) AdmissionRe
 		OriginalAdmissionReview: ar,
 		ID:                      string(ar.Request.UID),
 		Name:                    ar.Request.Name,
+		Version:                 AdmissionReviewVersionV1beta1,
 		Namespace:               ar.Request.Namespace,
 		Operation:               v1Beta1OperationToModel(ar.Request.Operation),
 		OldObjectRaw:            ar.Request.OldObject.Raw,
@@ -88,6 +101,7 @@ func NewAdmissionReviewV1(ar *admissionv1.AdmissionReview) AdmissionReview {
 		ID:                      string(ar.Request.UID),
 		Name:                    ar.Request.Name,
 		Namespace:               ar.Request.Namespace,
+		Version:                 AdmissionReviewVersionV1,
 		Operation:               v1OperationToModel(ar.Request.Operation),
 		OldObjectRaw:            ar.Request.OldObject.Raw,
 		NewObjectRaw:            ar.Request.Object.Raw,

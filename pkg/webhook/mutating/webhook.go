@@ -81,7 +81,7 @@ func NewWebhook(cfg WebhookConfig) (webhook.Webhook, error) {
 
 func (w mutatingWebhook) ID() string { return w.id }
 
-func (w mutatingWebhook) Kind() webhook.Kind { return webhook.KindMutating }
+func (w mutatingWebhook) Kind() model.WebhookKind { return model.WebhookKindMutating }
 
 func (w mutatingWebhook) Review(ctx context.Context, ar model.AdmissionReview) (model.AdmissionResponse, error) {
 	w.logger.Debugf("reviewing request %s, named: %s/%s", ar.ID, ar.Namespace, ar.Name)
