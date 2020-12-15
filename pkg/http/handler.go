@@ -66,10 +66,6 @@ func HandlerFor(webhook webhook.Webhook) (http.Handler, error) {
 			return
 		}
 
-		// Set the admission request on the context.
-		// TODO(slok)
-		//ctx := whcontext.SetAdmissionRequest(r.Context(), ar.OriginalAdmissionReview)
-
 		// Webhook execution logic. This is how we are dealing with the different responses:
 		// |                        | HTTP Code             | status.Code | status.Status | status.Message |
 		// |------------------------|-----------------------| ------------|---------------|----------------|
@@ -163,6 +159,7 @@ func validatingModelResponseToJSON(review model.AdmissionReview, resp *model.Val
 	case *admissionv1beta1.AdmissionReview:
 		// TODO(slok): Log warnings being used with v1beta1.
 		data, err := json.Marshal(admissionv1beta1.AdmissionReview{
+			TypeMeta: v1beta1AdmissionReviewTypeMeta,
 			Response: &admissionv1beta1.AdmissionResponse{
 				UID:     types.UID(review.ID),
 				Allowed: resp.Allowed,
@@ -173,6 +170,7 @@ func validatingModelResponseToJSON(review model.AdmissionReview, resp *model.Val
 
 	case *admissionv1.AdmissionReview:
 		data, err := json.Marshal(admissionv1.AdmissionReview{
+			TypeMeta: v1AdmissionReviewTypeMeta,
 			Response: &admissionv1.AdmissionResponse{
 				UID:      types.UID(review.ID),
 				Warnings: resp.Warnings,
@@ -197,6 +195,7 @@ func mutatingModelResponseToJSON(review model.AdmissionReview, resp *model.Mutat
 	case *admissionv1beta1.AdmissionReview:
 		// TODO(slok): Log warnings being used with v1beta1.
 		data, err := json.Marshal(admissionv1beta1.AdmissionReview{
+			TypeMeta: v1beta1AdmissionReviewTypeMeta,
 			Response: &admissionv1beta1.AdmissionResponse{
 				UID:       types.UID(review.ID),
 				PatchType: v1beta1JSONPatchType,
@@ -208,6 +207,7 @@ func mutatingModelResponseToJSON(review model.AdmissionReview, resp *model.Mutat
 
 	case *admissionv1.AdmissionReview:
 		data, err := json.Marshal(admissionv1.AdmissionReview{
+			TypeMeta: v1AdmissionReviewTypeMeta,
 			Response: &admissionv1.AdmissionResponse{
 				UID:       types.UID(review.ID),
 				PatchType: v1JSONPatchType,
@@ -234,7 +234,10 @@ func errorToJSON(review model.AdmissionReview, err error) ([]byte, error) {
 			},
 		}
 
-		return json.Marshal(admissionv1beta1.AdmissionReview{Response: r})
+		return json.Marshal(admissionv1beta1.AdmissionReview{
+			TypeMeta: v1beta1AdmissionReviewTypeMeta,
+			Response: r,
+		})
 	case *admissionv1.AdmissionReview:
 		r := &admissionv1.AdmissionResponse{
 			UID: types.UID(review.ID),
@@ -244,18 +247,32 @@ func errorToJSON(review model.AdmissionReview, err error) ([]byte, error) {
 			},
 		}
 
-		return json.Marshal(admissionv1.AdmissionReview{Response: r})
+		return json.Marshal(admissionv1.AdmissionReview{
+			TypeMeta: v1AdmissionReviewTypeMeta,
+			Response: r,
+		})
 	}
 
 	return nil, fmt.Errorf("invalid admission response type")
 }
 
-var v1beta1JSONPatchType = func() *admissionv1beta1.PatchType {
-	pt := admissionv1beta1.PatchTypeJSONPatch
-	return &pt
-}()
+var (
+	v1beta1JSONPatchType = func() *admissionv1beta1.PatchType {
+		pt := admissionv1beta1.PatchTypeJSONPatch
+		return &pt
+	}()
+	v1JSONPatchType = func() *admissionv1.PatchType {
+		pt := admissionv1.PatchTypeJSONPatch
+		return &pt
+	}()
 
-var v1JSONPatchType = func() *admissionv1.PatchType {
-	pt := admissionv1.PatchTypeJSONPatch
-	return &pt
-}()
+	v1beta1AdmissionReviewTypeMeta = metav1.TypeMeta{
+		Kind:       "AdmissionReview",
+		APIVersion: "admission.k8s.io/v1beta1",
+	}
+
+	v1AdmissionReviewTypeMeta = metav1.TypeMeta{
+		Kind:       "AdmissionReview",
+		APIVersion: "admission.k8s.io/v1",
+	}
+)

@@ -26,11 +26,11 @@ func TestMutatorChain(t *testing.T) {
 		"Should call all the mutators.": {
 			mutatorMocks: func() []mutating.Mutator {
 				m1, m2, m3, m4, m5 := &mutatingmock.Mutator{}, &mutatingmock.Mutator{}, &mutatingmock.Mutator{}, &mutatingmock.Mutator{}, &mutatingmock.Mutator{}
-				m1.On("Mutate", mock.Anything, mock.Anything).Return(&mutating.MutatorResult{}, nil)
-				m2.On("Mutate", mock.Anything, mock.Anything).Return(&mutating.MutatorResult{}, nil)
-				m3.On("Mutate", mock.Anything, mock.Anything).Return(&mutating.MutatorResult{}, nil)
-				m4.On("Mutate", mock.Anything, mock.Anything).Return(&mutating.MutatorResult{}, nil)
-				m5.On("Mutate", mock.Anything, mock.Anything).Return(&mutating.MutatorResult{}, nil)
+				m1.On("Mutate", mock.Anything, mock.Anything, mock.Anything).Return(&mutating.MutatorResult{}, nil)
+				m2.On("Mutate", mock.Anything, mock.Anything, mock.Anything).Return(&mutating.MutatorResult{}, nil)
+				m3.On("Mutate", mock.Anything, mock.Anything, mock.Anything).Return(&mutating.MutatorResult{}, nil)
+				m4.On("Mutate", mock.Anything, mock.Anything, mock.Anything).Return(&mutating.MutatorResult{}, nil)
+				m5.On("Mutate", mock.Anything, mock.Anything, mock.Anything).Return(&mutating.MutatorResult{}, nil)
 				return []mutating.Mutator{m1, m2, m3, m4, m5}
 			},
 			expResult: &mutating.MutatorResult{},
@@ -46,11 +46,11 @@ func TestMutatorChain(t *testing.T) {
 				obj4 := &corev1.Pod{ObjectMeta: metav1.ObjectMeta{Name: "p4"}}
 
 				m1, m2, m3, m4, m5 := &mutatingmock.Mutator{}, &mutatingmock.Mutator{}, &mutatingmock.Mutator{}, &mutatingmock.Mutator{}, &mutatingmock.Mutator{}
-				m1.On("Mutate", mock.Anything, obj0).Return(&mutating.MutatorResult{MutatedObject: obj1}, nil)
-				m2.On("Mutate", mock.Anything, obj1).Return(&mutating.MutatorResult{MutatedObject: obj2}, nil)
-				m3.On("Mutate", mock.Anything, obj2).Return(&mutating.MutatorResult{}, nil) // No mutation, should keep the previous one.
-				m4.On("Mutate", mock.Anything, obj2).Return(&mutating.MutatorResult{MutatedObject: obj3}, nil)
-				m5.On("Mutate", mock.Anything, obj3).Return(&mutating.MutatorResult{MutatedObject: obj4}, nil)
+				m1.On("Mutate", mock.Anything, mock.Anything, obj0).Return(&mutating.MutatorResult{MutatedObject: obj1}, nil)
+				m2.On("Mutate", mock.Anything, mock.Anything, obj1).Return(&mutating.MutatorResult{MutatedObject: obj2}, nil)
+				m3.On("Mutate", mock.Anything, mock.Anything, obj2).Return(&mutating.MutatorResult{}, nil) // No mutation, should keep the previous one.
+				m4.On("Mutate", mock.Anything, mock.Anything, obj2).Return(&mutating.MutatorResult{MutatedObject: obj3}, nil)
+				m5.On("Mutate", mock.Anything, mock.Anything, obj3).Return(&mutating.MutatorResult{MutatedObject: obj4}, nil)
 				return []mutating.Mutator{m1, m2, m3, m4, m5}
 			},
 			expResult: &mutating.MutatorResult{
@@ -63,7 +63,7 @@ func TestMutatorChain(t *testing.T) {
 			mutatorMocks: func() []mutating.Mutator {
 				obj0 := &corev1.Pod{ObjectMeta: metav1.ObjectMeta{Name: "p0"}}
 				m1 := &mutatingmock.Mutator{}
-				m1.On("Mutate", mock.Anything, obj0).Return(&mutating.MutatorResult{}, nil)
+				m1.On("Mutate", mock.Anything, mock.Anything, obj0).Return(&mutating.MutatorResult{}, nil)
 				return []mutating.Mutator{m1}
 			},
 			expResult: &mutating.MutatorResult{
@@ -74,9 +74,9 @@ func TestMutatorChain(t *testing.T) {
 		"Should stop in the middle of the chain if any of the mutators stops the chain..": {
 			mutatorMocks: func() []mutating.Mutator {
 				m1, m2, m3, m4, m5 := &mutatingmock.Mutator{}, &mutatingmock.Mutator{}, &mutatingmock.Mutator{}, &mutatingmock.Mutator{}, &mutatingmock.Mutator{}
-				m1.On("Mutate", mock.Anything, mock.Anything).Return(&mutating.MutatorResult{}, nil)
-				m2.On("Mutate", mock.Anything, mock.Anything).Return(&mutating.MutatorResult{}, nil)
-				m3.On("Mutate", mock.Anything, mock.Anything).Return(&mutating.MutatorResult{StopChain: true}, nil)
+				m1.On("Mutate", mock.Anything, mock.Anything, mock.Anything).Return(&mutating.MutatorResult{}, nil)
+				m2.On("Mutate", mock.Anything, mock.Anything, mock.Anything).Return(&mutating.MutatorResult{}, nil)
+				m3.On("Mutate", mock.Anything, mock.Anything, mock.Anything).Return(&mutating.MutatorResult{StopChain: true}, nil)
 				return []mutating.Mutator{m1, m2, m3, m4, m5}
 			},
 			expResult: &mutating.MutatorResult{StopChain: true},
@@ -85,9 +85,9 @@ func TestMutatorChain(t *testing.T) {
 		"In case of error the chain should be stopped.": {
 			mutatorMocks: func() []mutating.Mutator {
 				m1, m2, m3, m4, m5 := &mutatingmock.Mutator{}, &mutatingmock.Mutator{}, &mutatingmock.Mutator{}, &mutatingmock.Mutator{}, &mutatingmock.Mutator{}
-				m1.On("Mutate", mock.Anything, mock.Anything).Return(&mutating.MutatorResult{}, nil)
-				m2.On("Mutate", mock.Anything, mock.Anything).Return(&mutating.MutatorResult{}, nil)
-				m3.On("Mutate", mock.Anything, mock.Anything).Return(&mutating.MutatorResult{}, fmt.Errorf("wanted error"))
+				m1.On("Mutate", mock.Anything, mock.Anything, mock.Anything).Return(&mutating.MutatorResult{}, nil)
+				m2.On("Mutate", mock.Anything, mock.Anything, mock.Anything).Return(&mutating.MutatorResult{}, nil)
+				m3.On("Mutate", mock.Anything, mock.Anything, mock.Anything).Return(&mutating.MutatorResult{}, fmt.Errorf("wanted error"))
 				return []mutating.Mutator{m1, m2, m3, m4, m5}
 			},
 			expErr: true,
@@ -103,7 +103,7 @@ func TestMutatorChain(t *testing.T) {
 
 			// Execute.
 			chain := mutating.NewChain(log.Dummy, mutators...)
-			res, err := chain.Mutate(context.TODO(), test.initalObj)
+			res, err := chain.Mutate(context.TODO(), nil, test.initalObj)
 
 			// Check result.
 			if test.expErr {

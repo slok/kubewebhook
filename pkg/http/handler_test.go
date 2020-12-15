@@ -117,7 +117,7 @@ func TestDefaultWebhookFlow(t *testing.T) {
 				}
 				mw.On("Review", mock.Anything, mock.Anything).Once().Return(resp, nil)
 			},
-			expBody: `{"response":{"uid":"1234567890","allowed":true}}`,
+			expBody: `{"kind":"AdmissionReview","apiVersion":"admission.k8s.io/v1beta1","response":{"uid":"1234567890","allowed":true}}`,
 			expCode: 200,
 		},
 
@@ -132,7 +132,7 @@ func TestDefaultWebhookFlow(t *testing.T) {
 				}
 				mw.On("Review", mock.Anything, mock.Anything).Once().Return(resp, nil)
 			},
-			expBody: `{"response":{"uid":"1234567890","allowed":false,"status":{"metadata":{},"status":"Failure","message":"this is not valid because reasons"}}}`,
+			expBody: `{"kind":"AdmissionReview","apiVersion":"admission.k8s.io/v1beta1","response":{"uid":"1234567890","allowed":false,"status":{"metadata":{},"status":"Failure","message":"this is not valid because reasons"}}}`,
 			expCode: 400,
 		},
 
@@ -146,7 +146,7 @@ func TestDefaultWebhookFlow(t *testing.T) {
 				}
 				mw.On("Review", mock.Anything, mock.Anything).Once().Return(resp, nil)
 			},
-			expBody: `{"response":{"uid":"1234567890","allowed":true,"patch":"eyJzb21ldGhpbmciOiBzb21ldGhpbmd9","patchType":"JSONPatch"}}`,
+			expBody: `{"kind":"AdmissionReview","apiVersion":"admission.k8s.io/v1beta1","response":{"uid":"1234567890","allowed":true,"patch":"eyJzb21ldGhpbmciOiBzb21ldGhpbmd9","patchType":"JSONPatch"}}`,
 			expCode: 200,
 		},
 
@@ -160,7 +160,7 @@ func TestDefaultWebhookFlow(t *testing.T) {
 				}
 				mw.On("Review", mock.Anything, mock.Anything).Once().Return(resp, nil)
 			},
-			expBody: `{"response":{"uid":"1234567890","allowed":true,"patchType":"JSONPatch"}}`,
+			expBody: `{"kind":"AdmissionReview","apiVersion":"admission.k8s.io/v1beta1","response":{"uid":"1234567890","allowed":true,"patchType":"JSONPatch"}}`,
 			expCode: 204,
 		},
 
@@ -174,7 +174,7 @@ func TestDefaultWebhookFlow(t *testing.T) {
 				}
 				mw.On("Review", mock.Anything, mock.Anything).Once().Return(resp, nil)
 			},
-			expBody: `{"response":{"uid":"1234567890","allowed":true,"warnings":["warn1","warn2"]}}`,
+			expBody: `{"kind":"AdmissionReview","apiVersion":"admission.k8s.io/v1","response":{"uid":"1234567890","allowed":true,"warnings":["warn1","warn2"]}}`,
 			expCode: 200,
 		},
 
@@ -189,7 +189,7 @@ func TestDefaultWebhookFlow(t *testing.T) {
 				}
 				mw.On("Review", mock.Anything, mock.Anything).Once().Return(resp, nil)
 			},
-			expBody: `{"response":{"uid":"1234567890","allowed":false,"status":{"metadata":{},"status":"Failure","message":"this is not valid because reasons"},"warnings":["warn1","warn2"]}}`,
+			expBody: `{"kind":"AdmissionReview","apiVersion":"admission.k8s.io/v1","response":{"uid":"1234567890","allowed":false,"status":{"metadata":{},"status":"Failure","message":"this is not valid because reasons"},"warnings":["warn1","warn2"]}}`,
 			expCode: 400,
 		},
 
@@ -203,7 +203,7 @@ func TestDefaultWebhookFlow(t *testing.T) {
 				}
 				mw.On("Review", mock.Anything, mock.Anything).Once().Return(resp, nil)
 			},
-			expBody: `{"response":{"uid":"1234567890","allowed":true,"patch":"eyJzb21ldGhpbmciOiBzb21ldGhpbmd9","patchType":"JSONPatch","warnings":["warn1","warn2"]}}`,
+			expBody: `{"kind":"AdmissionReview","apiVersion":"admission.k8s.io/v1","response":{"uid":"1234567890","allowed":true,"patch":"eyJzb21ldGhpbmciOiBzb21ldGhpbmd9","patchType":"JSONPatch","warnings":["warn1","warn2"]}}`,
 			expCode: 200,
 		},
 
@@ -217,7 +217,7 @@ func TestDefaultWebhookFlow(t *testing.T) {
 				}
 				mw.On("Review", mock.Anything, mock.Anything).Once().Return(resp, nil)
 			},
-			expBody: `{"response":{"uid":"1234567890","allowed":true,"patchType":"JSONPatch","warnings":["warn1","warn2"]}}`,
+			expBody: `{"kind":"AdmissionReview","apiVersion":"admission.k8s.io/v1","response":{"uid":"1234567890","allowed":true,"patchType":"JSONPatch","warnings":["warn1","warn2"]}}`,
 			expCode: 204,
 		},
 
@@ -226,7 +226,7 @@ func TestDefaultWebhookFlow(t *testing.T) {
 			mock: func(mw *webhookmock.Webhook) {
 				mw.On("Review", mock.Anything, mock.Anything).Once().Return(nil, fmt.Errorf("wanted error"))
 			},
-			expBody: `{"response":{"uid":"1234567890","allowed":false,"status":{"metadata":{},"status":"Failure","message":"wanted error"}}}`,
+			expBody: `{"kind":"AdmissionReview","apiVersion":"admission.k8s.io/v1beta1","response":{"uid":"1234567890","allowed":false,"status":{"metadata":{},"status":"Failure","message":"wanted error"}}}`,
 			expCode: 500,
 		},
 
@@ -235,7 +235,7 @@ func TestDefaultWebhookFlow(t *testing.T) {
 			mock: func(mw *webhookmock.Webhook) {
 				mw.On("Review", mock.Anything, mock.Anything).Once().Return(nil, fmt.Errorf("wanted error"))
 			},
-			expBody: `{"response":{"uid":"1234567890","allowed":false,"status":{"metadata":{},"status":"Failure","message":"wanted error"}}}`,
+			expBody: `{"kind":"AdmissionReview","apiVersion":"admission.k8s.io/v1","response":{"uid":"1234567890","allowed":false,"status":{"metadata":{},"status":"Failure","message":"wanted error"}}}`,
 			expCode: 500,
 		},
 	}

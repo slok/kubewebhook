@@ -7,6 +7,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/slok/kubewebhook/pkg/log"
+	"github.com/slok/kubewebhook/pkg/model"
 )
 
 // MutatorResult is the result of a mutator.
@@ -22,21 +23,26 @@ type MutatorResult struct {
 
 // Mutator knows how to mutate the received kubernetes object.
 type Mutator interface {
-	// Mutate will received a Kubernetes object. What the mutator returns
-	// as result.MutatedObject is the object that will be used as the mutation
-	// it must be of the same type of the received one (if is a Pod, it must return a Pod)
+	// Mutate receives a Kubernetes resource object to be mutated, it must
+	// return an error or a mutation result. What the mutator returns
+	// as result.MutatedObject is the object that will be used as the mutation.
+	// It must be of the same type of the received one (if is a Pod, it must return a Pod)
 	// if no object is returned, it will be used the received one as the mutated one.
-	Mutate(context.Context, metav1.Object) (result *MutatorResult, err error)
+	// Also recieves the webhook admission review in case it wants more context and
+	// information of the review.
+	// Mutators can be grouped in chains, that's why we have a `StopChain` boolean
+	// in the result, to stop executing the validators chain.
+	Mutate(ctx context.Context, ar *model.AdmissionReview, obj metav1.Object) (result *MutatorResult, err error)
 }
 
 //go:generate mockery --case underscore --output mutatingmock --outpkg mutatingmock --name Mutator
 
 // MutatorFunc is a helper type to create mutators from functions.
-type MutatorFunc func(context.Context, metav1.Object) (*MutatorResult, error)
+type MutatorFunc func(context.Context, *model.AdmissionReview, metav1.Object) (*MutatorResult, error)
 
 // Mutate satisfies Mutator interface.
-func (f MutatorFunc) Mutate(ctx context.Context, obj metav1.Object) (*MutatorResult, error) {
-	return f(ctx, obj)
+func (f MutatorFunc) Mutate(ctx context.Context, ar *model.AdmissionReview, obj metav1.Object) (*MutatorResult, error) {
+	return f(ctx, ar, obj)
 }
 
 // Chain is a chain of mutators that will execute secuentially all the
@@ -55,14 +61,14 @@ func NewChain(logger log.Logger, mutators ...Mutator) *Chain {
 }
 
 // Mutate will execute all the mutation chain.
-func (c *Chain) Mutate(ctx context.Context, obj metav1.Object) (*MutatorResult, error) {
+func (c *Chain) Mutate(ctx context.Context, ar *model.AdmissionReview, obj metav1.Object) (*MutatorResult, error) {
 	var warnings []string
 	for _, mt := range c.mutators {
 		select {
 		case <-ctx.Done():
 			return nil, fmt.Errorf("mutator chain not finished correctly, context done")
 		default:
-			res, err := mt.Mutate(ctx, obj)
+			res, err := mt.Mutate(ctx, ar, obj)
 			if err != nil {
 				return nil, err
 			}

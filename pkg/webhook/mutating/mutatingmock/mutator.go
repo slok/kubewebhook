@@ -5,8 +5,10 @@ package mutatingmock
 import (
 	context "context"
 
-	mutating "github.com/slok/kubewebhook/pkg/webhook/mutating"
+	model "github.com/slok/kubewebhook/pkg/model"
 	mock "github.com/stretchr/testify/mock"
+
+	mutating "github.com/slok/kubewebhook/pkg/webhook/mutating"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -16,13 +18,13 @@ type Mutator struct {
 	mock.Mock
 }
 
-// Mutate provides a mock function with given fields: _a0, _a1
-func (_m *Mutator) Mutate(_a0 context.Context, _a1 v1.Object) (*mutating.MutatorResult, error) {
-	ret := _m.Called(_a0, _a1)
+// Mutate provides a mock function with given fields: ctx, ar, obj
+func (_m *Mutator) Mutate(ctx context.Context, ar *model.AdmissionReview, obj v1.Object) (*mutating.MutatorResult, error) {
+	ret := _m.Called(ctx, ar, obj)
 
 	var r0 *mutating.MutatorResult
-	if rf, ok := ret.Get(0).(func(context.Context, v1.Object) *mutating.MutatorResult); ok {
-		r0 = rf(_a0, _a1)
+	if rf, ok := ret.Get(0).(func(context.Context, *model.AdmissionReview, v1.Object) *mutating.MutatorResult); ok {
+		r0 = rf(ctx, ar, obj)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*mutating.MutatorResult)
@@ -30,8 +32,8 @@ func (_m *Mutator) Mutate(_a0 context.Context, _a1 v1.Object) (*mutating.Mutator
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, v1.Object) error); ok {
-		r1 = rf(_a0, _a1)
+	if rf, ok := ret.Get(1).(func(context.Context, *model.AdmissionReview, v1.Object) error); ok {
+		r1 = rf(ctx, ar, obj)
 	} else {
 		r1 = ret.Error(1)
 	}

@@ -9,6 +9,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	whhttp "github.com/slok/kubewebhook/pkg/http"
+	"github.com/slok/kubewebhook/pkg/model"
 	"github.com/slok/kubewebhook/pkg/webhook/mutating"
 	"github.com/slok/kubewebhook/pkg/webhook/validating"
 )
@@ -16,13 +17,13 @@ import (
 // ServeWebhook shows how to serve a validating webhook that denies all pods.
 func ExampleHandlerFor_serveWebhook() {
 	// Create (in)validator.
-	v := validating.ValidatorFunc(func(_ context.Context, obj metav1.Object) (*validating.ValidatorResult, error) {
+	v := validating.ValidatorFunc(func(_ context.Context, _ *model.AdmissionReview, obj metav1.Object) (*validating.ValidatorResult, error) {
 		// Assume always is a pod (you should check type assertion is ok to not panic).
 		pod := obj.(*corev1.Pod)
 
 		return &validating.ValidatorResult{
 			Valid:   false,
-			Message: fmt.Sprintf("%s/%s denied because sll pods will be denied", pod.Namespace, pod.Name),
+			Message: fmt.Sprintf("%s/%s denied because all pods will be denied", pod.Namespace, pod.Name),
 		}, nil
 	})
 
@@ -42,18 +43,18 @@ func ExampleHandlerFor_serveWebhook() {
 // ServeMultipleWebhooks shows how to serve multiple webhooks in the same server.
 func ExampleHandlerFor_serveMultipleWebhooks() {
 	// Create (in)validator.
-	v := validating.ValidatorFunc(func(_ context.Context, obj metav1.Object) (*validating.ValidatorResult, error) {
+	v := validating.ValidatorFunc(func(_ context.Context, _ *model.AdmissionReview, obj metav1.Object) (*validating.ValidatorResult, error) {
 		// Assume always is a pod (you should check type assertion is ok to not panic).
 		pod := obj.(*corev1.Pod)
 
 		return &validating.ValidatorResult{
 			Valid:   false,
-			Message: fmt.Sprintf("%s/%s denied because sll pods will be denied", pod.Namespace, pod.Name),
+			Message: fmt.Sprintf("%s/%s denied because all pods will be denied", pod.Namespace, pod.Name),
 		}, nil
 	})
 
 	// Create a stub mutator.
-	m := mutating.MutatorFunc(func(_ context.Context, obj metav1.Object) (*mutating.MutatorResult, error) {
+	m := mutating.MutatorFunc(func(_ context.Context, _ *model.AdmissionReview, obj metav1.Object) (*mutating.MutatorResult, error) {
 		return &mutating.MutatorResult{}, nil
 	})
 

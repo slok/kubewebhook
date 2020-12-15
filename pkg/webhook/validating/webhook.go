@@ -101,7 +101,7 @@ func (w validatingWebhook) Review(ctx context.Context, ar model.AdmissionReview)
 		return nil, fmt.Errorf("impossible to type assert the deep copy to metav1.Object")
 	}
 
-	res, err := w.validator.Validate(ctx, validatingObj)
+	res, err := w.validator.Validate(ctx, &ar, validatingObj)
 	if err != nil {
 		return nil, fmt.Errorf("validator error: %w", err)
 	}

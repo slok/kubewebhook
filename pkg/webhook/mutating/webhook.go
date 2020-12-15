@@ -110,7 +110,7 @@ func (w mutatingWebhook) Review(ctx context.Context, ar model.AdmissionReview) (
 
 func (w mutatingWebhook) mutatingAdmissionReview(ctx context.Context, ar model.AdmissionReview, rawObj []byte, objForMutation metav1.Object) (*model.MutatingAdmissionResponse, error) {
 	// Mutate the object.
-	res, err := w.mutator.Mutate(ctx, objForMutation)
+	res, err := w.mutator.Mutate(ctx, &ar, objForMutation)
 	if err != nil {
 		return nil, fmt.Errorf("could not mutate object: %w", err)
 	}

@@ -7,6 +7,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/slok/kubewebhook/pkg/log"
+	"github.com/slok/kubewebhook/pkg/model"
 )
 
 // ValidatorResult is the result of a validator.
@@ -23,20 +24,23 @@ type ValidatorResult struct {
 
 // Validator knows how to validate the received kubernetes object.
 type Validator interface {
-	// Validate will received a pointer to an object, validators can be
-	// grouped in chains, that's why we have a `StopChain` boolean in the result,
-	// to stop executing the validators chain.
-	Validate(context.Context, metav1.Object) (result *ValidatorResult, err error)
+	// Validate receives a Kubernetes resource object to be validated, it must
+	// return an error or a validation result.
+	// Also recieves the webhook admission review in case it wants more context and
+	// information of the review.
+	// Validators can be grouped in chains, that's why we have a `StopChain` boolean
+	// in the result, to stop executing the validators chain.
+	Validate(ctx context.Context, ar *model.AdmissionReview, obj metav1.Object) (result *ValidatorResult, err error)
 }
 
 //go:generate mockery --case underscore --output validatingmock --outpkg validatingmock --name Validator
 
 // ValidatorFunc is a helper type to create validators from functions.
-type ValidatorFunc func(context.Context, metav1.Object) (result *ValidatorResult, err error)
+type ValidatorFunc func(context.Context, *model.AdmissionReview, metav1.Object) (result *ValidatorResult, err error)
 
 // Validate satisfies Validator interface.
-func (f ValidatorFunc) Validate(ctx context.Context, obj metav1.Object) (result *ValidatorResult, err error) {
-	return f(ctx, obj)
+func (f ValidatorFunc) Validate(ctx context.Context, ar *model.AdmissionReview, obj metav1.Object) (result *ValidatorResult, err error) {
+	return f(ctx, ar, obj)
 }
 
 type chain struct {
@@ -56,14 +60,14 @@ func NewChain(logger log.Logger, validators ...Validator) Validator {
 }
 
 // Validate will execute all the validation chain.
-func (c chain) Validate(ctx context.Context, obj metav1.Object) (*ValidatorResult, error) {
+func (c chain) Validate(ctx context.Context, ar *model.AdmissionReview, obj metav1.Object) (*ValidatorResult, error) {
 	var warnings []string
 	for _, vl := range c.validators {
 		select {
 		case <-ctx.Done():
 			return nil, fmt.Errorf("validator chain not finished correctly, context done")
 		default:
-			res, err := vl.Validate(ctx, obj)
+			res, err := vl.Validate(ctx, ar, obj)
 			if err != nil {
 				return nil, err
 			}

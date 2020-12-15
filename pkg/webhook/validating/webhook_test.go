@@ -36,7 +36,7 @@ func getPodJSON() []byte {
 }
 
 func getFakeValidator(valid bool, message string) validating.Validator {
-	return validating.ValidatorFunc(func(_ context.Context, _ metav1.Object) (*validating.ValidatorResult, error) {
+	return validating.ValidatorFunc(func(_ context.Context, _ *model.AdmissionReview, _ metav1.Object) (*validating.ValidatorResult, error) {
 		return &validating.ValidatorResult{
 			Valid:   valid,
 			Message: message,
@@ -54,7 +54,7 @@ func TestPodAdmissionReviewValidation(t *testing.T) {
 	}{
 		"A webhook review with error should return an error.": {
 			cfg: validating.WebhookConfig{ID: "test", Obj: &corev1.Pod{}},
-			validator: validating.ValidatorFunc(func(_ context.Context, _ metav1.Object) (*validating.ValidatorResult, error) {
+			validator: validating.ValidatorFunc(func(_ context.Context, _ *model.AdmissionReview, _ metav1.Object) (*validating.ValidatorResult, error) {
 				return nil, fmt.Errorf("wanted error")
 			}),
 			review: model.AdmissionReview{ID: "test", NewObjectRaw: getPodJSON()},
@@ -88,7 +88,7 @@ func TestPodAdmissionReviewValidation(t *testing.T) {
 
 		"A static webhook review of a delete operation on a Pod should allow.": {
 			cfg: validating.WebhookConfig{ID: "test", Obj: &corev1.Pod{}},
-			validator: validating.ValidatorFunc(func(_ context.Context, obj metav1.Object) (*validating.ValidatorResult, error) {
+			validator: validating.ValidatorFunc(func(_ context.Context, _ *model.AdmissionReview, obj metav1.Object) (*validating.ValidatorResult, error) {
 				// Just a check to validate that is unstructured.
 				pod, ok := obj.(*corev1.Pod)
 				if !ok {
@@ -135,7 +135,7 @@ func TestPodAdmissionReviewValidation(t *testing.T) {
 
 		"A dynamic webhook review of a an unknown type should check that a label is present.": {
 			cfg: validating.WebhookConfig{ID: "test"},
-			validator: validating.ValidatorFunc(func(_ context.Context, obj metav1.Object) (*validating.ValidatorResult, error) {
+			validator: validating.ValidatorFunc(func(_ context.Context, _ *model.AdmissionReview, obj metav1.Object) (*validating.ValidatorResult, error) {
 				// Just a check to validate that is unstructured.
 				if _, ok := obj.(runtime.Unstructured); !ok {
 					return nil, fmt.Errorf("not unstructured")
@@ -171,7 +171,7 @@ func TestPodAdmissionReviewValidation(t *testing.T) {
 
 		"A dynamic webhook review of a delete operation on a unknown type should check that a label is present.": {
 			cfg: validating.WebhookConfig{ID: "test"},
-			validator: validating.ValidatorFunc(func(_ context.Context, obj metav1.Object) (*validating.ValidatorResult, error) {
+			validator: validating.ValidatorFunc(func(_ context.Context, _ *model.AdmissionReview, obj metav1.Object) (*validating.ValidatorResult, error) {
 				// Just a check to validate that is unstructured.
 				if _, ok := obj.(runtime.Unstructured); !ok {
 					return nil, fmt.Errorf("not unstructured")
@@ -231,7 +231,7 @@ func TestPodAdmissionReviewValidation(t *testing.T) {
 }
 
 func getRandomValidator() validating.Validator {
-	return validating.ValidatorFunc(func(_ context.Context, _ metav1.Object) (*validating.ValidatorResult, error) {
+	return validating.ValidatorFunc(func(_ context.Context, _ *model.AdmissionReview, _ metav1.Object) (*validating.ValidatorResult, error) {
 		valid := time.Now().Nanosecond()%2 == 0
 		return &validating.ValidatorResult{Valid: valid}, nil
 	})

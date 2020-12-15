@@ -68,7 +68,7 @@ func getPodJSON() []byte {
 }
 
 func getPodNSMutator(ns string) mutating.Mutator {
-	return mutating.MutatorFunc(func(_ context.Context, obj metav1.Object) (*mutating.MutatorResult, error) {
+	return mutating.MutatorFunc(func(_ context.Context, _ *model.AdmissionReview, obj metav1.Object) (*mutating.MutatorResult, error) {
 		pod, ok := obj.(*corev1.Pod)
 		if !ok {
 			return nil, fmt.Errorf("not a pod")
@@ -83,7 +83,7 @@ func getPodNSMutator(ns string) mutating.Mutator {
 }
 
 func getPodAnnotationsReplacerMutator(annotations map[string]string) mutating.Mutator {
-	return mutating.MutatorFunc(func(_ context.Context, obj metav1.Object) (*mutating.MutatorResult, error) {
+	return mutating.MutatorFunc(func(_ context.Context, _ *model.AdmissionReview, obj metav1.Object) (*mutating.MutatorResult, error) {
 		pod, ok := obj.(*corev1.Pod)
 		if !ok {
 			return nil, fmt.Errorf("not a pod")
@@ -98,7 +98,7 @@ func getPodAnnotationsReplacerMutator(annotations map[string]string) mutating.Mu
 }
 
 func getPodResourceLimitDeletorMutator() mutating.Mutator {
-	return mutating.MutatorFunc(func(_ context.Context, obj metav1.Object) (*mutating.MutatorResult, error) {
+	return mutating.MutatorFunc(func(_ context.Context, _ *model.AdmissionReview, obj metav1.Object) (*mutating.MutatorResult, error) {
 		pod, ok := obj.(*corev1.Pod)
 		if !ok {
 			return nil, fmt.Errorf("not a pod")
@@ -126,7 +126,7 @@ func TestPodAdmissionReviewMutation(t *testing.T) {
 	}{
 		"A webhook review with error should return an error.": {
 			cfg: mutating.WebhookConfig{ID: "test", Obj: &corev1.Pod{}},
-			mutator: mutating.MutatorFunc(func(_ context.Context, obj metav1.Object) (*mutating.MutatorResult, error) {
+			mutator: mutating.MutatorFunc(func(_ context.Context, _ *model.AdmissionReview, obj metav1.Object) (*mutating.MutatorResult, error) {
 				return nil, fmt.Errorf("wanted error")
 			}),
 			review: model.AdmissionReview{
@@ -138,7 +138,7 @@ func TestPodAdmissionReviewMutation(t *testing.T) {
 
 		"A static webhook review of a Pod with an ns mutator should mutate the ns.": {
 			cfg: mutating.WebhookConfig{ID: "test", Obj: &corev1.Pod{}},
-			mutator: mutating.MutatorFunc(func(_ context.Context, obj metav1.Object) (*mutating.MutatorResult, error) {
+			mutator: mutating.MutatorFunc(func(_ context.Context, _ *model.AdmissionReview, obj metav1.Object) (*mutating.MutatorResult, error) {
 				pod, ok := obj.(*corev1.Pod)
 				if !ok {
 					return nil, fmt.Errorf("not a pod")
@@ -262,7 +262,7 @@ func TestPodAdmissionReviewMutation(t *testing.T) {
 
 		"A dynamic webhook review of a an unknown type should be able to mutate with the common object attributes (check unstructured object mutation).": {
 			cfg: mutating.WebhookConfig{ID: "test"},
-			mutator: mutating.MutatorFunc(func(_ context.Context, obj metav1.Object) (*mutating.MutatorResult, error) {
+			mutator: mutating.MutatorFunc(func(_ context.Context, _ *model.AdmissionReview, obj metav1.Object) (*mutating.MutatorResult, error) {
 				// Just a check to validate that is unstructured.
 				if _, ok := obj.(runtime.Unstructured); !ok {
 					return nil, fmt.Errorf("not unstructured")
@@ -311,7 +311,7 @@ func TestPodAdmissionReviewMutation(t *testing.T) {
 
 		"A dynamic webhook delete operation review of an unknown type should be able to mutate with the common object attributes (check unstructured object mutation).": {
 			cfg: mutating.WebhookConfig{ID: "test"},
-			mutator: mutating.MutatorFunc(func(_ context.Context, obj metav1.Object) (*mutating.MutatorResult, error) {
+			mutator: mutating.MutatorFunc(func(_ context.Context, _ *model.AdmissionReview, obj metav1.Object) (*mutating.MutatorResult, error) {
 				// Just a check to validate that is unstructured.
 				if _, ok := obj.(runtime.Unstructured); !ok {
 					return nil, fmt.Errorf("not unstructured")
