@@ -16,4 +16,4 @@ rm ./webhookCA.csr
 echo "* certificate path: ${OUT_CERT}"
 echo "* key path: ${OUT_KEY}"
 echo "webhook k8s manifest CABundle:"
-echo  $(cat ${OUT_CERT} | base64 -w0)
+echo -n $(cat ${OUT_CERT} | base64 -w0)

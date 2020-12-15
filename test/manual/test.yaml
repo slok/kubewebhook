@@ -1,10 +1,13 @@
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: nginx-test
   namespace: kubewebhook
 spec:
   replicas: 10
+  selector:
+    matchLabels:
+      app: nginx
   template:
     metadata:
       labels:
