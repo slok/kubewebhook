@@ -58,7 +58,7 @@ func TestPodTaggerMutate(t *testing.T) {
 
 			pl := mutatortesting.NewPodLabeler(test.labels)
 			gotPod := test.pod
-			_, err := pl.Mutate(context.TODO(), gotPod)
+			_, err := pl.Mutate(context.TODO(), nil, gotPod)
 
 			if test.expErr {
 				assert.Error(err)

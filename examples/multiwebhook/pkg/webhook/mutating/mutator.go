@@ -9,6 +9,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/slok/kubewebhook/pkg/log"
+	"github.com/slok/kubewebhook/pkg/model"
+	"github.com/slok/kubewebhook/pkg/webhook/mutating"
 )
 
 // podLabelMutator will add labels to a pod. Satisfies mutating.Mutator interface.
@@ -17,11 +19,11 @@ type podLabelMutator struct {
 	logger log.Logger
 }
 
-func (m *podLabelMutator) Mutate(_ context.Context, obj metav1.Object) (bool, error) {
+func (m *podLabelMutator) Mutate(_ context.Context, _ *model.AdmissionReview, obj metav1.Object) (*mutating.MutatorResult, error) {
 	pod, ok := obj.(*corev1.Pod)
 	if !ok {
 		// If not a pod just continue the mutation chain(if there is one) and don't do nothing.
-		return false, nil
+		return &mutating.MutatorResult{}, nil
 	}
 
 	// Mutate our object with the required annotations.
@@ -33,16 +35,16 @@ func (m *podLabelMutator) Mutate(_ context.Context, obj metav1.Object) (bool, er
 		pod.Labels[k] = v
 	}
 
-	return false, nil
+	return &mutating.MutatorResult{MutatedObject: obj}, nil
 }
 
 type lantencyMutator struct {
 	maxLatencyMS int
 }
 
-func (m *lantencyMutator) Mutate(_ context.Context, _ metav1.Object) (bool, error) {
+func (m *lantencyMutator) Mutate(_ context.Context, _ *model.AdmissionReview, _ metav1.Object) (*mutating.MutatorResult, error) {
 	rand := rand.New(rand.NewSource(time.Now().UnixNano()))
 	ms := time.Duration(rand.Intn(m.maxLatencyMS)) * time.Millisecond
 	time.Sleep(ms)
-	return false, nil
+	return &mutating.MutatorResult{}, nil
 }

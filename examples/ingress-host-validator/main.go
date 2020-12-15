@@ -13,6 +13,7 @@ import (
 
 	whhttp "github.com/slok/kubewebhook/pkg/http"
 	"github.com/slok/kubewebhook/pkg/log"
+	"github.com/slok/kubewebhook/pkg/model"
 	validatingwh "github.com/slok/kubewebhook/pkg/webhook/validating"
 )
 
@@ -21,30 +22,28 @@ type ingressHostValidator struct {
 	logger    log.Logger
 }
 
-func (v *ingressHostValidator) Validate(_ context.Context, obj metav1.Object) (bool, validatingwh.ValidatorResult, error) {
+func (v *ingressHostValidator) Validate(_ context.Context, _ *model.AdmissionReview, obj metav1.Object) (*validatingwh.ValidatorResult, error) {
 	ingress, ok := obj.(*extensionsv1beta1.Ingress)
 
 	if !ok {
-		return false, validatingwh.ValidatorResult{}, fmt.Errorf("not an ingress")
+		return nil, fmt.Errorf("not an ingress")
 	}
 
 	for _, r := range ingress.Spec.Rules {
 		if !v.hostRegex.MatchString(r.Host) {
 			v.logger.Infof("ingress %s denied, host %s is not valid for regex %s", ingress.Name, r.Host, v.hostRegex)
-			res := validatingwh.ValidatorResult{
+			return &validatingwh.ValidatorResult{
 				Valid:   false,
 				Message: fmt.Sprintf("%s ingress host doesn't match %s regex", r.Host, v.hostRegex),
-			}
-			return false, res, nil
+			}, nil
 		}
 	}
 
 	v.logger.Infof("ingress %s is valid", ingress.Name)
-	res := validatingwh.ValidatorResult{
+	return &validatingwh.ValidatorResult{
 		Valid:   true,
 		Message: "all hosts in the ingress are valid",
-	}
-	return false, res, nil
+	}, nil
 }
 
 type config struct {
@@ -85,7 +84,7 @@ func main() {
 	}
 
 	vcfg := validatingwh.WebhookConfig{
-		Name:      "ingressHostValidator",
+		ID:        "ingressHostValidator",
 		Obj:       &extensionsv1beta1.Ingress{},
 		Validator: vl,
 		Logger:    logger,
