@@ -3,7 +3,7 @@ module github.com/slok/kubewebhook
 go 1.15
 
 require (
-	github.com/HdrHistogram/hdrhistogram-go v1.0.0 // indirect
+	github.com/HdrHistogram/hdrhistogram-go v1.0.1 // indirect
 	github.com/opentracing/opentracing-go v1.2.0
 	github.com/prometheus/client_golang v1.8.0
 	github.com/stretchr/testify v1.6.1
