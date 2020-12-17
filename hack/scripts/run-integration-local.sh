@@ -18,7 +18,6 @@ if [ -z "${TEST_WEBHOOK_URL}" ]; then
     echo "Please enter the tunnel address (e.g '0.tcp.ngrok.io:18776'):"
     read TEST_WEBHOOK_URL
     echo "[*] Remember you can use 'TEST_WEBHOOK_URL' env var to skip this step."
-    
 else
     echo "[*] Using '${TEST_WEBHOOK_URL}' from 'TEST_WEBHOOK_URL' env var"
 fi

@@ -1,8 +1,15 @@
 ## [Unreleased]
 
+### Added
+
+- A new model that decouples the different Kubernetes admission review model types.
+
 ### Changed
 
 - Webhooks factory signatures now receive only a single configuration struct instead of multiple arguments.
+- All Kubernetes specific admission review references, changed in favor of Kubewebhook own model.
+- Better HTTP reponse details (messages, HTTP codes...) on allow, not allow, mutating and errors.
+- Webhook reviewm metrics have been changed to give more insights.
 
 ## [0.11.0] - 2020-10-21
 
