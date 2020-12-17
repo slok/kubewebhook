@@ -51,7 +51,7 @@ func getTestAdmissionReviewV1beta1RequestStr(uid string) string {
 		},
 	}
 	var b bytes.Buffer
-	encoder.Encode(ar, &b)
+	_ = encoder.Encode(ar, &b)
 
 	return b.String()
 }
@@ -79,7 +79,7 @@ func getTestAdmissionReviewV1RequestStr(uid string) string {
 		},
 	}
 	var b bytes.Buffer
-	encoder.Encode(ar, &b)
+	_ = encoder.Encode(ar, &b)
 
 	return b.String()
 }

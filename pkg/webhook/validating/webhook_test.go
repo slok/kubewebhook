@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -227,26 +226,5 @@ func TestPodAdmissionReviewValidation(t *testing.T) {
 			}
 
 		})
-	}
-}
-
-func getRandomValidator() validating.Validator {
-	return validating.ValidatorFunc(func(_ context.Context, _ *model.AdmissionReview, _ metav1.Object) (*validating.ValidatorResult, error) {
-		valid := time.Now().Nanosecond()%2 == 0
-		return &validating.ValidatorResult{Valid: valid}, nil
-	})
-}
-
-func BenchmarkPodAdmissionReviewValidation(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		cfg := validating.WebhookConfig{
-			ID:        "test",
-			Obj:       &corev1.Pod{},
-			Validator: getRandomValidator(),
-		}
-		wh, _ := validating.NewWebhook(cfg)
-
-		ar := model.AdmissionReview{ID: "test", NewObjectRaw: getPodJSON()}
-		wh.Review(context.TODO(), ar)
 	}
 }

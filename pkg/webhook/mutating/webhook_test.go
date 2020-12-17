@@ -382,28 +382,3 @@ func TestPodAdmissionReviewMutation(t *testing.T) {
 		})
 	}
 }
-
-/*
-func BenchmarkPodAdmissionReviewMutation(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		mutator := getPodNSMutator("myChangedNS")
-		ar := &admissionv1beta1.AdmissionReview{
-			Request: &admissionv1beta1.AdmissionRequest{
-				UID: "test",
-				Object: runtime.RawExtension{
-					Raw: getPodJSON(),
-				},
-			},
-		}
-
-		cfg := mutating.WebhookConfig{
-			Name:    "test",
-			Obj:     &corev1.Pod{},
-			Mutator: mutator,
-		}
-		wh, err := mutating.NewWebhook(cfg)
-		assert.NoError(b, err)
-		wh.Review(context.TODO(), ar)
-	}
-}
-*/
