@@ -6,9 +6,7 @@ import (
 	"fmt"
 
 	"gomodules.xyz/jsonpatch/v3"
-	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/slok/kubewebhook/pkg/log"
 	"github.com/slok/kubewebhook/pkg/model"
@@ -147,8 +145,4 @@ func (w mutatingWebhook) mutatingAdmissionReview(ctx context.Context, ar model.A
 		JSONPatchPatch: marshalledPatch,
 		Warnings:       res.Warnings,
 	}, nil
-}
-
-func (w mutatingWebhook) toAdmissionErrorResponse(ar model.AdmissionReview, err error) *admissionv1beta1.AdmissionResponse {
-	return helpers.ToAdmissionErrorResponse(types.UID(ar.ID), err, w.logger)
 }

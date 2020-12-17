@@ -69,11 +69,11 @@ func HandlerFor(webhook webhook.Webhook) (http.Handler, error) {
 		// Webhook execution logic. This is how we are dealing with the different responses:
 		// |                        | HTTP Code             | status.Code | status.Status | status.Message |
 		// |------------------------|-----------------------| ------------|---------------|----------------|
-		// | Validating Allowed     | 200                   |-            | -             | -              |
-		// | Validating not allowed | 400                   | 400         | Failure       | Custom message |
-		// | Mutating mutation      | 200                   | 200         | -             | -              |
-		// | Mutating no mutation   | 204                   | 204         | -             | -              |
-		// | Err                    | 500                   |-            | Failure       | Err string     |
+		// | Validating Allowed     | 200                   | -           | -             | -              |
+		// | Validating not allowed | 200                   | 400         | Failure       | Custom message |
+		// | Mutating mutation      | 200                   | -           | -             | -              |
+		// | Mutating no mutation   | 200                   | -           | -             | -              |
+		// | Err                    | 500                   | -           | Failure       | Err string     |
 		admissionResp, err := webhook.Review(ctx, *ar)
 		if err != nil {
 			errResp, err := errorToJSON(*ar, err)
@@ -90,7 +90,7 @@ func HandlerFor(webhook webhook.Webhook) (http.Handler, error) {
 		}
 
 		// Create the review response.
-		resp, httpCode, err := modelResponseToJSON(*ar, admissionResp)
+		resp, err := modelResponseToJSON(*ar, admissionResp)
 		if err != nil {
 			errResp, err := errorToJSON(*ar, err)
 			if err != nil {
@@ -106,7 +106,6 @@ func HandlerFor(webhook webhook.Webhook) (http.Handler, error) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(httpCode)
 
 		if _, err := w.Write(resp); err != nil {
 			http.Error(w, fmt.Sprintf("could not write response: %v", err), http.StatusInternalServerError)
@@ -132,26 +131,25 @@ func requestBodyToModelReview(body []byte) (*model.AdmissionReview, error) {
 	return nil, fmt.Errorf("invalid admission review type")
 }
 
-func modelResponseToJSON(review model.AdmissionReview, resp model.AdmissionResponse) (data []byte, httpCode int, err error) {
+func modelResponseToJSON(review model.AdmissionReview, resp model.AdmissionResponse) (data []byte, err error) {
 	switch r := resp.(type) {
 	case *model.ValidatingAdmissionResponse:
 		return validatingModelResponseToJSON(review, r)
 	case *model.MutatingAdmissionResponse:
 		return mutatingModelResponseToJSON(review, r)
 	default:
-		return nil, http.StatusInternalServerError, fmt.Errorf("unknown webhook response type")
+		return nil, fmt.Errorf("unknown webhook response type")
 	}
 }
 
-func validatingModelResponseToJSON(review model.AdmissionReview, resp *model.ValidatingAdmissionResponse) (data []byte, httpCode int, err error) {
+func validatingModelResponseToJSON(review model.AdmissionReview, resp *model.ValidatingAdmissionResponse) (data []byte, err error) {
 	// Set the satus code and result based on the validation result.
-	httpCode = http.StatusOK
 	var resultStatus *metav1.Status
 	if !resp.Allowed {
-		httpCode = http.StatusBadRequest
 		resultStatus = &metav1.Status{
 			Message: resp.Message,
 			Status:  metav1.StatusFailure,
+			Code:    http.StatusBadRequest,
 		}
 	}
 
@@ -166,7 +164,7 @@ func validatingModelResponseToJSON(review model.AdmissionReview, resp *model.Val
 				Result:  resultStatus,
 			},
 		})
-		return data, httpCode, err
+		return data, err
 
 	case *admissionv1.AdmissionReview:
 		data, err := json.Marshal(admissionv1.AdmissionReview{
@@ -178,19 +176,13 @@ func validatingModelResponseToJSON(review model.AdmissionReview, resp *model.Val
 				Result:   resultStatus,
 			},
 		})
-		return data, httpCode, err
+		return data, err
 	}
 
-	return nil, http.StatusInternalServerError, fmt.Errorf("invalid admission response type")
+	return nil, fmt.Errorf("invalid admission response type")
 }
 
-func mutatingModelResponseToJSON(review model.AdmissionReview, resp *model.MutatingAdmissionResponse) (data []byte, httpCode int, err error) {
-	// Set the satus code based on the mutation content.
-	httpCode = http.StatusOK
-	if len(resp.JSONPatchPatch) == 0 {
-		httpCode = http.StatusNoContent
-	}
-
+func mutatingModelResponseToJSON(review model.AdmissionReview, resp *model.MutatingAdmissionResponse) (data []byte, err error) {
 	switch review.OriginalAdmissionReview.(type) {
 	case *admissionv1beta1.AdmissionReview:
 		// TODO(slok): Log warnings being used with v1beta1.
@@ -203,7 +195,7 @@ func mutatingModelResponseToJSON(review model.AdmissionReview, resp *model.Mutat
 				Allowed:   true,
 			},
 		})
-		return data, httpCode, err
+		return data, err
 
 	case *admissionv1.AdmissionReview:
 		data, err := json.Marshal(admissionv1.AdmissionReview{
@@ -217,10 +209,10 @@ func mutatingModelResponseToJSON(review model.AdmissionReview, resp *model.Mutat
 			},
 		})
 
-		return data, httpCode, err
+		return data, err
 	}
 
-	return nil, http.StatusInternalServerError, fmt.Errorf("invalid admission response type")
+	return nil, fmt.Errorf("invalid admission response type")
 }
 
 func errorToJSON(review model.AdmissionReview, err error) ([]byte, error) {

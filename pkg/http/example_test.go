@@ -18,8 +18,10 @@ import (
 func ExampleHandlerFor_serveWebhook() {
 	// Create (in)validator.
 	v := validating.ValidatorFunc(func(_ context.Context, _ *model.AdmissionReview, obj metav1.Object) (*validating.ValidatorResult, error) {
-		// Assume always is a pod (you should check type assertion is ok to not panic).
-		pod := obj.(*corev1.Pod)
+		pod, ok := obj.(*corev1.Pod)
+		if !ok {
+			return &validating.ValidatorResult{Valid: true}, nil
+		}
 
 		return &validating.ValidatorResult{
 			Valid:   false,
@@ -45,7 +47,10 @@ func ExampleHandlerFor_serveMultipleWebhooks() {
 	// Create (in)validator.
 	v := validating.ValidatorFunc(func(_ context.Context, _ *model.AdmissionReview, obj metav1.Object) (*validating.ValidatorResult, error) {
 		// Assume always is a pod (you should check type assertion is ok to not panic).
-		pod := obj.(*corev1.Pod)
+		pod, ok := obj.(*corev1.Pod)
+		if !ok {
+			return &validating.ValidatorResult{Valid: true}, nil
+		}
 
 		return &validating.ValidatorResult{
 			Valid:   false,

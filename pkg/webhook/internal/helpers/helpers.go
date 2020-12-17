@@ -5,28 +5,12 @@ import (
 	"reflect"
 	"strings"
 
-	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
-	"k8s.io/apimachinery/pkg/types"
 	clientsetscheme "k8s.io/client-go/kubernetes/scheme"
-
-	"github.com/slok/kubewebhook/pkg/log"
 )
-
-// ToAdmissionErrorResponse transforms an error into a admission response with error.
-func ToAdmissionErrorResponse(uid types.UID, err error, logger log.Logger) *admissionv1beta1.AdmissionResponse {
-	logger.Errorf("admission webhook error: %s", err)
-	return &admissionv1beta1.AdmissionResponse{
-		UID: uid,
-		Result: &metav1.Status{
-			Message: err.Error(),
-			Status:  metav1.StatusFailure,
-		},
-	}
-}
 
 // NewK8sObj returns a new object of a Kubernetes type based on the type.
 func NewK8sObj(t reflect.Type) metav1.Object {

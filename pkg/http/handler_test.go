@@ -132,8 +132,8 @@ func TestDefaultWebhookFlow(t *testing.T) {
 				}
 				mw.On("Review", mock.Anything, mock.Anything).Once().Return(resp, nil)
 			},
-			expBody: `{"kind":"AdmissionReview","apiVersion":"admission.k8s.io/v1beta1","response":{"uid":"1234567890","allowed":false,"status":{"metadata":{},"status":"Failure","message":"this is not valid because reasons"}}}`,
-			expCode: 400,
+			expBody: `{"kind":"AdmissionReview","apiVersion":"admission.k8s.io/v1beta1","response":{"uid":"1234567890","allowed":false,"status":{"metadata":{},"status":"Failure","message":"this is not valid because reasons","code":400}}}`,
+			expCode: 200,
 		},
 
 		"A correct mutating admission v1beta1 webhook with mutation should not fail.": {
@@ -161,7 +161,7 @@ func TestDefaultWebhookFlow(t *testing.T) {
 				mw.On("Review", mock.Anything, mock.Anything).Once().Return(resp, nil)
 			},
 			expBody: `{"kind":"AdmissionReview","apiVersion":"admission.k8s.io/v1beta1","response":{"uid":"1234567890","allowed":true,"patchType":"JSONPatch"}}`,
-			expCode: 204,
+			expCode: 200,
 		},
 
 		"A correct validation admission v1 webhook that allows should not fail.": {
@@ -189,8 +189,8 @@ func TestDefaultWebhookFlow(t *testing.T) {
 				}
 				mw.On("Review", mock.Anything, mock.Anything).Once().Return(resp, nil)
 			},
-			expBody: `{"kind":"AdmissionReview","apiVersion":"admission.k8s.io/v1","response":{"uid":"1234567890","allowed":false,"status":{"metadata":{},"status":"Failure","message":"this is not valid because reasons"},"warnings":["warn1","warn2"]}}`,
-			expCode: 400,
+			expBody: `{"kind":"AdmissionReview","apiVersion":"admission.k8s.io/v1","response":{"uid":"1234567890","allowed":false,"status":{"metadata":{},"status":"Failure","message":"this is not valid because reasons","code":400},"warnings":["warn1","warn2"]}}`,
+			expCode: 200,
 		},
 
 		"A correct mutating admission v1 webhook should not fail.": {
@@ -218,7 +218,7 @@ func TestDefaultWebhookFlow(t *testing.T) {
 				mw.On("Review", mock.Anything, mock.Anything).Once().Return(resp, nil)
 			},
 			expBody: `{"kind":"AdmissionReview","apiVersion":"admission.k8s.io/v1","response":{"uid":"1234567890","allowed":true,"patchType":"JSONPatch","warnings":["warn1","warn2"]}}`,
-			expCode: 204,
+			expCode: 200,
 		},
 
 		"A regular mutating admission v1beta1 call to the webhook handler should execute the webhook and return error if something failed": {
