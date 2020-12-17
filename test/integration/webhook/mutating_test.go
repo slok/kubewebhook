@@ -17,6 +17,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	whhttp "github.com/slok/kubewebhook/pkg/http"
+	"github.com/slok/kubewebhook/pkg/model"
 	"github.com/slok/kubewebhook/pkg/webhook"
 	"github.com/slok/kubewebhook/pkg/webhook/mutating"
 	buildingv1 "github.com/slok/kubewebhook/test/integration/crd/apis/building/v1"
@@ -32,9 +33,6 @@ func TestMutatingWebhook(t *testing.T) {
 	)
 
 	cfg := helperconfig.GetTestEnvConfig(t)
-	// Use this configuration if you are developing the tests and you are
-	// using a local k3s + ngrok stack (check /test/integration/helper/config).
-	//cfg = helperconfig.GetTestDevelopmentEnvConfig(t)
 
 	cli, err := helpercli.GetK8sSTDClients(cfg.KubeConfigPath)
 	require.NoError(t, err, "error getting kubernetes client")
@@ -50,7 +48,7 @@ func TestMutatingWebhook(t *testing.T) {
 			webhookRegisterCfg: getMutatingWebhookConfig(t, cfg, []arv1.RuleWithOperations{webhookRulesPod}),
 			webhook: func() webhook.Webhook {
 				// Our mutator logic.
-				mut := mutating.MutatorFunc(func(ctx context.Context, obj metav1.Object) (bool, error) {
+				mut := mutating.MutatorFunc(func(ctx context.Context, ar *model.AdmissionReview, obj metav1.Object) (*mutating.MutatorResult, error) {
 					pod := obj.(*corev1.Pod)
 					// Add a container.
 					pod.Spec.Containers = append(pod.Spec.Containers, corev1.Container{Name: "test3", Image: "wrong3"})
@@ -66,10 +64,10 @@ func TestMutatingWebhook(t *testing.T) {
 					pod.Spec.Containers[1] = c2
 					pod.Spec.Containers[2] = c0
 
-					return false, nil
+					return &mutating.MutatorResult{MutatedObject: pod}, nil
 				})
 				mwh, _ := mutating.NewWebhook(mutating.WebhookConfig{
-					Name:    "pod-mutator-test2",
+					ID:      "pod-mutator-test2",
 					Obj:     &corev1.Pod{},
 					Mutator: mut,
 				})
@@ -84,7 +82,7 @@ func TestMutatingWebhook(t *testing.T) {
 					},
 					Spec: corev1.PodSpec{
 						Containers: []corev1.Container{
-							corev1.Container{
+							{
 								Name:  "test",
 								Image: "wrong",
 								Ports: []corev1.ContainerPort{
@@ -93,7 +91,7 @@ func TestMutatingWebhook(t *testing.T) {
 									{ContainerPort: 8082},
 								},
 							},
-							corev1.Container{Name: "test2", Image: "wrong2"},
+							{Name: "test2", Image: "wrong2"},
 						},
 					},
 				}
@@ -104,9 +102,9 @@ func TestMutatingWebhook(t *testing.T) {
 
 				// Check expectations.
 				expContainers := []corev1.Container{
-					corev1.Container{Name: "test2", Image: "wrong2"},
-					corev1.Container{Name: "test3", Image: "wrong3"},
-					corev1.Container{
+					{Name: "test2", Image: "wrong2"},
+					{Name: "test3", Image: "wrong3"},
+					{
 						Name:  "test",
 						Image: "wrong",
 						Ports: []corev1.ContainerPort{
@@ -135,7 +133,7 @@ func TestMutatingWebhook(t *testing.T) {
 			webhookRegisterCfg: getMutatingWebhookConfig(t, cfg, []arv1.RuleWithOperations{webhookRulesPod}),
 			webhook: func() webhook.Webhook {
 				// Our mutator logic.
-				mut := mutating.MutatorFunc(func(ctx context.Context, obj metav1.Object) (bool, error) {
+				mut := mutating.MutatorFunc(func(ctx context.Context, ar *model.AdmissionReview, obj metav1.Object) (*mutating.MutatorResult, error) {
 					pod := obj.(*corev1.Pod)
 
 					if pod.Labels == nil {
@@ -145,10 +143,10 @@ func TestMutatingWebhook(t *testing.T) {
 					pod.Labels["lastName"] = "Wayne"
 					pod.Labels["nickname"] = "Batman"
 
-					return false, nil
+					return &mutating.MutatorResult{MutatedObject: pod}, nil
 				})
 				mwh, _ := mutating.NewWebhook(mutating.WebhookConfig{
-					Name:    "pod-mutator-label",
+					ID:      "pod-mutator-label",
 					Mutator: mut,
 				})
 				return mwh
@@ -166,7 +164,7 @@ func TestMutatingWebhook(t *testing.T) {
 					},
 					Spec: corev1.PodSpec{
 						Containers: []corev1.Container{
-							corev1.Container{
+							{
 								Name:  "test",
 								Image: "wrong",
 							},
@@ -196,7 +194,7 @@ func TestMutatingWebhook(t *testing.T) {
 			webhookRegisterCfg: getMutatingWebhookConfig(t, cfg, []arv1.RuleWithOperations{webhookRulesHouseCRD}),
 			webhook: func() webhook.Webhook {
 				// Our mutator logic.
-				mut := mutating.MutatorFunc(func(ctx context.Context, obj metav1.Object) (bool, error) {
+				mut := mutating.MutatorFunc(func(ctx context.Context, ar *model.AdmissionReview, obj metav1.Object) (*mutating.MutatorResult, error) {
 					house := obj.(*buildingv1.House)
 					house.Spec.Name = "changed-name"
 					house.Spec.Active = &trueBool
@@ -204,10 +202,10 @@ func TestMutatingWebhook(t *testing.T) {
 					house.Spec.Owners = []buildingv1.User{
 						{Name: "user1", Email: "user1@kubebwehook.slok.dev"},
 					}
-					return false, nil
+					return &mutating.MutatorResult{MutatedObject: house}, nil
 				})
 				mwh, _ := mutating.NewWebhook(mutating.WebhookConfig{
-					Name:    "house-mutator-label",
+					ID:      "house-mutator-label",
 					Obj:     &buildingv1.House{},
 					Mutator: mut,
 				})
@@ -254,7 +252,7 @@ func TestMutatingWebhook(t *testing.T) {
 			webhookRegisterCfg: getMutatingWebhookConfig(t, cfg, []arv1.RuleWithOperations{webhookRulesHouseCRD}),
 			webhook: func() webhook.Webhook {
 				// Our mutator logic.
-				mut := mutating.MutatorFunc(func(ctx context.Context, obj metav1.Object) (bool, error) {
+				mut := mutating.MutatorFunc(func(ctx context.Context, ar *model.AdmissionReview, obj metav1.Object) (*mutating.MutatorResult, error) {
 					// Mutate.
 					labels := obj.GetLabels()
 					if labels == nil {
@@ -265,10 +263,10 @@ func TestMutatingWebhook(t *testing.T) {
 					labels["rooms"] = "3"
 					obj.SetLabels(labels)
 
-					return false, nil
+					return &mutating.MutatorResult{MutatedObject: obj}, nil
 				})
 				mwh, _ := mutating.NewWebhook(mutating.WebhookConfig{
-					Name:    "house-mutator-label",
+					ID:      "house-mutator-label",
 					Mutator: mut,
 				})
 				return mwh
