@@ -12,14 +12,15 @@ import (
 
 	whhttp "github.com/slok/kubewebhook/pkg/http"
 	"github.com/slok/kubewebhook/pkg/log"
+	"github.com/slok/kubewebhook/pkg/model"
 	mutatingwh "github.com/slok/kubewebhook/pkg/webhook/mutating"
 )
 
-func annotatePodMutator(_ context.Context, obj metav1.Object) (bool, error) {
+func annotatePodMutator(_ context.Context, _ *model.AdmissionReview, obj metav1.Object) (*mutatingwh.MutatorResult, error) {
 	pod, ok := obj.(*corev1.Pod)
 	if !ok {
 		// If not a pod just continue the mutation chain(if there is one) and don't do nothing.
-		return false, nil
+		return &mutatingwh.MutatorResult{}, nil
 	}
 
 	// Mutate our object with the required annotations.
@@ -29,7 +30,9 @@ func annotatePodMutator(_ context.Context, obj metav1.Object) (bool, error) {
 	pod.Annotations["mutated"] = "true"
 	pod.Annotations["mutator"] = "pod-annotate"
 
-	return false, nil
+	return &mutatingwh.MutatorResult{
+		MutatedObject: pod,
+	}, nil
 }
 
 type config struct {
@@ -57,7 +60,7 @@ func main() {
 	mt := mutatingwh.MutatorFunc(annotatePodMutator)
 
 	mcfg := mutatingwh.WebhookConfig{
-		Name:    "podAnnotate",
+		ID:      "podAnnotate",
 		Obj:     &corev1.Pod{},
 		Mutator: mt,
 		Logger:  logger,

@@ -81,9 +81,9 @@ deps: ## Setup dependencies.
 	$(DEPS_CMD)
 
 .PHONY: create-integration-test-certs
-create-integration-test-certs: ## Creates certificates for the integration test.
-	./hack/scripts/integration-test-certs.sh
+integration-create-certs: ## Creates certificates for the integration test.
+	./test/integration/create-certs.sh
 
 .PHONY: generate-integration-test-crd
-generate-integration-test-crd: ## Generates CRDs for the integration test.
-	./hack/scripts/integration-test-crd.sh
+integration-gen-crd: ## Generates CRDs for the integration test.
+	./test/integration/gen-crd.sh

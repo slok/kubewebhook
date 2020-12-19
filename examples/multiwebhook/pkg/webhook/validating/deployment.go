@@ -1,16 +1,14 @@
 package validating
 
 import (
-	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/slok/kubewebhook/pkg/log"
-	"github.com/slok/kubewebhook/pkg/observability/metrics"
 	"github.com/slok/kubewebhook/pkg/webhook"
 	"github.com/slok/kubewebhook/pkg/webhook/validating"
 	extensionsv1beta1 "k8s.io/api/extensions/v1beta1"
 )
 
 // NewDeploymentWebhook returns a new deployment validationg webhook.
-func NewDeploymentWebhook(minReplicas, maxReplicas int, ot opentracing.Tracer, mrec metrics.Recorder, logger log.Logger) (webhook.Webhook, error) {
+func NewDeploymentWebhook(minReplicas, maxReplicas int, logger log.Logger) (webhook.Webhook, error) {
 
 	// Create validators.
 	repVal := &deploymentReplicasValidator{
@@ -20,25 +18,21 @@ func NewDeploymentWebhook(minReplicas, maxReplicas int, ot opentracing.Tracer, m
 	}
 
 	vals := []validating.Validator{
-		validating.TraceValidator(ot, "latencyValidator20ms", &lantencyValidator{maxLatencyMS: 20}),
-		validating.TraceValidator(ot, "latencyValidator120ms", &lantencyValidator{maxLatencyMS: 120}),
-		validating.TraceValidator(ot, "latencyValidator300ms", &lantencyValidator{maxLatencyMS: 300}),
-		validating.TraceValidator(ot, "latencyValidator10ms", &lantencyValidator{maxLatencyMS: 10}),
-		validating.TraceValidator(ot, "latencyValidator175ms", &lantencyValidator{maxLatencyMS: 175}),
-		validating.TraceValidator(ot, "latencyValidator80ms", &lantencyValidator{maxLatencyMS: 80}),
-		validating.TraceValidator(ot, "latencyValidator10ms", &lantencyValidator{maxLatencyMS: 10}),
-		validating.TraceValidator(ot, "deploymentReplicasValidator", repVal),
-	}
-	valChain := validating.NewChain(logger, vals...)
-
-	cfg := validating.WebhookConfig{
-		Name:            "multiwebhook-deploymentValidator",
-		Obj:             &extensionsv1beta1.Deployment{},
-		Validator:       valChain,
-		Tracer:          ot,
-		MetricsRecorder: mrec,
-		Logger:          logger,
+		&lantencyValidator{maxLatencyMS: 20},
+		&lantencyValidator{maxLatencyMS: 120},
+		&lantencyValidator{maxLatencyMS: 300},
+		&lantencyValidator{maxLatencyMS: 10},
+		&lantencyValidator{maxLatencyMS: 175},
+		&lantencyValidator{maxLatencyMS: 80},
+		&lantencyValidator{maxLatencyMS: 10},
+		repVal,
 	}
 
-	return validating.NewWebhook(cfg)
+	return validating.NewWebhook(
+		validating.WebhookConfig{
+			ID:        "multiwebhook-deploymentValidator",
+			Obj:       &extensionsv1beta1.Deployment{},
+			Validator: validating.NewChain(logger, vals...),
+			Logger:    logger,
+		})
 }

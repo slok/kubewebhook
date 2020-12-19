@@ -14,7 +14,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	whhttp "github.com/slok/kubewebhook/pkg/http"
 	"github.com/slok/kubewebhook/pkg/log"
-	"github.com/slok/kubewebhook/pkg/observability/metrics"
+	metricsprometheus "github.com/slok/kubewebhook/pkg/metrics/prometheus"
+	"github.com/slok/kubewebhook/pkg/webhook"
 	jaeger "github.com/uber/jaeger-client-go"
 	jaegerconfig "github.com/uber/jaeger-client-go/config"
 
@@ -23,8 +24,9 @@ import (
 )
 
 const (
-	gracePeriod   = 3 * time.Second
-	jaegerService = "multi-webhook"
+	gracePeriod = 3 * time.Second
+	minReps     = 1
+	maxReps     = 12
 )
 
 var (
@@ -32,8 +34,6 @@ var (
 		"webhook": "multiwebhook",
 		"test":    "kubewebhook",
 	}
-	minReps = 1
-	maxReps = 12
 )
 
 // Main is the main program.
@@ -52,27 +52,27 @@ func (m *Main) Run() error {
 
 	// Create services.
 	promReg := prometheus.NewRegistry()
-	metricsRec := metrics.NewPrometheus(promReg)
-	tracer, closer, err := m.createTracer(jaegerService)
+	metricsRec, err := metricsprometheus.NewRecorder(metricsprometheus.RecorderConfig{Registry: promReg})
 	if err != nil {
-		return err
+		return fmt.Errorf("could not create prometheus recorder: %w", err)
 	}
-	defer closer.Close()
 
 	// Create webhooks
-	mpw, err := mutating.NewPodWebhook(defLabels, tracer, metricsRec, m.logger)
+	mpw, err := mutating.NewPodWebhook(defLabels, m.logger)
 	if err != nil {
 		return err
 	}
+	mpw = webhook.NewMeasuredWebhook(metricsRec, mpw)
 	mpwh, err := whhttp.HandlerFor(mpw)
 	if err != nil {
 		return err
 	}
 
-	vdw, err := validating.NewDeploymentWebhook(minReps, maxReps, tracer, metricsRec, m.logger)
+	vdw, err := validating.NewDeploymentWebhook(minReps, maxReps, m.logger)
 	if err != nil {
 		return err
 	}
+	vdw = webhook.NewMeasuredWebhook(metricsRec, vdw)
 	vdwh, err := whhttp.HandlerFor(vdw)
 	if err != nil {
 		return err

@@ -18,6 +18,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	whhttp "github.com/slok/kubewebhook/pkg/http"
+	"github.com/slok/kubewebhook/pkg/model"
 	"github.com/slok/kubewebhook/pkg/webhook"
 	"github.com/slok/kubewebhook/pkg/webhook/validating"
 	buildingv1 "github.com/slok/kubewebhook/test/integration/crd/apis/building/v1"
@@ -53,9 +54,6 @@ func getValidatingWebhookConfig(t *testing.T, cfg helperconfig.TestEnvConfig, ru
 
 func TestValidatingWebhook(t *testing.T) {
 	cfg := helperconfig.GetTestEnvConfig(t)
-	// Use this configuration if you are developing the tests and you are
-	// using a local k3s + ngrok stack (check /test/integration/helper/config).
-	//cfg = helperconfig.GetTestDevelopmentEnvConfig(t)
 
 	cli, err := helpercli.GetK8sSTDClients(cfg.KubeConfigPath)
 	require.NoError(t, err, "error getting kubernetes client")
@@ -71,14 +69,14 @@ func TestValidatingWebhook(t *testing.T) {
 			webhookRegisterCfg: getValidatingWebhookConfig(t, cfg, []arv1.RuleWithOperations{webhookRulesPod}),
 			webhook: func() webhook.Webhook {
 				// Our validator logic.
-				val := validating.ValidatorFunc(func(ctx context.Context, obj metav1.Object) (bool, validating.ValidatorResult, error) {
-					return true, validating.ValidatorResult{
+				val := validating.ValidatorFunc(func(ctx context.Context, ar *model.AdmissionReview, obj metav1.Object) (*validating.ValidatorResult, error) {
+					return &validating.ValidatorResult{
 						Valid:   false,
 						Message: "test message from validator",
 					}, nil
 				})
 				vwh, _ := validating.NewWebhook(validating.WebhookConfig{
-					Name:      "pod-validating-label",
+					ID:        "pod-validating-label",
 					Obj:       &corev1.Pod{},
 					Validator: val,
 				})
@@ -114,14 +112,14 @@ func TestValidatingWebhook(t *testing.T) {
 			webhookRegisterCfg: getValidatingWebhookConfig(t, cfg, []arv1.RuleWithOperations{webhookRulesPod}),
 			webhook: func() webhook.Webhook {
 				// Our validator logic.
-				val := validating.ValidatorFunc(func(ctx context.Context, obj metav1.Object) (bool, validating.ValidatorResult, error) {
-					return true, validating.ValidatorResult{
+				val := validating.ValidatorFunc(func(ctx context.Context, ar *model.AdmissionReview, obj metav1.Object) (*validating.ValidatorResult, error) {
+					return &validating.ValidatorResult{
 						Valid:   false,
 						Message: "test message from validator",
 					}, nil
 				})
 				vwh, _ := validating.NewWebhook(validating.WebhookConfig{
-					Name:      "pod-validating-label",
+					ID:        "pod-validating-label",
 					Validator: val,
 				})
 				return vwh
@@ -156,11 +154,11 @@ func TestValidatingWebhook(t *testing.T) {
 			webhookRegisterCfg: getValidatingWebhookConfig(t, cfg, []arv1.RuleWithOperations{webhookRulesPod}),
 			webhook: func() webhook.Webhook {
 				// Our validator logic.
-				val := validating.ValidatorFunc(func(ctx context.Context, obj metav1.Object) (bool, validating.ValidatorResult, error) {
-					return true, validating.ValidatorResult{Valid: true}, nil
+				val := validating.ValidatorFunc(func(ctx context.Context, ar *model.AdmissionReview, obj metav1.Object) (*validating.ValidatorResult, error) {
+					return &validating.ValidatorResult{Valid: true}, nil
 				})
 				vwh, _ := validating.NewWebhook(validating.WebhookConfig{
-					Name:      "pod-validating-label",
+					ID:        "pod-validating-label",
 					Obj:       &corev1.Pod{},
 					Validator: val,
 				})
@@ -192,19 +190,19 @@ func TestValidatingWebhook(t *testing.T) {
 			webhookRegisterCfg: getValidatingWebhookConfig(t, cfg, []arv1.RuleWithOperations{webhookRulesHouseCRD}),
 			webhook: func() webhook.Webhook {
 				// Our validator logic.
-				val := validating.ValidatorFunc(func(ctx context.Context, obj metav1.Object) (bool, validating.ValidatorResult, error) {
+				val := validating.ValidatorFunc(func(ctx context.Context, ar *model.AdmissionReview, obj metav1.Object) (*validating.ValidatorResult, error) {
 					h := obj.(*buildingv1.House)
 					if h.Spec.Name == "newHouse" {
-						return true, validating.ValidatorResult{
+						return &validating.ValidatorResult{
 							Valid:   false,
 							Message: "test message from validator",
 						}, nil
 					}
 
-					return true, validating.ValidatorResult{Valid: true}, nil
+					return &validating.ValidatorResult{Valid: true}, nil
 				})
 				vwh, _ := validating.NewWebhook(validating.WebhookConfig{
-					Name:      "crd-validating-label",
+					ID:        "crd-validating-label",
 					Obj:       &buildingv1.House{},
 					Validator: val,
 				})
@@ -249,14 +247,14 @@ func TestValidatingWebhook(t *testing.T) {
 			webhookRegisterCfg: getValidatingWebhookConfig(t, cfg, []arv1.RuleWithOperations{webhookRulesHouseCRD}),
 			webhook: func() webhook.Webhook {
 				// Our validator logic.
-				val := validating.ValidatorFunc(func(ctx context.Context, obj metav1.Object) (bool, validating.ValidatorResult, error) {
-					return true, validating.ValidatorResult{
+				val := validating.ValidatorFunc(func(ctx context.Context, ar *model.AdmissionReview, obj metav1.Object) (*validating.ValidatorResult, error) {
+					return &validating.ValidatorResult{
 						Valid:   false,
 						Message: "test message from validator",
 					}, nil
 				})
 				vwh, _ := validating.NewWebhook(validating.WebhookConfig{
-					Name:      "crd-validating-label",
+					ID:        "crd-validating-label",
 					Validator: val,
 				})
 				return vwh
@@ -300,16 +298,16 @@ func TestValidatingWebhook(t *testing.T) {
 			webhookRegisterCfg: getValidatingWebhookConfig(t, cfg, []arv1.RuleWithOperations{webhookRulesHouseCRD}),
 			webhook: func() webhook.Webhook {
 				// Our validator logic.
-				val := validating.ValidatorFunc(func(ctx context.Context, obj metav1.Object) (bool, validating.ValidatorResult, error) {
+				val := validating.ValidatorFunc(func(ctx context.Context, ar *model.AdmissionReview, obj metav1.Object) (*validating.ValidatorResult, error) {
 					h := obj.(*buildingv1.House)
 					if h.Spec.Name == "newHouse" {
-						return true, validating.ValidatorResult{Valid: true}, nil
+						return &validating.ValidatorResult{StopChain: true, Valid: true}, nil
 					}
 
-					return true, validating.ValidatorResult{Valid: false}, nil
+					return &validating.ValidatorResult{Valid: false}, nil
 				})
 				vwh, _ := validating.NewWebhook(validating.WebhookConfig{
-					Name:      "crd-validating-label",
+					ID:        "crd-validating-label",
 					Obj:       &buildingv1.House{},
 					Validator: val,
 				})
@@ -349,19 +347,19 @@ func TestValidatingWebhook(t *testing.T) {
 		"Having a static webhook, a validating webhook should allow deleting the pod.": {
 			webhookRegisterCfg: getValidatingWebhookConfig(t, cfg, []arv1.RuleWithOperations{webhookRulesDeletePod}),
 			webhook: func() webhook.Webhook {
-				val := validating.ValidatorFunc(func(ctx context.Context, obj metav1.Object) (bool, validating.ValidatorResult, error) {
+				val := validating.ValidatorFunc(func(ctx context.Context, ar *model.AdmissionReview, obj metav1.Object) (*validating.ValidatorResult, error) {
 					// Allow if it has our label.
 					if l := obj.GetLabels()["kubewebhook"]; l == "test" {
-						return true, validating.ValidatorResult{Valid: true}, nil
+						return &validating.ValidatorResult{StopChain: true, Valid: true}, nil
 					}
 
-					return true, validating.ValidatorResult{
+					return &validating.ValidatorResult{
 						Valid:   false,
 						Message: "test message from validator",
 					}, nil
 				})
 				vwh, _ := validating.NewWebhook(validating.WebhookConfig{
-					Name:      "pod-validating-delete",
+					ID:        "pod-validating-delete",
 					Obj:       &corev1.Pod{},
 					Validator: val,
 				})
@@ -399,19 +397,19 @@ func TestValidatingWebhook(t *testing.T) {
 		"Having a dynamic webhook, a validating webhook should allow deleting the CRD.": {
 			webhookRegisterCfg: getValidatingWebhookConfig(t, cfg, []arv1.RuleWithOperations{webhookRulesDeletePod}),
 			webhook: func() webhook.Webhook {
-				val := validating.ValidatorFunc(func(ctx context.Context, obj metav1.Object) (bool, validating.ValidatorResult, error) {
+				val := validating.ValidatorFunc(func(ctx context.Context, ar *model.AdmissionReview, obj metav1.Object) (*validating.ValidatorResult, error) {
 					// Allow if it has our label.
 					if l := obj.GetLabels()["city"]; l == "Bilbo" {
-						return true, validating.ValidatorResult{Valid: true}, nil
+						return &validating.ValidatorResult{StopChain: true, Valid: true}, nil
 					}
 
-					return true, validating.ValidatorResult{
+					return &validating.ValidatorResult{
 						Valid:   false,
 						Message: "test message from validator",
 					}, nil
 				})
 				vwh, _ := validating.NewWebhook(validating.WebhookConfig{
-					Name:      "pod-dynamic-validating-delete",
+					ID:        "pod-dynamic-validating-delete",
 					Validator: val,
 				})
 				return vwh
@@ -463,6 +461,7 @@ func TestValidatingWebhook(t *testing.T) {
 				Addr:    cfg.ListenAddress,
 			}
 			go func() {
+				fmt.Printf("dnsakjdbdkjsandkjsabdksajd: %s\n", cfg.ListenAddress)
 				err := srv.ListenAndServeTLS(cfg.WebhookCertPath, cfg.WebhookCertKeyPath)
 				if err != nil && err != http.ErrServerClosed {
 					assert.FailNow(t, "error serving webhook", err.Error())

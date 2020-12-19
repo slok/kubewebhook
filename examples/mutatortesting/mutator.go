@@ -6,6 +6,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/slok/kubewebhook/pkg/model"
 	"github.com/slok/kubewebhook/pkg/webhook/mutating"
 )
 
@@ -25,7 +26,7 @@ func NewPodLabeler(labels map[string]string) mutating.Mutator {
 }
 
 // Mutate will set the required labels on the pods. Satisfies mutating.Mutator interface.
-func (p *PodLabeler) Mutate(ctx context.Context, obj metav1.Object) (bool, error) {
+func (p *PodLabeler) Mutate(ctx context.Context, ar *model.AdmissionReview, obj metav1.Object) (*mutating.MutatorResult, error) {
 	pod := obj.(*corev1.Pod)
 
 	if pod.Labels == nil {
@@ -35,5 +36,7 @@ func (p *PodLabeler) Mutate(ctx context.Context, obj metav1.Object) (bool, error
 	for k, v := range p.labels {
 		pod.Labels[k] = v
 	}
-	return false, nil
+	return &mutating.MutatorResult{
+		MutatedObject: pod,
+	}, nil
 }

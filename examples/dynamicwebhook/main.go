@@ -11,6 +11,8 @@ import (
 
 	whhttp "github.com/slok/kubewebhook/pkg/http"
 	"github.com/slok/kubewebhook/pkg/log"
+	"github.com/slok/kubewebhook/pkg/model"
+	"github.com/slok/kubewebhook/pkg/webhook/mutating"
 	mutatingwh "github.com/slok/kubewebhook/pkg/webhook/mutating"
 )
 
@@ -36,20 +38,20 @@ func main() {
 	cfg := initFlags()
 
 	// Create our mutator.
-	mt := mutatingwh.MutatorFunc(func(_ context.Context, obj metav1.Object) (bool, error) {
+	mt := mutatingwh.MutatorFunc(func(_ context.Context, ar *model.AdmissionReview, obj metav1.Object) (*mutating.MutatorResult, error) {
 		labels := obj.GetLabels()
 		if labels == nil {
 			labels = map[string]string{}
 		}
-		labels["kubewebhook"] = "mutated"
+		labels[fmt.Sprintf("kubewebhook-%s", ar.Version)] = "mutated"
 		obj.SetLabels(labels)
 
-		return false, nil
+		return &mutating.MutatorResult{MutatedObject: obj}, nil
 	})
 
 	// We don't use any type, it works for any type.
 	mcfg := mutatingwh.WebhookConfig{
-		Name:    "labeler",
+		ID:      "labeler",
 		Mutator: mt,
 		Logger:  logger,
 	}
