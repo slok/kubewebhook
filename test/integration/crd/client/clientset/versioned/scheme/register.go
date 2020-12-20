@@ -19,7 +19,7 @@ limitations under the License.
 package scheme
 
 import (
-	buildingv1 "github.com/slok/kubewebhook/test/integration/crd/apis/building/v1"
+	buildingv1 "github.com/slok/kubewebhook/v2/test/integration/crd/apis/building/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"

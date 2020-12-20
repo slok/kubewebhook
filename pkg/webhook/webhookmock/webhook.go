@@ -5,7 +5,7 @@ package webhookmock
 import (
 	context "context"
 
-	model "github.com/slok/kubewebhook/pkg/model"
+	model "github.com/slok/kubewebhook/v2/pkg/model"
 	mock "github.com/stretchr/testify/mock"
 )
 

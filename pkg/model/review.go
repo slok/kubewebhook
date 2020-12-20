@@ -54,8 +54,8 @@ type AdmissionReview struct {
 func NewAdmissionReviewV1Beta1(ar *admissionv1beta1.AdmissionReview) AdmissionReview {
 	// Default false.
 	dryRun := false
-	if ar.Request.DryRun != nil && *ar.Request.DryRun {
-		dryRun = true
+	if ar.Request.DryRun != nil {
+		dryRun = *ar.Request.DryRun
 	}
 
 	return AdmissionReview{
@@ -92,8 +92,8 @@ func v1Beta1OperationToModel(op admissionv1beta1.Operation) AdmissionReviewOp {
 func NewAdmissionReviewV1(ar *admissionv1.AdmissionReview) AdmissionReview {
 	// Default false.
 	dryRun := false
-	if ar.Request.DryRun != nil && *ar.Request.DryRun {
-		dryRun = true
+	if ar.Request.DryRun != nil {
+		dryRun = *ar.Request.DryRun
 	}
 
 	return AdmissionReview{

@@ -12,15 +12,15 @@ import (
 	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	whhttp "github.com/slok/kubewebhook/pkg/http"
-	"github.com/slok/kubewebhook/pkg/log"
-	metricsprometheus "github.com/slok/kubewebhook/pkg/metrics/prometheus"
-	"github.com/slok/kubewebhook/pkg/webhook"
+	whhttp "github.com/slok/kubewebhook/v2/pkg/http"
+	"github.com/slok/kubewebhook/v2/pkg/log"
+	metricsprometheus "github.com/slok/kubewebhook/v2/pkg/metrics/prometheus"
+	"github.com/slok/kubewebhook/v2/pkg/webhook"
 	jaeger "github.com/uber/jaeger-client-go"
 	jaegerconfig "github.com/uber/jaeger-client-go/config"
 
-	"github.com/slok/kubewebhook/examples/multiwebhook/pkg/webhook/mutating"
-	"github.com/slok/kubewebhook/examples/multiwebhook/pkg/webhook/validating"
+	"github.com/slok/kubewebhook/v2/examples/multiwebhook/pkg/webhook/mutating"
+	"github.com/slok/kubewebhook/v2/examples/multiwebhook/pkg/webhook/validating"
 )
 
 const (

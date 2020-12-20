@@ -6,7 +6,7 @@ import (
 	arv1 "k8s.io/api/admissionregistration/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	helperconfig "github.com/slok/kubewebhook/test/integration/helper/config"
+	helperconfig "github.com/slok/kubewebhook/v2/test/integration/helper/config"
 )
 
 func getMutatingWebhookConfig(t *testing.T, cfg helperconfig.TestEnvConfig, rules []arv1.RuleWithOperations) *arv1.MutatingWebhookConfiguration {

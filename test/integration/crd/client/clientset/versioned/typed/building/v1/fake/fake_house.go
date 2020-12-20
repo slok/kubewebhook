@@ -21,7 +21,7 @@ package fake
 import (
 	"context"
 
-	buildingv1 "github.com/slok/kubewebhook/test/integration/crd/apis/building/v1"
+	buildingv1 "github.com/slok/kubewebhook/v2/test/integration/crd/apis/building/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
