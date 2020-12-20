@@ -3,7 +3,7 @@ package webhook
 import (
 	"context"
 
-	"github.com/slok/kubewebhook/pkg/model"
+	"github.com/slok/kubewebhook/v2/pkg/model"
 )
 
 // Webhook knows how to handle the admission reviews, in other words Webhook is a dynamic

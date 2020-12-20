@@ -10,10 +10,10 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	whhttp "github.com/slok/kubewebhook/pkg/http"
-	"github.com/slok/kubewebhook/pkg/log"
-	"github.com/slok/kubewebhook/pkg/model"
-	mutatingwh "github.com/slok/kubewebhook/pkg/webhook/mutating"
+	whhttp "github.com/slok/kubewebhook/v2/pkg/http"
+	"github.com/slok/kubewebhook/v2/pkg/log"
+	"github.com/slok/kubewebhook/v2/pkg/model"
+	mutatingwh "github.com/slok/kubewebhook/v2/pkg/webhook/mutating"
 )
 
 func annotatePodMutator(_ context.Context, _ *model.AdmissionReview, obj metav1.Object) (*mutatingwh.MutatorResult, error) {

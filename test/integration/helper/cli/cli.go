@@ -9,7 +9,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
 
-	kubewebhookcrd "github.com/slok/kubewebhook/test/integration/crd/client/clientset/versioned"
+	kubewebhookcrd "github.com/slok/kubewebhook/v2/test/integration/crd/client/clientset/versioned"
 )
 
 // GetK8sSTDClients returns a all k8s clients.

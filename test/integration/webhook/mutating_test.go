@@ -16,14 +16,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
-	whhttp "github.com/slok/kubewebhook/pkg/http"
-	"github.com/slok/kubewebhook/pkg/model"
-	"github.com/slok/kubewebhook/pkg/webhook"
-	"github.com/slok/kubewebhook/pkg/webhook/mutating"
-	buildingv1 "github.com/slok/kubewebhook/test/integration/crd/apis/building/v1"
-	kubewebhookcrd "github.com/slok/kubewebhook/test/integration/crd/client/clientset/versioned"
-	helpercli "github.com/slok/kubewebhook/test/integration/helper/cli"
-	helperconfig "github.com/slok/kubewebhook/test/integration/helper/config"
+	whhttp "github.com/slok/kubewebhook/v2/pkg/http"
+	"github.com/slok/kubewebhook/v2/pkg/model"
+	"github.com/slok/kubewebhook/v2/pkg/webhook"
+	"github.com/slok/kubewebhook/v2/pkg/webhook/mutating"
+	buildingv1 "github.com/slok/kubewebhook/v2/test/integration/crd/apis/building/v1"
+	kubewebhookcrd "github.com/slok/kubewebhook/v2/test/integration/crd/client/clientset/versioned"
+	helpercli "github.com/slok/kubewebhook/v2/test/integration/helper/cli"
+	helperconfig "github.com/slok/kubewebhook/v2/test/integration/helper/config"
 )
 
 func TestMutatingWebhook(t *testing.T) {

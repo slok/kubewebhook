@@ -12,8 +12,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	metrics "github.com/slok/kubewebhook/pkg/metrics/prometheus"
-	"github.com/slok/kubewebhook/pkg/webhook"
+	metrics "github.com/slok/kubewebhook/v2/pkg/metrics/prometheus"
+	"github.com/slok/kubewebhook/v2/pkg/webhook"
 )
 
 func getCommonData() webhook.MeasureOpCommonData {

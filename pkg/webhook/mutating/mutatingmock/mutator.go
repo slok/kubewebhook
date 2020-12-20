@@ -5,10 +5,10 @@ package mutatingmock
 import (
 	context "context"
 
-	model "github.com/slok/kubewebhook/pkg/model"
+	model "github.com/slok/kubewebhook/v2/pkg/model"
 	mock "github.com/stretchr/testify/mock"
 
-	mutating "github.com/slok/kubewebhook/pkg/webhook/mutating"
+	mutating "github.com/slok/kubewebhook/v2/pkg/webhook/mutating"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )

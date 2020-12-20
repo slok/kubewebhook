@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/slok/kubewebhook/pkg/model"
+	"github.com/slok/kubewebhook/v2/pkg/model"
 )
 
 // MeasureOpCommonData is the

@@ -8,10 +8,10 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	whhttp "github.com/slok/kubewebhook/pkg/http"
-	"github.com/slok/kubewebhook/pkg/model"
-	"github.com/slok/kubewebhook/pkg/webhook/mutating"
-	"github.com/slok/kubewebhook/pkg/webhook/validating"
+	whhttp "github.com/slok/kubewebhook/v2/pkg/http"
+	"github.com/slok/kubewebhook/v2/pkg/model"
+	"github.com/slok/kubewebhook/v2/pkg/webhook/mutating"
+	"github.com/slok/kubewebhook/v2/pkg/webhook/validating"
 )
 
 // ServeWebhook shows how to serve a validating webhook that denies all pods.

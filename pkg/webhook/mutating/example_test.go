@@ -6,9 +6,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/slok/kubewebhook/pkg/log"
-	"github.com/slok/kubewebhook/pkg/model"
-	"github.com/slok/kubewebhook/pkg/webhook/mutating"
+	"github.com/slok/kubewebhook/v2/pkg/log"
+	"github.com/slok/kubewebhook/v2/pkg/model"
+	"github.com/slok/kubewebhook/v2/pkg/webhook/mutating"
 )
 
 // PodAnnotateMutatingWebhook shows how you would create a pod mutating webhook that adds

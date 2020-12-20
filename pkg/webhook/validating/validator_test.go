@@ -8,9 +8,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	"github.com/slok/kubewebhook/pkg/log"
-	"github.com/slok/kubewebhook/pkg/webhook/validating"
-	"github.com/slok/kubewebhook/pkg/webhook/validating/validatingmock"
+	"github.com/slok/kubewebhook/v2/pkg/log"
+	"github.com/slok/kubewebhook/v2/pkg/webhook/validating"
+	"github.com/slok/kubewebhook/v2/pkg/webhook/validating/validatingmock"
 )
 
 func TestValidatorChain(t *testing.T) {

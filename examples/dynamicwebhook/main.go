@@ -9,11 +9,11 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	whhttp "github.com/slok/kubewebhook/pkg/http"
-	"github.com/slok/kubewebhook/pkg/log"
-	"github.com/slok/kubewebhook/pkg/model"
-	"github.com/slok/kubewebhook/pkg/webhook/mutating"
-	mutatingwh "github.com/slok/kubewebhook/pkg/webhook/mutating"
+	whhttp "github.com/slok/kubewebhook/v2/pkg/http"
+	"github.com/slok/kubewebhook/v2/pkg/log"
+	"github.com/slok/kubewebhook/v2/pkg/model"
+	"github.com/slok/kubewebhook/v2/pkg/webhook/mutating"
+	mutatingwh "github.com/slok/kubewebhook/v2/pkg/webhook/mutating"
 )
 
 type config struct {

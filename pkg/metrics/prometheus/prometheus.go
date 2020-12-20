@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/slok/kubewebhook/pkg/webhook"
+	"github.com/slok/kubewebhook/v2/pkg/webhook"
 )
 
 const (

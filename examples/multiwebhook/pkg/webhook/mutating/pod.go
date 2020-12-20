@@ -1,9 +1,9 @@
 package mutating
 
 import (
-	"github.com/slok/kubewebhook/pkg/log"
-	"github.com/slok/kubewebhook/pkg/webhook"
-	"github.com/slok/kubewebhook/pkg/webhook/mutating"
+	"github.com/slok/kubewebhook/v2/pkg/log"
+	"github.com/slok/kubewebhook/v2/pkg/webhook"
+	"github.com/slok/kubewebhook/v2/pkg/webhook/mutating"
 	corev1 "k8s.io/api/core/v1"
 )
 

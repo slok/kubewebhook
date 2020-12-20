@@ -1,9 +1,9 @@
 package validating
 
 import (
-	"github.com/slok/kubewebhook/pkg/log"
-	"github.com/slok/kubewebhook/pkg/webhook"
-	"github.com/slok/kubewebhook/pkg/webhook/validating"
+	"github.com/slok/kubewebhook/v2/pkg/log"
+	"github.com/slok/kubewebhook/v2/pkg/webhook"
+	"github.com/slok/kubewebhook/v2/pkg/webhook/validating"
 	extensionsv1beta1 "k8s.io/api/extensions/v1beta1"
 )
 
