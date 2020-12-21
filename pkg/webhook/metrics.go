@@ -65,6 +65,8 @@ func NewMeasuredWebhook(rec MetricsRecorder, next Webhook) Webhook {
 	return measuredWebhook{
 		webhookID:   next.ID(),
 		webhookKind: next.Kind(),
+		rec:         rec,
+		next:        next,
 	}
 }
 
