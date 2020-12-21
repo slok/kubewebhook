@@ -4,6 +4,8 @@
 
 # kubewebhook [![Build Status][ci-image]][ci-url] [![Go Report Card][goreport-image]][goreport-url] [![GoDoc][godoc-image]][godoc-url]
 
+## A full library refactor is on the works. You can access `v2` at this moment in [slok/v2](https://github.com/slok/kubewebhook/tree/slok/v2)
+
 Kubewebhook is a small Go framework to create [external admission webhooks][aw-url] for Kubernetes.
 
 With Kubewebhook you can make validating and mutating webhooks very fast and focusing mainly on the domain logic of the webhook itself.
