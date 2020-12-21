@@ -41,6 +41,18 @@ type MetricsRecorder interface {
 	MeasureMutatingWebhookReviewOp(ctx context.Context, data MeasureMutatingOpData)
 }
 
+type noopMetricsRecorder int
+
+// NoopMetricsRecorder is a no-op metrics recorder.
+const NoopMetricsRecorder = noopMetricsRecorder(0)
+
+var _ MetricsRecorder = NoopMetricsRecorder
+
+func (noopMetricsRecorder) MeasureValidatingWebhookReviewOp(ctx context.Context, data MeasureValidatingOpData) {
+}
+func (noopMetricsRecorder) MeasureMutatingWebhookReviewOp(ctx context.Context, data MeasureMutatingOpData) {
+}
+
 type measuredWebhook struct {
 	webhookID   string
 	webhookKind model.WebhookKind
@@ -53,6 +65,8 @@ func NewMeasuredWebhook(rec MetricsRecorder, next Webhook) Webhook {
 	return measuredWebhook{
 		webhookID:   next.ID(),
 		webhookKind: next.Kind(),
+		rec:         rec,
+		next:        next,
 	}
 }
 
