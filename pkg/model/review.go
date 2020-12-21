@@ -105,6 +105,8 @@ func NewAdmissionReviewV1(ar *admissionv1.AdmissionReview) AdmissionReview {
 		Operation:               v1OperationToModel(ar.Request.Operation),
 		OldObjectRaw:            ar.Request.OldObject.Raw,
 		NewObjectRaw:            ar.Request.Object.Raw,
+		RequestGVR:              ar.Request.RequestResource,
+		RequestGVK:              ar.Request.RequestKind,
 		DryRun:                  dryRun,
 	}
 }
