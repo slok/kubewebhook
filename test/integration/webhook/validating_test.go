@@ -15,6 +15,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/kubernetes"
 
 	whhttp "github.com/slok/kubewebhook/v2/pkg/http"
@@ -27,6 +28,8 @@ import (
 	helperconfig "github.com/slok/kubewebhook/v2/test/integration/helper/config"
 )
 
+// testValidatingWebhookCommon tests the common use cases that should be shared among all webhook versions
+// so the version of the webhook (v1 or v1beta1) should not make a difference.
 func testValidatingWebhookCommon(t *testing.T, version string) {
 	cfg := helperconfig.GetTestEnvConfig(t)
 
@@ -223,6 +226,14 @@ func testValidatingWebhookCommon(t *testing.T, version string) {
 			webhook: func() webhook.Webhook {
 				// Our validator logic.
 				val := validating.ValidatorFunc(func(ctx context.Context, ar *model.AdmissionReview, obj metav1.Object) (*validating.ValidatorResult, error) {
+					labels := obj.GetLabels()
+
+					// We should have the object correctly to return invalid, this wil test we have correctly our object.
+					city := labels["city"]
+					if city != "Bilbo" {
+						return &validating.ValidatorResult{Valid: true}, nil
+					}
+
 					return &validating.ValidatorResult{
 						Valid:   false,
 						Message: "test message from validator",
@@ -230,6 +241,66 @@ func testValidatingWebhookCommon(t *testing.T, version string) {
 				})
 				vwh, _ := validating.NewWebhook(validating.WebhookConfig{
 					ID:        "crd-validating-label",
+					Validator: val,
+				})
+				return vwh
+			},
+			execTest: func(t *testing.T, _ kubernetes.Interface, crdcli kubewebhookcrd.Interface) {
+				// Crate a house and check expectations.
+				h := &buildingv1.House{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      fmt.Sprintf("test-%d", time.Now().UnixNano()),
+						Namespace: "default",
+						Labels: map[string]string{
+							"city":      "Bilbo",
+							"bathrooms": "2",
+						},
+					},
+					Spec: buildingv1.HouseSpec{
+						Name:    "newHouse",
+						Address: "whatever 42",
+						Owners: []buildingv1.User{
+							{Name: "user1", Email: "user1@kubebwehook.slok.dev"},
+							{Name: "user2", Email: "user2@kubebwehook.slok.dev"},
+						},
+					},
+				}
+				_, err := crdcli.BuildingV1().Houses(h.Namespace).Create(context.TODO(), h, metav1.CreateOptions{})
+				if assert.Error(t, err) {
+					sErr, ok := err.(*apierrors.StatusError)
+					if assert.True(t, ok) {
+						assert.Equal(t, `admission webhook "test.slok.dev" denied the request: test message from validator`, sErr.ErrStatus.Message)
+						assert.Equal(t, metav1.StatusFailure, sErr.ErrStatus.Status)
+					}
+				} else {
+					// Creation should err, if we are here then we need to clean.
+					// nolint: errcheck
+					crdcli.BuildingV1().Houses(h.Namespace).Delete(context.TODO(), h.Name, metav1.DeleteOptions{})
+				}
+			},
+		},
+
+		"(invalid, static, unstructured, CRD) Having a static webhook forcing unstructured, a validating webhook should not allow creating the CRD and return a message.": {
+			webhookRegisterCfg: getValidatingWebhookConfig(t, cfg, []arv1.RuleWithOperations{webhookRulesHouseCRD}, []string{version}),
+			webhook: func() webhook.Webhook {
+				// Our validator logic.
+				val := validating.ValidatorFunc(func(ctx context.Context, ar *model.AdmissionReview, obj metav1.Object) (*validating.ValidatorResult, error) {
+					labels := obj.GetLabels()
+
+					// We should have the object correctly to return invalid, this wil test we have correctly our object.
+					city := labels["city"]
+					if city != "Bilbo" {
+						return &validating.ValidatorResult{Valid: true}, nil
+					}
+
+					return &validating.ValidatorResult{
+						Valid:   false,
+						Message: "test message from validator",
+					}, nil
+				})
+				vwh, _ := validating.NewWebhook(validating.WebhookConfig{
+					ID:        "crd-validating-label",
+					Obj:       &unstructured.Unstructured{},
 					Validator: val,
 				})
 				return vwh
