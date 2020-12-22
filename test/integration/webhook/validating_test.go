@@ -27,32 +27,7 @@ import (
 	helperconfig "github.com/slok/kubewebhook/v2/test/integration/helper/config"
 )
 
-func getValidatingWebhookConfig(t *testing.T, cfg helperconfig.TestEnvConfig, rules []arv1.RuleWithOperations) *arv1.ValidatingWebhookConfiguration {
-	whSideEffect := arv1.SideEffectClassNone
-	whFailurePolicy := arv1.Fail
-	var timeoutSecs int32 = 30
-	return &arv1.ValidatingWebhookConfiguration{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "integration-test-webhook",
-		},
-		Webhooks: []arv1.ValidatingWebhook{
-			{
-				Name:                    "test.slok.dev",
-				AdmissionReviewVersions: []string{"v1beta1"},
-				FailurePolicy:           &whFailurePolicy,
-				TimeoutSeconds:          &timeoutSecs,
-				SideEffects:             &whSideEffect,
-				ClientConfig: arv1.WebhookClientConfig{
-					URL:      &cfg.WebhookURL,
-					CABundle: []byte(cfg.WebhookCert),
-				},
-				Rules: rules,
-			},
-		},
-	}
-}
-
-func TestValidatingWebhook(t *testing.T) {
+func testValidatingWebhookCommon(t *testing.T, version string) {
 	cfg := helperconfig.GetTestEnvConfig(t)
 
 	cli, err := helpercli.GetK8sSTDClients(cfg.KubeConfigPath)
@@ -65,8 +40,8 @@ func TestValidatingWebhook(t *testing.T) {
 		webhook            func() webhook.Webhook
 		execTest           func(t *testing.T, cli kubernetes.Interface, crdcli kubewebhookcrd.Interface)
 	}{
-		"Having a static webhook, a validating webhook should not allow creating the pod and return a message.": {
-			webhookRegisterCfg: getValidatingWebhookConfig(t, cfg, []arv1.RuleWithOperations{webhookRulesPod}),
+		"(invalid, static, core) Having a static webhook, a validating webhook should not allow creating the pod and return a message.": {
+			webhookRegisterCfg: getValidatingWebhookConfig(t, cfg, []arv1.RuleWithOperations{webhookRulesPod}, []string{version}),
 			webhook: func() webhook.Webhook {
 				// Our validator logic.
 				val := validating.ValidatorFunc(func(ctx context.Context, ar *model.AdmissionReview, obj metav1.Object) (*validating.ValidatorResult, error) {
@@ -108,8 +83,8 @@ func TestValidatingWebhook(t *testing.T) {
 			},
 		},
 
-		"Having a dynamic webhook, a validating webhook should not allow creating the pod and return a message.": {
-			webhookRegisterCfg: getValidatingWebhookConfig(t, cfg, []arv1.RuleWithOperations{webhookRulesPod}),
+		"(invalid, dynamic, core) Having a dynamic webhook, a validating webhook should not allow creating the pod and return a message.": {
+			webhookRegisterCfg: getValidatingWebhookConfig(t, cfg, []arv1.RuleWithOperations{webhookRulesPod}, []string{version}),
 			webhook: func() webhook.Webhook {
 				// Our validator logic.
 				val := validating.ValidatorFunc(func(ctx context.Context, ar *model.AdmissionReview, obj metav1.Object) (*validating.ValidatorResult, error) {
@@ -150,8 +125,8 @@ func TestValidatingWebhook(t *testing.T) {
 			},
 		},
 
-		"Having a static webhook, a validating webhook should allow creating the pod.": {
-			webhookRegisterCfg: getValidatingWebhookConfig(t, cfg, []arv1.RuleWithOperations{webhookRulesPod}),
+		"(valid, static, core) A validating webhook should allow creating the pod.": {
+			webhookRegisterCfg: getValidatingWebhookConfig(t, cfg, []arv1.RuleWithOperations{webhookRulesPod}, []string{version}),
 			webhook: func() webhook.Webhook {
 				// Our validator logic.
 				val := validating.ValidatorFunc(func(ctx context.Context, ar *model.AdmissionReview, obj metav1.Object) (*validating.ValidatorResult, error) {
@@ -186,8 +161,8 @@ func TestValidatingWebhook(t *testing.T) {
 			},
 		},
 
-		"Having a static webhook, a validating webhook should not allow creating the CRD and return a message.": {
-			webhookRegisterCfg: getValidatingWebhookConfig(t, cfg, []arv1.RuleWithOperations{webhookRulesHouseCRD}),
+		"(invalid, static, CRD) Having a static webhook, a validating webhook should not allow creating the CRD and return a message.": {
+			webhookRegisterCfg: getValidatingWebhookConfig(t, cfg, []arv1.RuleWithOperations{webhookRulesHouseCRD}, []string{version}),
 			webhook: func() webhook.Webhook {
 				// Our validator logic.
 				val := validating.ValidatorFunc(func(ctx context.Context, ar *model.AdmissionReview, obj metav1.Object) (*validating.ValidatorResult, error) {
@@ -243,8 +218,8 @@ func TestValidatingWebhook(t *testing.T) {
 			},
 		},
 
-		"Having a dynamic webhook, a validating webhook should not allow creating the CRD and return a message.": {
-			webhookRegisterCfg: getValidatingWebhookConfig(t, cfg, []arv1.RuleWithOperations{webhookRulesHouseCRD}),
+		"(invalid, dynamic, CRD) Having a dynamic webhook, a validating webhook should not allow creating the CRD and return a message.": {
+			webhookRegisterCfg: getValidatingWebhookConfig(t, cfg, []arv1.RuleWithOperations{webhookRulesHouseCRD}, []string{version}),
 			webhook: func() webhook.Webhook {
 				// Our validator logic.
 				val := validating.ValidatorFunc(func(ctx context.Context, ar *model.AdmissionReview, obj metav1.Object) (*validating.ValidatorResult, error) {
@@ -294,8 +269,8 @@ func TestValidatingWebhook(t *testing.T) {
 			},
 		},
 
-		"Having a static webhook, a validating webhook should allow creating the CRD and return a message.": {
-			webhookRegisterCfg: getValidatingWebhookConfig(t, cfg, []arv1.RuleWithOperations{webhookRulesHouseCRD}),
+		"(valid, static, CRD) Having a static webhook, a validating webhook should allow creating the CRD and return a message.": {
+			webhookRegisterCfg: getValidatingWebhookConfig(t, cfg, []arv1.RuleWithOperations{webhookRulesHouseCRD}, []string{version}),
 			webhook: func() webhook.Webhook {
 				// Our validator logic.
 				val := validating.ValidatorFunc(func(ctx context.Context, ar *model.AdmissionReview, obj metav1.Object) (*validating.ValidatorResult, error) {
@@ -344,8 +319,8 @@ func TestValidatingWebhook(t *testing.T) {
 			},
 		},
 
-		"Having a static webhook, a validating webhook should allow deleting the pod.": {
-			webhookRegisterCfg: getValidatingWebhookConfig(t, cfg, []arv1.RuleWithOperations{webhookRulesDeletePod}),
+		"(valid, static, core, delete) Having a static webhook, a validating webhook should allow deleting the pod.": {
+			webhookRegisterCfg: getValidatingWebhookConfig(t, cfg, []arv1.RuleWithOperations{webhookRulesDeletePod}, []string{version}),
 			webhook: func() webhook.Webhook {
 				val := validating.ValidatorFunc(func(ctx context.Context, ar *model.AdmissionReview, obj metav1.Object) (*validating.ValidatorResult, error) {
 					// Allow if it has our label.
@@ -394,8 +369,8 @@ func TestValidatingWebhook(t *testing.T) {
 			},
 		},
 
-		"Having a dynamic webhook, a validating webhook should allow deleting the CRD.": {
-			webhookRegisterCfg: getValidatingWebhookConfig(t, cfg, []arv1.RuleWithOperations{webhookRulesDeletePod}),
+		"(valid, dynamic, CRD, delete) Having a dynamic webhook, a validating webhook should allow deleting the CRD.": {
+			webhookRegisterCfg: getValidatingWebhookConfig(t, cfg, []arv1.RuleWithOperations{webhookRulesDeletePod}, []string{version}),
 			webhook: func() webhook.Webhook {
 				val := validating.ValidatorFunc(func(ctx context.Context, ar *model.AdmissionReview, obj metav1.Object) (*validating.ValidatorResult, error) {
 					// Allow if it has our label.
@@ -461,7 +436,6 @@ func TestValidatingWebhook(t *testing.T) {
 				Addr:    cfg.ListenAddress,
 			}
 			go func() {
-				fmt.Printf("dnsakjdbdkjsandkjsabdksajd: %s\n", cfg.ListenAddress)
 				err := srv.ListenAndServeTLS(cfg.WebhookCertPath, cfg.WebhookCertKeyPath)
 				if err != nil && err != http.ErrServerClosed {
 					assert.FailNow(t, "error serving webhook", err.Error())
@@ -477,4 +451,12 @@ func TestValidatingWebhook(t *testing.T) {
 			test.execTest(t, cli, crdcli)
 		})
 	}
+}
+
+func TestValidatingWebhookV1Beta1(t *testing.T) {
+	testValidatingWebhookCommon(t, "v1beta1")
+}
+
+func TestValidatingWebhookV1(t *testing.T) {
+	testValidatingWebhookCommon(t, "v1")
 }

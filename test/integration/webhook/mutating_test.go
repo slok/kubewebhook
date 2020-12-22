@@ -26,14 +26,15 @@ import (
 	helperconfig "github.com/slok/kubewebhook/v2/test/integration/helper/config"
 )
 
-func TestMutatingWebhook(t *testing.T) {
+// testMutatingWebhookCommon tests the common use cases that should be shared among all webhook versions
+// so the version of the webhook (v1 or v1beta1) should not make a difference.
+func testMutatingWebhookCommon(t *testing.T, version string) {
 	var (
 		trueBool  = true
 		falseBool = false
 	)
 
 	cfg := helperconfig.GetTestEnvConfig(t)
-
 	cli, err := helpercli.GetK8sSTDClients(cfg.KubeConfigPath)
 	require.NoError(t, err, "error getting kubernetes client")
 	crdcli, err := helpercli.GetK8sCRDClients(cfg.KubeConfigPath)
@@ -44,8 +45,8 @@ func TestMutatingWebhook(t *testing.T) {
 		webhook            func() webhook.Webhook
 		execTest           func(t *testing.T, cli kubernetes.Interface, crdcli kubewebhookcrd.Interface)
 	}{
-		"Having a static webhook, a mutation on a pod creation should mutate the containers, mutate one of them and add a new one.": {
-			webhookRegisterCfg: getMutatingWebhookConfig(t, cfg, []arv1.RuleWithOperations{webhookRulesPod}),
+		"(static, core) Having a static webhook, a mutation on a pod creation should mutate the containers, mutate one of them and add a new one.": {
+			webhookRegisterCfg: getMutatingWebhookConfig(t, cfg, []arv1.RuleWithOperations{webhookRulesPod}, []string{version}),
 			webhook: func() webhook.Webhook {
 				// Our mutator logic.
 				mut := mutating.MutatorFunc(func(ctx context.Context, ar *model.AdmissionReview, obj metav1.Object) (*mutating.MutatorResult, error) {
@@ -129,8 +130,8 @@ func TestMutatingWebhook(t *testing.T) {
 			},
 		},
 
-		"Having a dynamic webhook, a mutation on a pod creation should mutate the pod labels, rewrite the existing ones, and add the missing ones.": {
-			webhookRegisterCfg: getMutatingWebhookConfig(t, cfg, []arv1.RuleWithOperations{webhookRulesPod}),
+		"(dynamic, core) Having a dynamic webhook, a mutation on a pod creation should mutate the pod labels, rewrite the existing ones, and add the missing ones.": {
+			webhookRegisterCfg: getMutatingWebhookConfig(t, cfg, []arv1.RuleWithOperations{webhookRulesPod}, []string{version}),
 			webhook: func() webhook.Webhook {
 				// Our mutator logic.
 				mut := mutating.MutatorFunc(func(ctx context.Context, ar *model.AdmissionReview, obj metav1.Object) (*mutating.MutatorResult, error) {
@@ -190,8 +191,8 @@ func TestMutatingWebhook(t *testing.T) {
 			},
 		},
 
-		"Having a static webhook, a mutation on a CRD creation should mutate the the CRD fields, rewrite the existing ones, and add the missing ones.": {
-			webhookRegisterCfg: getMutatingWebhookConfig(t, cfg, []arv1.RuleWithOperations{webhookRulesHouseCRD}),
+		"(static, CRD) Having a static webhook, a mutation on a CRD creation should mutate the the CRD fields, rewrite the existing ones, and add the missing ones.": {
+			webhookRegisterCfg: getMutatingWebhookConfig(t, cfg, []arv1.RuleWithOperations{webhookRulesHouseCRD}, []string{version}),
 			webhook: func() webhook.Webhook {
 				// Our mutator logic.
 				mut := mutating.MutatorFunc(func(ctx context.Context, ar *model.AdmissionReview, obj metav1.Object) (*mutating.MutatorResult, error) {
@@ -248,8 +249,8 @@ func TestMutatingWebhook(t *testing.T) {
 			},
 		},
 
-		"Having a dynamic webhook, a mutation on a CRD creation should mutate the the CRD labels, rewrite the existing ones, and add the missing ones.": {
-			webhookRegisterCfg: getMutatingWebhookConfig(t, cfg, []arv1.RuleWithOperations{webhookRulesHouseCRD}),
+		"(dynamic, CRD) Having a dynamic webhook, a mutation on a CRD creation should mutate the the CRD labels, rewrite the existing ones, and add the missing ones.": {
+			webhookRegisterCfg: getMutatingWebhookConfig(t, cfg, []arv1.RuleWithOperations{webhookRulesHouseCRD}, []string{version}),
 			webhook: func() webhook.Webhook {
 				// Our mutator logic.
 				mut := mutating.MutatorFunc(func(ctx context.Context, ar *model.AdmissionReview, obj metav1.Object) (*mutating.MutatorResult, error) {
@@ -342,4 +343,12 @@ func TestMutatingWebhook(t *testing.T) {
 			test.execTest(t, cli, crdcli)
 		})
 	}
+}
+
+func TestMutatingWebhookV1Beta1(t *testing.T) {
+	testMutatingWebhookCommon(t, "v1beta1")
+}
+
+func TestMutatingWebhookV1(t *testing.T) {
+	testMutatingWebhookCommon(t, "v1")
 }
