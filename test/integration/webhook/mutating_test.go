@@ -14,6 +14,7 @@ import (
 	arv1 "k8s.io/api/admissionregistration/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/kubernetes"
 
 	whhttp "github.com/slok/kubewebhook/v2/pkg/http"
@@ -268,6 +269,69 @@ func testMutatingWebhookCommon(t *testing.T, version string) {
 				})
 				mwh, _ := mutating.NewWebhook(mutating.WebhookConfig{
 					ID:      "house-mutator-label",
+					Mutator: mut,
+				})
+				return mwh
+			},
+			execTest: func(t *testing.T, _ kubernetes.Interface, crdcli kubewebhookcrd.Interface) {
+				// Try creating a house.
+				h := &buildingv1.House{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      fmt.Sprintf("test-%d", time.Now().UnixNano()),
+						Namespace: "default",
+						Labels: map[string]string{
+							"city":      "Bilbo",
+							"bathrooms": "2",
+						},
+					},
+					Spec: buildingv1.HouseSpec{
+						Name:    "newHouse",
+						Address: "whatever 42",
+						Owners: []buildingv1.User{
+							{Name: "user1", Email: "user1@kubebwehook.slok.dev"},
+							{Name: "user2", Email: "user2@kubebwehook.slok.dev"},
+						},
+					},
+				}
+				_, err := crdcli.BuildingV1().Houses(h.Namespace).Create(context.TODO(), h, metav1.CreateOptions{})
+				require.NoError(t, err)
+				// nolint: errcheck
+				defer crdcli.BuildingV1().Houses(h.Namespace).Delete(context.TODO(), h.Name, metav1.DeleteOptions{})
+
+				// Check expectations.
+				expLabels := map[string]string{
+					"city":      "Madrid",
+					"bathrooms": "2",
+					"rooms":     "3",
+					"type":      "Flat",
+				}
+				house, err := crdcli.BuildingV1().Houses(h.Namespace).Get(context.TODO(), h.Name, metav1.GetOptions{})
+				if assert.NoError(t, err) {
+					assert.Equal(t, expLabels, house.Labels)
+				}
+			},
+		},
+
+		"(static, unstructured, CRD) Having a static webhook forcing unstructured, a mutation on a CRD creation should mutate the the CRD labels, rewrite the existing ones, and add the missing ones.": {
+			webhookRegisterCfg: getMutatingWebhookConfig(t, cfg, []arv1.RuleWithOperations{webhookRulesHouseCRD}, []string{version}),
+			webhook: func() webhook.Webhook {
+				// Our mutator logic.
+				mut := mutating.MutatorFunc(func(ctx context.Context, ar *model.AdmissionReview, obj metav1.Object) (*mutating.MutatorResult, error) {
+					// Mutate.
+					labels := obj.GetLabels()
+					if labels == nil {
+						labels = map[string]string{}
+					}
+					labels["city"] = "Madrid"
+					labels["type"] = "Flat"
+					labels["rooms"] = "3"
+					obj.SetLabels(labels)
+
+					return &mutating.MutatorResult{MutatedObject: obj}, nil
+				})
+				mwh, _ := mutating.NewWebhook(mutating.WebhookConfig{
+					ID:      "house-mutator-label",
+					Obj:     &unstructured.Unstructured{},
 					Mutator: mut,
 				})
 				return mwh
