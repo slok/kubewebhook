@@ -3,6 +3,7 @@
 package webhook_test
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"net/http"
@@ -33,9 +34,9 @@ import (
 func testValidatingWebhookCommon(t *testing.T, version string) {
 	cfg := helperconfig.GetTestEnvConfig(t)
 
-	cli, err := helpercli.GetK8sSTDClients(cfg.KubeConfigPath)
+	cli, err := helpercli.GetK8sSTDClients(cfg.KubeConfigPath, nil)
 	require.NoError(t, err, "error getting kubernetes client")
-	crdcli, err := helpercli.GetK8sCRDClients(cfg.KubeConfigPath)
+	crdcli, err := helpercli.GetK8sCRDClients(cfg.KubeConfigPath, nil)
 	require.NoError(t, err, "error getting kubernetes CRD client")
 
 	tests := map[string]struct {
@@ -499,7 +500,7 @@ func testValidatingWebhookCommon(t *testing.T, version string) {
 			// nolint: errcheck
 			defer cli.AdmissionregistrationV1().ValidatingWebhookConfigurations().Delete(context.TODO(), test.webhookRegisterCfg.Name, metav1.DeleteOptions{})
 
-			// Start mutating webhook server.
+			// Start validating webhook server.
 			wh := test.webhook()
 			h := whhttp.MustHandlerFor(wh)
 			srv := http.Server{
@@ -524,10 +525,148 @@ func testValidatingWebhookCommon(t *testing.T, version string) {
 	}
 }
 
+func testValidatingWebhookWarnings(t *testing.T) {
+	cfg := helperconfig.GetTestEnvConfig(t)
+
+	tests := map[string]struct {
+		webhookRegisterCfg *arv1.ValidatingWebhookConfiguration
+		webhook            func() webhook.Webhook
+		execTest           func(t *testing.T, cli kubernetes.Interface, crdcli kubewebhookcrd.Interface)
+		expWarnings        string
+	}{
+		"Warning messages should be received by a validating webhook that accepts.": {
+			webhookRegisterCfg: getValidatingWebhookConfig(t, cfg, []arv1.RuleWithOperations{webhookRulesPod}, []string{"v1"}),
+			webhook: func() webhook.Webhook {
+				// Our validator logic.
+				val := validating.ValidatorFunc(func(ctx context.Context, ar *model.AdmissionReview, obj metav1.Object) (*validating.ValidatorResult, error) {
+					return &validating.ValidatorResult{
+						Valid: true,
+						Warnings: []string{
+							"this is the first warning",
+							"and this is the second warning",
+						},
+					}, nil
+				})
+				vwh, _ := validating.NewWebhook(validating.WebhookConfig{
+					ID:        "pod-validating-label",
+					Obj:       &corev1.Pod{},
+					Validator: val,
+				})
+				return vwh
+			},
+			execTest: func(t *testing.T, cli kubernetes.Interface, _ kubewebhookcrd.Interface) {
+				// Create a pod.
+				p := &corev1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      fmt.Sprintf("test-%d", time.Now().UnixNano()),
+						Namespace: "default",
+					},
+					Spec: corev1.PodSpec{Containers: []corev1.Container{{Name: "test", Image: "wrong", Ports: []corev1.ContainerPort{{ContainerPort: 8080}}}}},
+				}
+				_, err := cli.CoreV1().Pods(p.Namespace).Create(context.TODO(), p, metav1.CreateOptions{})
+				require.NoError(t, err)
+				// nolint: errcheck
+				defer cli.CoreV1().Pods(p.Namespace).Delete(context.TODO(), p.Name, metav1.DeleteOptions{})
+			},
+			expWarnings: "Warning: this is the first warning\nWarning: and this is the second warning\n",
+		},
+
+		"Warning messages should be received by a validating webhook that does not accept.": {
+			webhookRegisterCfg: getValidatingWebhookConfig(t, cfg, []arv1.RuleWithOperations{webhookRulesPod}, []string{"v1"}),
+			webhook: func() webhook.Webhook {
+				// Our validator logic.
+				val := validating.ValidatorFunc(func(ctx context.Context, ar *model.AdmissionReview, obj metav1.Object) (*validating.ValidatorResult, error) {
+					return &validating.ValidatorResult{
+						Valid:   false,
+						Message: "test message from validator",
+						Warnings: []string{
+							"this is the first warning",
+							"and this is the second warning",
+						},
+					}, nil
+				})
+				vwh, _ := validating.NewWebhook(validating.WebhookConfig{
+					ID:        "pod-validating-label",
+					Obj:       &corev1.Pod{},
+					Validator: val,
+				})
+				return vwh
+			},
+			execTest: func(t *testing.T, cli kubernetes.Interface, _ kubewebhookcrd.Interface) {
+				// Create a pod.
+				p := &corev1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      fmt.Sprintf("test-%d", time.Now().UnixNano()),
+						Namespace: "default",
+					},
+					Spec: corev1.PodSpec{Containers: []corev1.Container{{Name: "test", Image: "wrong", Ports: []corev1.ContainerPort{{ContainerPort: 8080}}}}},
+				}
+
+				_, err := cli.CoreV1().Pods(p.Namespace).Create(context.TODO(), p, metav1.CreateOptions{})
+				if assert.Error(t, err) {
+					sErr, ok := err.(*apierrors.StatusError)
+					if assert.True(t, ok) {
+						assert.Equal(t, `admission webhook "test.slok.dev" denied the request: test message from validator`, sErr.ErrStatus.Message)
+						assert.Equal(t, metav1.StatusFailure, sErr.ErrStatus.Status)
+					}
+				} else {
+					// Creation should err, if we are here then we need to clean.
+					// nolint: errcheck
+					cli.CoreV1().Pods(p.Namespace).Delete(context.TODO(), p.Name, metav1.DeleteOptions{})
+				}
+			},
+			expWarnings: "Warning: this is the first warning\nWarning: and this is the second warning\n",
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			var gotWarnings bytes.Buffer
+
+			cli, err := helpercli.GetK8sSTDClients(cfg.KubeConfigPath, &gotWarnings)
+			require.NoError(t, err, "error getting kubernetes client")
+			crdcli, err := helpercli.GetK8sCRDClients(cfg.KubeConfigPath, &gotWarnings)
+			require.NoError(t, err, "error getting kubernetes CRD client")
+
+			// Register webhooks.
+			_, err = cli.AdmissionregistrationV1().ValidatingWebhookConfigurations().Create(context.TODO(), test.webhookRegisterCfg, metav1.CreateOptions{})
+			require.NoError(t, err, "error registering webhooks kubernetes client")
+			// nolint: errcheck
+			defer cli.AdmissionregistrationV1().ValidatingWebhookConfigurations().Delete(context.TODO(), test.webhookRegisterCfg.Name, metav1.DeleteOptions{})
+
+			// Start validating webhook server.
+			wh := test.webhook()
+			h := whhttp.MustHandlerFor(wh)
+			srv := http.Server{
+				Handler: h,
+				Addr:    cfg.ListenAddress,
+			}
+			go func() {
+				err := srv.ListenAndServeTLS(cfg.WebhookCertPath, cfg.WebhookCertKeyPath)
+				if err != nil && err != http.ErrServerClosed {
+					assert.FailNow(t, "error serving webhook", err.Error())
+				}
+			}()
+			// nolint: errcheck
+			defer srv.Shutdown(context.TODO())
+
+			// Wait a bit to get ready with the webhook server goroutine.
+			time.Sleep(2 * time.Second)
+
+			// Execute test.
+			test.execTest(t, cli, crdcli)
+
+			// Check warnings.
+			assert.Equal(t, test.expWarnings, gotWarnings.String())
+		})
+	}
+}
+
 func TestValidatingWebhookV1Beta1(t *testing.T) {
 	testValidatingWebhookCommon(t, "v1beta1")
 }
 
 func TestValidatingWebhookV1(t *testing.T) {
 	testValidatingWebhookCommon(t, "v1")
+	testValidatingWebhookWarnings(t)
 }
