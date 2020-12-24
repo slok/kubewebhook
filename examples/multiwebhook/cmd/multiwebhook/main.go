@@ -19,8 +19,8 @@ import (
 	jaeger "github.com/uber/jaeger-client-go"
 	jaegerconfig "github.com/uber/jaeger-client-go/config"
 
-	"github.com/slok/kubewebhook/v2/examples/multiwebhook/pkg/webhook/mutating"
-	"github.com/slok/kubewebhook/v2/examples/multiwebhook/pkg/webhook/validating"
+	kwhmutating "github.com/slok/kubewebhook/v2/examples/multiwebhook/pkg/webhook/mutating"
+	kwhvalidating "github.com/slok/kubewebhook/v2/examples/multiwebhook/pkg/webhook/validating"
 )
 
 const (
@@ -58,7 +58,7 @@ func (m *Main) Run() error {
 	}
 
 	// Create webhooks
-	mpw, err := mutating.NewPodWebhook(defLabels, m.logger)
+	mpw, err := kwhmutating.NewPodWebhook(defLabels, m.logger)
 	if err != nil {
 		return err
 	}
@@ -68,7 +68,7 @@ func (m *Main) Run() error {
 		return err
 	}
 
-	vdw, err := validating.NewDeploymentWebhook(minReps, maxReps, m.logger)
+	vdw, err := kwhvalidating.NewDeploymentWebhook(minReps, maxReps, m.logger)
 	if err != nil {
 		return err
 	}

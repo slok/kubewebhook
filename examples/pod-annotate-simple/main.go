@@ -16,25 +16,6 @@ import (
 	kwhmutating "github.com/slok/kubewebhook/v2/pkg/webhook/mutating"
 )
 
-func annotatePodMutator(_ context.Context, _ *kwhmodel.AdmissionReview, obj metav1.Object) (*kwhmutating.MutatorResult, error) {
-	pod, ok := obj.(*corev1.Pod)
-	if !ok {
-		// If not a pod just continue the mutation chain(if there is one) and don't do nothing.
-		return &kwhmutating.MutatorResult{}, nil
-	}
-
-	// Mutate our object with the required annotations.
-	if pod.Annotations == nil {
-		pod.Annotations = make(map[string]string)
-	}
-	pod.Annotations["mutated"] = "true"
-	pod.Annotations["mutator"] = "pod-annotate"
-
-	return &kwhmutating.MutatorResult{
-		MutatedObject: pod,
-	}, nil
-}
-
 type config struct {
 	certFile string
 	keyFile  string
@@ -51,36 +32,61 @@ func initFlags() *config {
 	return cfg
 }
 
-func main() {
+func run() error {
 	logger := &kwhlog.Std{Debug: true}
 
 	cfg := initFlags()
 
-	// Create our mutator
-	mt := kwhmutating.MutatorFunc(annotatePodMutator)
+	// Create mutator.
+	mt := kwhmutating.MutatorFunc(func(_ context.Context, _ *kwhmodel.AdmissionReview, obj metav1.Object) (*kwhmutating.MutatorResult, error) {
+		pod, ok := obj.(*corev1.Pod)
+		if !ok {
+			return &kwhmutating.MutatorResult{}, nil
+		}
 
+		// Mutate our object with the required annotations.
+		if pod.Annotations == nil {
+			pod.Annotations = make(map[string]string)
+		}
+		pod.Annotations["mutated"] = "true"
+		pod.Annotations["mutator"] = "pod-annotate"
+
+		return &kwhmutating.MutatorResult{MutatedObject: pod}, nil
+	})
+
+	// Create webhook.
 	mcfg := kwhmutating.WebhookConfig{
-		ID:      "podAnnotate",
-		Obj:     &corev1.Pod{},
+		ID:      "pod-annotate",
 		Mutator: mt,
 		Logger:  logger,
 	}
 	wh, err := kwhmutating.NewWebhook(mcfg)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error creating webhook: %s", err)
-		os.Exit(1)
+		return fmt.Errorf("error creating webhook: %w", err)
 	}
 
-	// Get the handler for our webhook.
+	// Get HTTP handler from webhook.
 	whHandler, err := kwhhttp.HandlerFor(wh)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error creating webhook handler: %s", err)
-		os.Exit(1)
+		return fmt.Errorf("error creating webhook handler: %w", err)
 	}
+
+	// Serve.
 	logger.Infof("Listening on :8080")
 	err = http.ListenAndServeTLS(":8080", cfg.certFile, cfg.keyFile, whHandler)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error serving webhook: %s", err)
-		os.Exit(1)
+		return fmt.Errorf("error serving webhook: %w", err)
+	}
+
+	return nil
+}
+
+func main() {
+	err := run()
+	if err != nil {
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error running app: %s", err)
+			os.Exit(1)
+		}
 	}
 }

@@ -8,21 +8,20 @@ import (
 	"os"
 	"regexp"
 
+	kwhhttp "github.com/slok/kubewebhook/v2/pkg/http"
+	kwhlog "github.com/slok/kubewebhook/v2/pkg/log"
+	kwhmodel "github.com/slok/kubewebhook/v2/pkg/model"
+	kwhvalidating "github.com/slok/kubewebhook/v2/pkg/webhook/validating"
 	extensionsv1beta1 "k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	whhttp "github.com/slok/kubewebhook/v2/pkg/http"
-	"github.com/slok/kubewebhook/v2/pkg/log"
-	"github.com/slok/kubewebhook/v2/pkg/model"
-	validatingwh "github.com/slok/kubewebhook/v2/pkg/webhook/validating"
 )
 
 type ingressHostValidator struct {
 	hostRegex *regexp.Regexp
-	logger    log.Logger
+	logger    kwhlog.Logger
 }
 
-func (v *ingressHostValidator) Validate(_ context.Context, _ *model.AdmissionReview, obj metav1.Object) (*validatingwh.ValidatorResult, error) {
+func (v *ingressHostValidator) Validate(_ context.Context, _ *kwhmodel.AdmissionReview, obj metav1.Object) (*kwhvalidating.ValidatorResult, error) {
 	ingress, ok := obj.(*extensionsv1beta1.Ingress)
 
 	if !ok {
@@ -32,7 +31,7 @@ func (v *ingressHostValidator) Validate(_ context.Context, _ *model.AdmissionRev
 	for _, r := range ingress.Spec.Rules {
 		if !v.hostRegex.MatchString(r.Host) {
 			v.logger.Infof("ingress %s denied, host %s is not valid for regex %s", ingress.Name, r.Host, v.hostRegex)
-			return &validatingwh.ValidatorResult{
+			return &kwhvalidating.ValidatorResult{
 				Valid:   false,
 				Message: fmt.Sprintf("%s ingress host doesn't match %s regex", r.Host, v.hostRegex),
 			}, nil
@@ -40,7 +39,7 @@ func (v *ingressHostValidator) Validate(_ context.Context, _ *model.AdmissionRev
 	}
 
 	v.logger.Infof("ingress %s is valid", ingress.Name)
-	return &validatingwh.ValidatorResult{
+	return &kwhvalidating.ValidatorResult{
 		Valid:   true,
 		Message: "all hosts in the ingress are valid",
 	}, nil
@@ -67,7 +66,7 @@ func initFlags() *config {
 }
 
 func main() {
-	logger := &log.Std{Debug: true}
+	logger := &kwhlog.Std{Debug: true}
 
 	cfg := initFlags()
 
@@ -83,13 +82,13 @@ func main() {
 		logger:    logger,
 	}
 
-	vcfg := validatingwh.WebhookConfig{
+	vcfg := kwhvalidating.WebhookConfig{
 		ID:        "ingressHostValidator",
 		Obj:       &extensionsv1beta1.Ingress{},
 		Validator: vl,
 		Logger:    logger,
 	}
-	wh, err := validatingwh.NewWebhook(vcfg)
+	wh, err := kwhvalidating.NewWebhook(vcfg)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error creating webhook: %s", err)
 		os.Exit(1)
@@ -97,7 +96,7 @@ func main() {
 
 	// Serve the webhook.
 	logger.Infof("Listening on %s", cfg.addr)
-	err = http.ListenAndServeTLS(cfg.addr, cfg.certFile, cfg.keyFile, whhttp.MustHandlerFor(wh))
+	err = http.ListenAndServeTLS(cfg.addr, cfg.certFile, cfg.keyFile, kwhhttp.MustHandlerFor(wh))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error serving webhook: %s", err)
 		os.Exit(1)

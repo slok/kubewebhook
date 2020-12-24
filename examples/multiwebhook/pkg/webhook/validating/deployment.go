@@ -1,14 +1,14 @@
 package validating
 
 import (
-	"github.com/slok/kubewebhook/v2/pkg/log"
-	"github.com/slok/kubewebhook/v2/pkg/webhook"
-	"github.com/slok/kubewebhook/v2/pkg/webhook/validating"
+	kwhlog "github.com/slok/kubewebhook/v2/pkg/log"
+	kwhwebhook "github.com/slok/kubewebhook/v2/pkg/webhook"
+	kwhvalidating "github.com/slok/kubewebhook/v2/pkg/webhook/validating"
 	extensionsv1beta1 "k8s.io/api/extensions/v1beta1"
 )
 
 // NewDeploymentWebhook returns a new deployment validationg webhook.
-func NewDeploymentWebhook(minReplicas, maxReplicas int, logger log.Logger) (webhook.Webhook, error) {
+func NewDeploymentWebhook(minReplicas, maxReplicas int, logger kwhlog.Logger) (kwhwebhook.Webhook, error) {
 
 	// Create validators.
 	repVal := &deploymentReplicasValidator{
@@ -17,7 +17,7 @@ func NewDeploymentWebhook(minReplicas, maxReplicas int, logger log.Logger) (webh
 		logger:      logger,
 	}
 
-	vals := []validating.Validator{
+	vals := []kwhvalidating.Validator{
 		&lantencyValidator{maxLatencyMS: 20},
 		&lantencyValidator{maxLatencyMS: 120},
 		&lantencyValidator{maxLatencyMS: 300},
@@ -28,11 +28,11 @@ func NewDeploymentWebhook(minReplicas, maxReplicas int, logger log.Logger) (webh
 		repVal,
 	}
 
-	return validating.NewWebhook(
-		validating.WebhookConfig{
+	return kwhvalidating.NewWebhook(
+		kwhvalidating.WebhookConfig{
 			ID:        "multiwebhook-deploymentValidator",
 			Obj:       &extensionsv1beta1.Deployment{},
-			Validator: validating.NewChain(logger, vals...),
+			Validator: kwhvalidating.NewChain(logger, vals...),
 			Logger:    logger,
 		})
 }
