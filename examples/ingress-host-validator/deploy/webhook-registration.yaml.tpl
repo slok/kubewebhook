@@ -6,7 +6,7 @@ metadata:
     app: ingress-host-validator-webhook
     kind: validating
 webhooks:
-  - name: ingress-host-validator-webhook.slok.xyz
+  - name: ingress-host-validator-webhook.slok.dev
     clientConfig:
       service:
         name: ingress-host-validator-webhook

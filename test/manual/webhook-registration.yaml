@@ -3,7 +3,7 @@ kind: MutatingWebhookConfiguration
 metadata:
   name: kubewebhook-test
 webhooks:
-  - name: pod-mutating-v1beta1.slok.xyz
+  - name: pod-mutating-v1beta1.slok.dev
     admissionReviewVersions: ["v1beta1"]
     sideEffects: None
     clientConfig:
@@ -25,7 +25,7 @@ kind: MutatingWebhookConfiguration
 metadata:
   name: kubewebhook-test1
 webhooks:
-  - name: pod-mutating-v1.slok.xyz
+  - name: pod-mutating-v1.slok.dev
     admissionReviewVersions: ["v1"]
     sideEffects: None
     clientConfig:
@@ -47,7 +47,7 @@ kind: ValidatingWebhookConfiguration
 metadata:
   name: kubewebhook-test3
 webhooks:
-  - name: deployment-validating-v1beta1.slok.xyz
+  - name: deployment-validating-v1beta1.slok.dev
     admissionReviewVersions: ["v1beta1"]
     sideEffects: None
     clientConfig:
