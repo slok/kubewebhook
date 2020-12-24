@@ -10,6 +10,11 @@
 - All Kubernetes specific admission review references, changed in favor of Kubewebhook own model.
 - Better HTTP reponse details (messages, HTTP codes...) on allow, not allow, mutating and errors.
 - Webhook reviewm metrics have been changed to give more insights.
+- Prometheus metrics have been redesigned and now are simpler and give more insights.
+
+### Removed
+
+- V1 docs
 
 ## [0.11.0] - 2020-10-21
 

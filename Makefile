@@ -11,7 +11,6 @@ UNIT_TEST_CMD := ./hack/scripts/unit-test.sh
 INTEGRATION_TEST_CMD := ./hack/scripts/run-integration.sh
 MOCKS_CMD := ./hack/scripts/mockgen.sh
 DOCKER_RUN_CMD := docker run -v ${PWD}:/src --rm -it $(SERVICE_NAME)
-DOCKER_DOCS_RUN_CMD := docker run -v ${PWD}/docs:/docs --rm -it -p 1313:1313 $(SERVICE_NAME)-docs
 DEPS_CMD := go mod tidy
 CHECK_CMD := ./hack/scripts/check.sh
 
@@ -67,14 +66,6 @@ mocks: build ## Generate mocks.
 .PHONY: godoc
 godoc: ## Run library docs.
 	godoc -http=":6060"
-
-.PHONY: docs-generate
-docs-generate: build ## Generate app docs.
-	$(DOCKER_DOCS_RUN_CMD) /bin/bash -c "cd src && hugo"
-
-.PHONY: docs-serve
-docs-serve: build ## Serve application docs.
-	$(DOCKER_DOCS_RUN_CMD) /bin/bash -c "cd src && hugo server --bind=0.0.0.0"
 
 .PHONY: deps
 deps: ## Setup dependencies.
