@@ -9,10 +9,10 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	whhttp "github.com/slok/kubewebhook/v2/pkg/http"
-	"github.com/slok/kubewebhook/v2/pkg/log"
-	"github.com/slok/kubewebhook/v2/pkg/model"
-	"github.com/slok/kubewebhook/v2/pkg/webhook/mutating"
+	kwhhttp "github.com/slok/kubewebhook/v2/pkg/http"
+	kwhlog "github.com/slok/kubewebhook/v2/pkg/log"
+	kwhmodel "github.com/slok/kubewebhook/v2/pkg/model"
+	kwhmutating "github.com/slok/kubewebhook/v2/pkg/webhook/mutating"
 	mutatingwh "github.com/slok/kubewebhook/v2/pkg/webhook/mutating"
 )
 
@@ -33,12 +33,12 @@ func initFlags() *config {
 }
 
 func main() {
-	logger := &log.Std{Debug: true}
+	logger := &kwhlog.Std{Debug: true}
 
 	cfg := initFlags()
 
 	// Create our mutator.
-	mt := mutatingwh.MutatorFunc(func(_ context.Context, ar *model.AdmissionReview, obj metav1.Object) (*mutating.MutatorResult, error) {
+	mt := mutatingwh.MutatorFunc(func(_ context.Context, ar *kwhmodel.AdmissionReview, obj metav1.Object) (*kwhmutating.MutatorResult, error) {
 		labels := obj.GetLabels()
 		if labels == nil {
 			labels = map[string]string{}
@@ -46,7 +46,7 @@ func main() {
 		labels[fmt.Sprintf("kubewebhook-%s", ar.Version)] = "mutated"
 		obj.SetLabels(labels)
 
-		return &mutating.MutatorResult{MutatedObject: obj}, nil
+		return &kwhmutating.MutatorResult{MutatedObject: obj}, nil
 	})
 
 	// We don't use any type, it works for any type.
@@ -62,7 +62,7 @@ func main() {
 	}
 
 	// Get the handler for our webhook.
-	whHandler, err := whhttp.HandlerFor(wh)
+	whHandler, err := kwhhttp.HandlerFor(wh)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error creating webhook handler: %s", err)
 		os.Exit(1)
