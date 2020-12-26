@@ -8,8 +8,10 @@ import (
 	"os"
 	"regexp"
 
+	"github.com/sirupsen/logrus"
 	kwhhttp "github.com/slok/kubewebhook/v2/pkg/http"
 	kwhlog "github.com/slok/kubewebhook/v2/pkg/log"
+	kwhlogrus "github.com/slok/kubewebhook/v2/pkg/log/logrus"
 	kwhmodel "github.com/slok/kubewebhook/v2/pkg/model"
 	kwhvalidating "github.com/slok/kubewebhook/v2/pkg/webhook/validating"
 	extensionsv1beta1 "k8s.io/api/extensions/v1beta1"
@@ -66,7 +68,9 @@ func initFlags() *config {
 }
 
 func main() {
-	logger := &kwhlog.Std{Debug: true}
+	logrusLogEntry := logrus.NewEntry(logrus.New())
+	logrusLogEntry.Logger.SetLevel(logrus.DebugLevel)
+	logger := kwhlogrus.NewLogrus(logrusLogEntry)
 
 	cfg := initFlags()
 

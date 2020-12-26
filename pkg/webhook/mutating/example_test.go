@@ -65,6 +65,6 @@ func ExampleMutator_chainMutatingWebhook() {
 	_, _ = mutating.NewWebhook(mutating.WebhookConfig{
 		ID:      "podWebhook",
 		Obj:     &corev1.Pod{},
-		Mutator: mutating.NewChain(log.Dummy, fakeMut, fakeMut2, fakeMut3),
+		Mutator: mutating.NewChain(log.Noop, fakeMut, fakeMut2, fakeMut3),
 	})
 }

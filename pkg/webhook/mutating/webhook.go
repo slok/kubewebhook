@@ -37,7 +37,7 @@ func (c *WebhookConfig) defaults() error {
 	}
 
 	if c.Logger == nil {
-		c.Logger = log.Dummy
+		c.Logger = log.Noop
 	}
 
 	return nil

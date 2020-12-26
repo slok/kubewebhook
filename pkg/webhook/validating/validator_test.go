@@ -120,7 +120,7 @@ func TestValidatorChain(t *testing.T) {
 			validators := test.validatorMocks()
 
 			// Execute.
-			chain := validating.NewChain(log.Dummy, validators...)
+			chain := validating.NewChain(log.Noop, validators...)
 			res, err := chain.Validate(context.TODO(), nil, nil)
 
 			// Check results.
