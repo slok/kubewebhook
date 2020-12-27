@@ -24,7 +24,6 @@ default: help
 .PHONY: build
 build: ## Build the development docker images.
 	docker build -t $(SERVICE_NAME) --build-arg uid=$(UID) --build-arg  gid=$(GID) -f ./docker/dev/Dockerfile .
-	docker build -t $(SERVICE_NAME)-docs --build-arg uid=$(UID) --build-arg  gid=$(GID) -f ./docker/docs/Dockerfile .
 
 build-binary: ## Build production stuff.
 	$(DOCKER_RUN_CMD) /bin/sh -c '$(BUILD_BINARY_CMD)'

@@ -9,8 +9,9 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/sirupsen/logrus"
 	kwhhttp "github.com/slok/kubewebhook/v2/pkg/http"
-	kwhlog "github.com/slok/kubewebhook/v2/pkg/log"
+	kwhlogrus "github.com/slok/kubewebhook/v2/pkg/log/logrus"
 	kwhmodel "github.com/slok/kubewebhook/v2/pkg/model"
 	kwhmutating "github.com/slok/kubewebhook/v2/pkg/webhook/mutating"
 	mutatingwh "github.com/slok/kubewebhook/v2/pkg/webhook/mutating"
@@ -33,7 +34,9 @@ func initFlags() *config {
 }
 
 func main() {
-	logger := &kwhlog.Std{Debug: true}
+	logrusLogEntry := logrus.NewEntry(logrus.New())
+	logrusLogEntry.Logger.SetLevel(logrus.DebugLevel)
+	logger := kwhlogrus.NewLogrus(logrusLogEntry)
 
 	cfg := initFlags()
 
@@ -62,7 +65,7 @@ func main() {
 	}
 
 	// Get the handler for our webhook.
-	whHandler, err := kwhhttp.HandlerFor(wh)
+	whHandler, err := kwhhttp.HandlerFor(kwhhttp.HandlerConfig{Webhook: wh, Logger: logger})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error creating webhook handler: %s", err)
 		os.Exit(1)

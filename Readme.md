@@ -19,7 +19,9 @@ With Kubewebhook you can make validating and mutating webhooks in any version, f
 - Webhook metrics ([RED][red-metrics-url]) for [Prometheus][prometheus-url] with [Grafana dashboard][grafana-dashboard] included.
 - Supports [warnings].
 
-## Example
+## Getting started
+
+**Use `github.com/slok/kubewebhook/v2` to import Kubewebhook `v2`.**
 
 ```go
 func run() error {
@@ -43,18 +45,17 @@ func run() error {
     })
 
     // Create webhook.
-    mcfg := kwhmutating.WebhookConfig{
+    wh, err := kwhmutating.NewWebhook(kwhmutating.WebhookConfig{
         ID:      "pod-annotate",
         Mutator: mt,
         Logger:  logger,
-    }
-    wh, err := kwhmutating.NewWebhook(mcfg)
+    })
     if err != nil {
         return fmt.Errorf("error creating webhook: %w", err)
     }
 
     // Get HTTP handler from webhook.
-    whHandler, err := kwhhttp.HandlerFor(wh)
+    whHandler, err := kwhhttp.HandlerFor(kwhhttp.HandlerConfig{Webhook: wh, Logger: logger})
     if err != nil {
         return fmt.Errorf("error creating webhook handler: %w", err)
     }

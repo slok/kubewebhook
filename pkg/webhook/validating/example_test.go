@@ -70,7 +70,7 @@ func ExampleValidator_chainValidatingWebhook() {
 	_, _ = validating.NewWebhook(validating.WebhookConfig{
 		ID:        "podWebhook",
 		Obj:       &corev1.Pod{},
-		Validator: validating.NewChain(log.Dummy, fakeVal, fakeVal2, fakeVal3),
+		Validator: validating.NewChain(log.Noop, fakeVal, fakeVal2, fakeVal3),
 	})
 
 }

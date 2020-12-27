@@ -102,7 +102,7 @@ func TestMutatorChain(t *testing.T) {
 			mutators := test.mutatorMocks()
 
 			// Execute.
-			chain := mutating.NewChain(log.Dummy, mutators...)
+			chain := mutating.NewChain(log.Noop, mutators...)
 			res, err := chain.Mutate(context.TODO(), nil, test.initalObj)
 
 			// Check result.

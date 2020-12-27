@@ -101,7 +101,7 @@ func (m measuredWebhook) Review(ctx context.Context, ar model.AdmissionReview) (
 			cData.WarningsNumber = len(r.Warnings)
 			m.rec.MeasureMutatingWebhookReviewOp(ctx, MeasureMutatingOpData{
 				MeasureOpCommonData: cData,
-				Mutated:             len(r.JSONPatchPatch) > 0,
+				Mutated:             len(r.JSONPatchPatch) > 0 && string(r.JSONPatchPatch) != "[]",
 			})
 
 		default:

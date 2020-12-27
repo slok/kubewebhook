@@ -1,9 +1,9 @@
 package log
 
-import (
-	"fmt"
-	"log"
-)
+import "context"
+
+// Kv is a helper type for structured logging fields usage.
+type Kv = map[string]interface{}
 
 // Logger is the interface that the loggers used by the library will use.
 type Logger interface {
@@ -11,39 +11,18 @@ type Logger interface {
 	Warningf(format string, args ...interface{})
 	Errorf(format string, args ...interface{})
 	Debugf(format string, args ...interface{})
+	WithValues(values map[string]interface{}) Logger
+	WithCtx(ctx context.Context) Logger
 }
 
-// Dummy logger doesn't log anything
-var Dummy = &dummy{}
+// Noop logger doesn't log anything.
+const Noop = noop(0)
 
-type dummy struct{}
+type noop int
 
-func (d *dummy) Infof(format string, args ...interface{})    {}
-func (d *dummy) Warningf(format string, args ...interface{}) {}
-func (d *dummy) Errorf(format string, args ...interface{})   {}
-func (d *dummy) Debugf(format string, args ...interface{})   {}
-
-// Std is a wrapper for go standard library logger.
-type Std struct {
-	Debug bool
-}
-
-func (s *Std) logWithPrefix(prefix, format string, args ...interface{}) {
-	format = fmt.Sprintf("%s %s", prefix, format)
-	log.Printf(format, args...)
-}
-
-func (s *Std) Infof(format string, args ...interface{}) {
-	s.logWithPrefix("[INFO]", format, args...)
-}
-func (s *Std) Warningf(format string, args ...interface{}) {
-	s.logWithPrefix("[WARN]", format, args...)
-}
-func (s *Std) Errorf(format string, args ...interface{}) {
-	s.logWithPrefix("[ERROR]", format, args...)
-}
-func (s *Std) Debugf(format string, args ...interface{}) {
-	if s.Debug {
-		s.logWithPrefix("[DEBUG]", format, args...)
-	}
-}
+func (n noop) Infof(format string, args ...interface{})    {}
+func (n noop) Warningf(format string, args ...interface{}) {}
+func (n noop) Errorf(format string, args ...interface{})   {}
+func (n noop) Debugf(format string, args ...interface{})   {}
+func (n noop) WithValues(map[string]interface{}) Logger    { return n }
+func (n noop) WithCtx(ctx context.Context) Logger          { return n }
