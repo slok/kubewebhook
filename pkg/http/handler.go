@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"time"
 
 	admissionv1 "k8s.io/api/admission/v1"
@@ -104,16 +105,16 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// Setup log data on context.
 	ctx = log.CtxWithValues(ctx, log.Kv{
-		"wh-id":      h.webhook.ID(),
-		"wh-kind":    h.webhook.Kind(),
-		"request-id": ar.ID,
-		"op":         ar.Operation,
-		"wh-version": ar.Version,
-		"dry-run":    ar.DryRun,
-		"kind":       ar.RequestGVK,
-		"ns":         ar.Namespace,
-		"name":       ar.Name,
-		"path":       r.URL.Path,
+		"webhook-id":   h.webhook.ID(),
+		"webhook-kind": h.webhook.Kind(),
+		"request-id":   ar.ID,
+		"op":           ar.Operation,
+		"wh-version":   ar.Version,
+		"dry-run":      ar.DryRun,
+		"kind":         strings.Trim(strings.Join([]string{ar.RequestGVK.Group, ar.RequestGVK.Version, ar.RequestGVK.Kind}, "/"), " /"),
+		"ns":           ar.Namespace,
+		"name":         ar.Name,
+		"path":         r.URL.Path,
 	})
 	logger := h.logger.WithCtx(ctx)
 

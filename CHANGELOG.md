@@ -15,10 +15,12 @@
 - http.HandlerFor now receives a configuration struct.
 - Improved the logger on webhooks and HTTP handlers.
 - Use structured logging over the application.
+- Add Logrus logger support.
 
 ### Removed
 
-- V1 docs
+- V1 docs.
+- STD logger.
 
 ## [0.11.0] - 2020-10-21
 
