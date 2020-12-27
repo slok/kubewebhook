@@ -100,7 +100,10 @@ func main() {
 
 	// Serve the webhook.
 	logger.Infof("Listening on %s", cfg.addr)
-	err = http.ListenAndServeTLS(cfg.addr, cfg.certFile, cfg.keyFile, kwhhttp.MustHandlerFor(wh))
+	err = http.ListenAndServeTLS(cfg.addr, cfg.certFile, cfg.keyFile, kwhhttp.MustHandlerFor(kwhhttp.HandlerConfig{
+		Webhook: wh,
+		Logger:  logger,
+	}))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error serving webhook: %s", err)
 		os.Exit(1)

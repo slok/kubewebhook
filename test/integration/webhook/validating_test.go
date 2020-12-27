@@ -502,7 +502,7 @@ func testValidatingWebhookCommon(t *testing.T, version string) {
 
 			// Start validating webhook server.
 			wh := test.webhook()
-			h := whhttp.MustHandlerFor(wh)
+			h := whhttp.MustHandlerFor(whhttp.HandlerConfig{Webhook: wh})
 			srv := http.Server{
 				Handler: h,
 				Addr:    cfg.ListenAddress,
@@ -636,7 +636,7 @@ func testValidatingWebhookWarnings(t *testing.T) {
 
 			// Start validating webhook server.
 			wh := test.webhook()
-			h := whhttp.MustHandlerFor(wh)
+			h := whhttp.MustHandlerFor(whhttp.HandlerConfig{Webhook: wh})
 			srv := http.Server{
 				Handler: h,
 				Addr:    cfg.ListenAddress,

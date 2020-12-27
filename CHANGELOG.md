@@ -3,6 +3,7 @@
 ### Added
 
 - A new model that decouples the different Kubernetes admission review model types.
+- Support Kubernetes warnings headers in webhooks.
 
 ### Changed
 
@@ -11,6 +12,9 @@
 - Better HTTP reponse details (messages, HTTP codes...) on allow, not allow, mutating and errors.
 - Webhook reviewm metrics have been changed to give more insights.
 - Prometheus metrics have been redesigned and now are simpler and give more insights.
+- http.HandlerFor now receives a configuration struct.
+- Improved the logger on webhooks and HTTP handlers.
+- Use structured logging over the application.
 
 ### Removed
 

@@ -1,6 +1,8 @@
 package logrus
 
 import (
+	"context"
+
 	"github.com/sirupsen/logrus"
 
 	"github.com/slok/kubewebhook/v2/pkg/log"
@@ -18,4 +20,8 @@ func NewLogrus(l *logrus.Entry) log.Logger {
 func (l logger) WithValues(kv map[string]interface{}) log.Logger {
 	newLogger := l.Entry.WithFields(kv)
 	return NewLogrus(newLogger)
+}
+
+func (l logger) WithCtx(ctx context.Context) log.Logger {
+	return l.WithValues(log.ValuesFromCtx(ctx))
 }

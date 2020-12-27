@@ -37,6 +37,7 @@ func (c *WebhookConfig) defaults() error {
 	if c.Logger == nil {
 		c.Logger = log.Noop
 	}
+	c.Logger = c.Logger.WithValues(log.Kv{"webhook-id": c.ID, "webhhok-type": "validating"})
 
 	return nil
 }
@@ -80,8 +81,6 @@ func (w validatingWebhook) ID() string { return w.id }
 func (w validatingWebhook) Kind() model.WebhookKind { return model.WebhookKindValidating }
 
 func (w validatingWebhook) Review(ctx context.Context, ar model.AdmissionReview) (model.AdmissionResponse, error) {
-	w.logger.Debugf("reviewing request %s, named: %s/%s", ar.ID, ar.Namespace, ar.Name)
-
 	// Delete operations don't have body because should be gone on the deletion, instead they have the body
 	// of the object we want to delete as an old object.
 	raw := ar.NewObjectRaw
@@ -109,6 +108,8 @@ func (w validatingWebhook) Review(ctx context.Context, ar model.AdmissionReview)
 	if res == nil {
 		return nil, fmt.Errorf("result is required, validator result is nil")
 	}
+
+	w.logger.WithCtx(ctx).WithValues(log.Kv{"valid": res.Valid}).Debugf("Webhook validating review finished with %q result", res.Valid)
 
 	// Forge response.
 	return &model.ValidatingAdmissionResponse{

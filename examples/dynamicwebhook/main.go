@@ -65,7 +65,7 @@ func main() {
 	}
 
 	// Get the handler for our webhook.
-	whHandler, err := kwhhttp.HandlerFor(wh)
+	whHandler, err := kwhhttp.HandlerFor(kwhhttp.HandlerConfig{Webhook: wh, Logger: logger})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error creating webhook handler: %s", err)
 		os.Exit(1)

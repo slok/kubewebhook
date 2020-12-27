@@ -39,6 +39,7 @@ func (c *WebhookConfig) defaults() error {
 	if c.Logger == nil {
 		c.Logger = log.Noop
 	}
+	c.Logger = c.Logger.WithValues(log.Kv{"webhook-id": c.ID, "webhhok-type": "mutating"})
 
 	return nil
 }
@@ -82,8 +83,6 @@ func (w mutatingWebhook) ID() string { return w.id }
 func (w mutatingWebhook) Kind() model.WebhookKind { return model.WebhookKindMutating }
 
 func (w mutatingWebhook) Review(ctx context.Context, ar model.AdmissionReview) (model.AdmissionResponse, error) {
-	w.logger.Debugf("reviewing request %s, named: %s/%s", ar.ID, ar.Namespace, ar.Name)
-
 	// Delete operations don't have body because should be gone on the deletion, instead they have the body
 	// of the object we want to delete as an old object.
 	raw := ar.NewObjectRaw
@@ -102,8 +101,14 @@ func (w mutatingWebhook) Review(ctx context.Context, ar model.AdmissionReview) (
 		return nil, fmt.Errorf("impossible to type assert the deep copy to metav1.Object")
 	}
 
-	return w.mutatingAdmissionReview(ctx, ar, raw, mutatingObj)
+	res, err := w.mutatingAdmissionReview(ctx, ar, raw, mutatingObj)
+	if err != nil {
+		return nil, err
+	}
 
+	w.logger.WithCtx(ctx).Debugf("Webhook mutating review finished with: '%s' JSON Patch", string(res.JSONPatchPatch))
+
+	return res, nil
 }
 
 func (w mutatingWebhook) mutatingAdmissionReview(ctx context.Context, ar model.AdmissionReview, rawObj []byte, objForMutation metav1.Object) (*model.MutatingAdmissionResponse, error) {
@@ -137,7 +142,6 @@ func (w mutatingWebhook) mutatingAdmissionReview(ctx context.Context, ar model.A
 	if err != nil {
 		return nil, fmt.Errorf("could not mashal into JSON, the JSON patch: %w", err)
 	}
-	w.logger.Debugf("json patch for request %s: %s", ar.ID, string(marshalledPatch))
 
 	// Forge response.
 	return &model.MutatingAdmissionResponse{

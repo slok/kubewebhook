@@ -1,5 +1,10 @@
 package log
 
+import "context"
+
+// Kv is a helper type for structured logging fields usage.
+type Kv = map[string]interface{}
+
 // Logger is the interface that the loggers used by the library will use.
 type Logger interface {
 	Infof(format string, args ...interface{})
@@ -7,6 +12,7 @@ type Logger interface {
 	Errorf(format string, args ...interface{})
 	Debugf(format string, args ...interface{})
 	WithValues(values map[string]interface{}) Logger
+	WithCtx(ctx context.Context) Logger
 }
 
 // Noop logger doesn't log anything.
@@ -19,3 +25,4 @@ func (n noop) Warningf(format string, args ...interface{}) {}
 func (n noop) Errorf(format string, args ...interface{})   {}
 func (n noop) Debugf(format string, args ...interface{})   {}
 func (n noop) WithValues(map[string]interface{}) Logger    { return n }
+func (n noop) WithCtx(ctx context.Context) Logger          { return n }

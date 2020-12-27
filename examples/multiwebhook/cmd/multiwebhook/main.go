@@ -65,7 +65,7 @@ func (m *Main) Run() error {
 		return err
 	}
 	mpw = kwhwebhook.NewMeasuredWebhook(metricsRec, mpw)
-	mpwh, err := kwhhttp.HandlerFor(mpw)
+	mpwh, err := kwhhttp.HandlerFor(kwhhttp.HandlerConfig{Webhook: mpw, Logger: m.logger})
 	if err != nil {
 		return err
 	}
@@ -75,7 +75,7 @@ func (m *Main) Run() error {
 		return err
 	}
 	vdw = kwhwebhook.NewMeasuredWebhook(metricsRec, vdw)
-	vdwh, err := kwhhttp.HandlerFor(vdw)
+	vdwh, err := kwhhttp.HandlerFor(kwhhttp.HandlerConfig{Webhook: vdw, Logger: m.logger})
 	if err != nil {
 		return err
 	}

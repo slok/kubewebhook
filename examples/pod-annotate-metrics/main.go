@@ -82,7 +82,10 @@ func run() error {
 	}
 
 	// Get HTTP handler from webhook.
-	whHandler, err := kwhhttp.HandlerFor(kwhwebhook.NewMeasuredWebhook(metricsRec, wh))
+	whHandler, err := kwhhttp.HandlerFor(kwhhttp.HandlerConfig{
+		Webhook: kwhwebhook.NewMeasuredWebhook(metricsRec, wh),
+		Logger:  logger,
+	})
 	if err != nil {
 		return fmt.Errorf("error creating webhook handler: %w", err)
 	}

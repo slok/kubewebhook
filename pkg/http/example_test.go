@@ -38,7 +38,7 @@ func ExampleHandlerFor_serveWebhook() {
 	wh, _ := validating.NewWebhook(cfg)
 
 	// Get webhook handler and serve (webhooks need to be server with TLS).
-	whHandler, _ := whhttp.HandlerFor(wh)
+	whHandler, _ := whhttp.HandlerFor(whhttp.HandlerConfig{Webhook: wh})
 	_ = http.ListenAndServeTLS(":8080", "file.cert", "file.key", whHandler)
 }
 
@@ -70,7 +70,7 @@ func ExampleHandlerFor_serveMultipleWebhooks() {
 		Validator: v,
 	}
 	vwh, _ := validating.NewWebhook(vcfg)
-	vwhHandler, _ := whhttp.HandlerFor(vwh)
+	vwhHandler, _ := whhttp.HandlerFor(whhttp.HandlerConfig{Webhook: vwh})
 
 	mcfg := mutating.WebhookConfig{
 		ID:      "muratingServeWebhook",
@@ -78,7 +78,7 @@ func ExampleHandlerFor_serveMultipleWebhooks() {
 		Mutator: m,
 	}
 	mwh, _ := mutating.NewWebhook(mcfg)
-	mwhHandler, _ := whhttp.HandlerFor(mwh)
+	mwhHandler, _ := whhttp.HandlerFor(whhttp.HandlerConfig{Webhook: mwh})
 
 	// Create a muxer and handle different webhooks in different paths of the server.
 	mux := http.NewServeMux()

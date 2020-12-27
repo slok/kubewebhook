@@ -1,10 +1,12 @@
 package http
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"time"
 
 	admissionv1 "k8s.io/api/admission/v1"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
@@ -13,6 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/types"
 
+	"github.com/slok/kubewebhook/v2/pkg/log"
 	"github.com/slok/kubewebhook/v2/pkg/model"
 	"github.com/slok/kubewebhook/v2/pkg/webhook"
 )
@@ -30,90 +33,150 @@ var (
 
 // MustHandlerFor it's the same as HandleFor but will panic instead of returning
 // a error.
-func MustHandlerFor(webhook webhook.Webhook) http.Handler {
-	h, err := HandlerFor(webhook)
+func MustHandlerFor(config HandlerConfig) http.Handler {
+	h, err := HandlerFor(config)
 	if err != nil {
 		panic(err)
 	}
 	return h
 }
 
-// HandlerFor returns a new http.Handler ready to handle admission reviews using a
-// a webhook.
-func HandlerFor(webhook webhook.Webhook) (http.Handler, error) {
-	if webhook == nil {
-		return nil, fmt.Errorf("webhook can't be nil")
-	}
-
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-
-		// Get webhook body with the admission review.
-		var body []byte
-		if r.Body != nil {
-			if data, err := ioutil.ReadAll(r.Body); err == nil {
-				body = data
-			}
-		}
-		if len(body) == 0 {
-			http.Error(w, "no body found", http.StatusBadRequest)
-			return
-		}
-
-		ar, err := requestBodyToModelReview(body)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-
-		// Webhook execution logic. This is how we are dealing with the different responses:
-		// |                        | HTTP Code             | status.Code | status.Status | status.Message |
-		// |------------------------|-----------------------| ------------|---------------|----------------|
-		// | Validating Allowed     | 200                   | -           | -             | -              |
-		// | Validating not allowed | 200                   | 400         | Failure       | Custom message |
-		// | Mutating mutation      | 200                   | -           | -             | -              |
-		// | Mutating no mutation   | 200                   | -           | -             | -              |
-		// | Err                    | 500                   | -           | Failure       | Err string     |
-		admissionResp, err := webhook.Review(ctx, *ar)
-		if err != nil {
-			errResp, err := errorToJSON(*ar, err)
-			if err != nil {
-				http.Error(w, fmt.Sprintf("could not marshall status error on admission response: %v", err), http.StatusInternalServerError)
-				return
-			}
-
-			w.WriteHeader(http.StatusInternalServerError)
-			if _, err := w.Write(errResp); err != nil {
-				http.Error(w, fmt.Sprintf("could not write response: %v", err), http.StatusInternalServerError)
-			}
-			return
-		}
-
-		// Create the review response.
-		resp, err := modelResponseToJSON(*ar, admissionResp)
-		if err != nil {
-			errResp, err := errorToJSON(*ar, err)
-			if err != nil {
-				http.Error(w, fmt.Sprintf("could not marshall status error on admission response: %v", err), http.StatusInternalServerError)
-				return
-			}
-
-			w.WriteHeader(http.StatusInternalServerError)
-			if _, err := w.Write(errResp); err != nil {
-				http.Error(w, fmt.Sprintf("could not write response: %v", err), http.StatusInternalServerError)
-			}
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-
-		if _, err := w.Write(resp); err != nil {
-			http.Error(w, fmt.Sprintf("could not write response: %v", err), http.StatusInternalServerError)
-		}
-	}), nil
+// HandlerConfig is the configuration for the webhook handlers.
+type HandlerConfig struct {
+	Webhook webhook.Webhook
+	Logger  log.Logger
 }
 
-func requestBodyToModelReview(body []byte) (*model.AdmissionReview, error) {
+func (c *HandlerConfig) defaults() error {
+	if c.Webhook == nil {
+		return fmt.Errorf("webhook can't be nil")
+	}
+
+	if c.Logger == nil {
+		c.Logger = log.Noop
+	}
+	c.Logger = c.Logger.WithValues(log.Kv{"svc": "http.Handler"})
+
+	return nil
+}
+
+// HandlerFor returns a new http.Handler ready to handle admission reviews using a
+// a webhook.
+func HandlerFor(config HandlerConfig) (http.Handler, error) {
+	err := config.defaults()
+	if err != nil {
+		return nil, fmt.Errorf("handler invalid configuration: %w", err)
+	}
+
+	return handler{
+		webhook: config.Webhook,
+		logger:  config.Logger}, nil
+}
+
+type handler struct {
+	webhook webhook.Webhook
+	logger  log.Logger
+}
+
+func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	t0 := time.Now()
+
+	// Get webhook body with the admission review.
+	var body []byte
+	if r.Body != nil {
+		if data, err := ioutil.ReadAll(r.Body); err == nil {
+			body = data
+		}
+	}
+	if len(body) == 0 {
+		http.Error(w, "no body found", http.StatusBadRequest)
+		h.logger.Errorf("no body found")
+		return
+	}
+
+	ar, err := h.requestBodyToModelReview(body)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		h.logger.Errorf("could not parse body to model review: %s", err)
+		return
+	}
+
+	// Setup log data on context.
+	ctx = log.CtxWithValues(ctx, log.Kv{
+		"wh-id":      h.webhook.ID(),
+		"wh-kind":    h.webhook.Kind(),
+		"request-id": ar.ID,
+		"op":         ar.Operation,
+		"wh-version": ar.Version,
+		"dry-run":    ar.DryRun,
+		"kind":       ar.RequestGVK,
+		"ns":         ar.Namespace,
+		"name":       ar.Name,
+		"path":       r.URL.Path,
+	})
+	logger := h.logger.WithCtx(ctx)
+
+	// Webhook execution logic. This is how we are dealing with the different responses:
+	// |                        | HTTP Code             | status.Code | status.Status | status.Message |
+	// |------------------------|-----------------------| ------------|---------------|----------------|
+	// | Validating Allowed     | 200                   | -           | -             | -              |
+	// | Validating not allowed | 200                   | 400         | Failure       | Custom message |
+	// | Mutating mutation      | 200                   | -           | -             | -              |
+	// | Mutating no mutation   | 200                   | -           | -             | -              |
+	// | Err                    | 500                   | -           | Failure       | Err string     |
+	admissionResp, err := h.webhook.Review(ctx, *ar)
+	if err != nil {
+		errResp, err := h.errorToJSON(*ar, err)
+		if err != nil {
+			msg := fmt.Sprintf("could not marshall status error on admission response: %v", err)
+			http.Error(w, msg, http.StatusInternalServerError)
+			logger.Errorf(msg)
+			return
+		}
+
+		w.WriteHeader(http.StatusInternalServerError)
+		if _, err := w.Write(errResp); err != nil {
+			msg := fmt.Sprintf("could not write response: %v", err)
+			http.Error(w, msg, http.StatusInternalServerError)
+			logger.Errorf(msg)
+		}
+		return
+	}
+
+	// Create the review response.
+	resp, err := h.modelResponseToJSON(ctx, *ar, admissionResp)
+	if err != nil {
+		errResp, err := h.errorToJSON(*ar, err)
+		if err != nil {
+			msg := fmt.Sprintf("could not marshall status error on admission response: %v", err)
+			http.Error(w, msg, http.StatusInternalServerError)
+			logger.Errorf(msg)
+			return
+		}
+
+		w.WriteHeader(http.StatusInternalServerError)
+		if _, err := w.Write(errResp); err != nil {
+			msg := fmt.Sprintf("could not write response: %v", err)
+			http.Error(w, msg, http.StatusInternalServerError)
+			logger.Errorf(msg)
+		}
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	if _, err := w.Write(resp); err != nil {
+		msg := fmt.Sprintf("could not write response: %v", err)
+		http.Error(w, msg, http.StatusInternalServerError)
+		logger.Errorf(msg)
+	}
+
+	logger.WithValues(log.Kv{
+		"duration": time.Since(t0),
+	}).Infof("Admission review request handled")
+}
+func (h handler) requestBodyToModelReview(body []byte) (*model.AdmissionReview, error) {
 	kubeReview, _, err := deserializer.Decode(body, nil, nil)
 	if err != nil {
 		return nil, fmt.Errorf("could not decode the admission review from the request: %w", err)
@@ -131,18 +194,18 @@ func requestBodyToModelReview(body []byte) (*model.AdmissionReview, error) {
 	return nil, fmt.Errorf("invalid admission review type")
 }
 
-func modelResponseToJSON(review model.AdmissionReview, resp model.AdmissionResponse) (data []byte, err error) {
+func (h handler) modelResponseToJSON(ctx context.Context, review model.AdmissionReview, resp model.AdmissionResponse) (data []byte, err error) {
 	switch r := resp.(type) {
 	case *model.ValidatingAdmissionResponse:
-		return validatingModelResponseToJSON(review, r)
+		return h.validatingModelResponseToJSON(ctx, review, r)
 	case *model.MutatingAdmissionResponse:
-		return mutatingModelResponseToJSON(review, r)
+		return h.mutatingModelResponseToJSON(ctx, review, r)
 	default:
 		return nil, fmt.Errorf("unknown webhook response type")
 	}
 }
 
-func validatingModelResponseToJSON(review model.AdmissionReview, resp *model.ValidatingAdmissionResponse) (data []byte, err error) {
+func (h handler) validatingModelResponseToJSON(ctx context.Context, review model.AdmissionReview, resp *model.ValidatingAdmissionResponse) (data []byte, err error) {
 	// Set the satus code and result based on the validation result.
 	var resultStatus *metav1.Status
 	if !resp.Allowed {
@@ -155,7 +218,10 @@ func validatingModelResponseToJSON(review model.AdmissionReview, resp *model.Val
 
 	switch review.OriginalAdmissionReview.(type) {
 	case *admissionv1beta1.AdmissionReview:
-		// TODO(slok): Log warnings being used with v1beta1.
+		if len(resp.Warnings) > 0 {
+			h.logger.WithCtx(ctx).Warningf("warnings used in a 'v1beta1' webhook")
+		}
+
 		data, err := json.Marshal(admissionv1beta1.AdmissionReview{
 			TypeMeta: v1beta1AdmissionReviewTypeMeta,
 			Response: &admissionv1beta1.AdmissionResponse{
@@ -182,10 +248,13 @@ func validatingModelResponseToJSON(review model.AdmissionReview, resp *model.Val
 	return nil, fmt.Errorf("invalid admission response type")
 }
 
-func mutatingModelResponseToJSON(review model.AdmissionReview, resp *model.MutatingAdmissionResponse) (data []byte, err error) {
+func (h handler) mutatingModelResponseToJSON(ctx context.Context, review model.AdmissionReview, resp *model.MutatingAdmissionResponse) (data []byte, err error) {
 	switch review.OriginalAdmissionReview.(type) {
 	case *admissionv1beta1.AdmissionReview:
-		// TODO(slok): Log warnings being used with v1beta1.
+		if len(resp.Warnings) > 0 {
+			h.logger.WithCtx(ctx).Warningf("warnings used in a 'v1beta1' webhook")
+		}
+
 		data, err := json.Marshal(admissionv1beta1.AdmissionReview{
 			TypeMeta: v1beta1AdmissionReviewTypeMeta,
 			Response: &admissionv1beta1.AdmissionResponse{
@@ -215,7 +284,7 @@ func mutatingModelResponseToJSON(review model.AdmissionReview, resp *model.Mutat
 	return nil, fmt.Errorf("invalid admission response type")
 }
 
-func errorToJSON(review model.AdmissionReview, err error) ([]byte, error) {
+func (h handler) errorToJSON(review model.AdmissionReview, err error) ([]byte, error) {
 	switch review.OriginalAdmissionReview.(type) {
 	case *admissionv1beta1.AdmissionReview:
 		r := &admissionv1beta1.AdmissionResponse{

@@ -248,8 +248,10 @@ func TestDefaultWebhookFlow(t *testing.T) {
 			// Mocks.
 			mwh := &webhookmock.Webhook{}
 			test.mock(mwh)
+			mwh.On("ID").Maybe().Return("")
+			mwh.On("Kind").Maybe().Return(model.WebhookKind(""))
 
-			h, err := kubewebhookhttp.HandlerFor(mwh)
+			h, err := kubewebhookhttp.HandlerFor(kubewebhookhttp.HandlerConfig{Webhook: mwh})
 			require.NoError(err)
 
 			req := httptest.NewRequest("GET", "/awesome/webhook", bytes.NewBufferString(test.body))

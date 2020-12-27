@@ -387,7 +387,7 @@ func testMutatingWebhookCommon(t *testing.T, version string) {
 
 			// Start mutating webhook server.
 			wh := test.webhook()
-			h := whhttp.MustHandlerFor(wh)
+			h := whhttp.MustHandlerFor(whhttp.HandlerConfig{Webhook: wh})
 			srv := http.Server{
 				Handler: h,
 				Addr:    cfg.ListenAddress,
@@ -470,7 +470,7 @@ func testMutatingWebhookWarnings(t *testing.T) {
 
 			// Start mutating webhook server.
 			wh := test.webhook()
-			h := whhttp.MustHandlerFor(wh)
+			h := whhttp.MustHandlerFor(whhttp.HandlerConfig{Webhook: wh})
 			srv := http.Server{
 				Handler: h,
 				Addr:    cfg.ListenAddress,
