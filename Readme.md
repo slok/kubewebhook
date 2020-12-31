@@ -4,7 +4,7 @@
 
 # kubewebhook [![Build Status][ci-image]][ci-url] [![Go Report Card][goreport-image]][goreport-url] [![GoDoc][godoc-image]][godoc-url]
 
-## A full library refactor is on the works. You can access `v2` at this moment in [slok/v2](https://github.com/slok/kubewebhook/tree/slok/v2)
+> `master` targets `v2`, if you are looking for v1, check [this](https://github.com/slok/kubewebhook/tree/v1).
 
 Kubewebhook is a small Go framework to create [external admission webhooks][aw-url] for Kubernetes.
 
