@@ -5,7 +5,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	"github.com/slok/kubewebhook/test/integration/crd/apis/building"
+	"github.com/slok/kubewebhook/v2/test/integration/crd/apis/building"
 )
 
 const version = "v1"

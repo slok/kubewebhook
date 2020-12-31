@@ -8,7 +8,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/slok/kubewebhook/examples/mutatortesting"
+	"github.com/slok/kubewebhook/v2/examples/mutatortesting"
 )
 
 func TestPodTaggerMutate(t *testing.T) {
@@ -58,7 +58,7 @@ func TestPodTaggerMutate(t *testing.T) {
 
 			pl := mutatortesting.NewPodLabeler(test.labels)
 			gotPod := test.pod
-			_, err := pl.Mutate(context.TODO(), gotPod)
+			_, err := pl.Mutate(context.TODO(), nil, gotPod)
 
 			if test.expErr {
 				assert.Error(err)

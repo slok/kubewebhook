@@ -11,7 +11,6 @@ UNIT_TEST_CMD := ./hack/scripts/unit-test.sh
 INTEGRATION_TEST_CMD := ./hack/scripts/run-integration.sh
 MOCKS_CMD := ./hack/scripts/mockgen.sh
 DOCKER_RUN_CMD := docker run -v ${PWD}:/src --rm -it $(SERVICE_NAME)
-DOCKER_DOCS_RUN_CMD := docker run -v ${PWD}/docs:/docs --rm -it -p 1313:1313 $(SERVICE_NAME)-docs
 DEPS_CMD := go mod tidy
 CHECK_CMD := ./hack/scripts/check.sh
 
@@ -25,7 +24,6 @@ default: help
 .PHONY: build
 build: ## Build the development docker images.
 	docker build -t $(SERVICE_NAME) --build-arg uid=$(UID) --build-arg  gid=$(GID) -f ./docker/dev/Dockerfile .
-	docker build -t $(SERVICE_NAME)-docs --build-arg uid=$(UID) --build-arg  gid=$(GID) -f ./docker/docs/Dockerfile .
 
 build-binary: ## Build production stuff.
 	$(DOCKER_RUN_CMD) /bin/sh -c '$(BUILD_BINARY_CMD)'
@@ -68,22 +66,14 @@ mocks: build ## Generate mocks.
 godoc: ## Run library docs.
 	godoc -http=":6060"
 
-.PHONY: docs-generate
-docs-generate: build ## Generate app docs.
-	$(DOCKER_DOCS_RUN_CMD) /bin/bash -c "cd src && hugo"
-
-.PHONY: docs-serve
-docs-serve: build ## Serve application docs.
-	$(DOCKER_DOCS_RUN_CMD) /bin/bash -c "cd src && hugo server --bind=0.0.0.0"
-
 .PHONY: deps
 deps: ## Setup dependencies.
 	$(DEPS_CMD)
 
 .PHONY: create-integration-test-certs
-create-integration-test-certs: ## Creates certificates for the integration test.
-	./hack/scripts/integration-test-certs.sh
+integration-create-certs: ## Creates certificates for the integration test.
+	./test/integration/create-certs.sh
 
 .PHONY: generate-integration-test-crd
-generate-integration-test-crd: ## Generates CRDs for the integration test.
-	./hack/scripts/integration-test-crd.sh
+integration-gen-crd: ## Generates CRDs for the integration test.
+	./test/integration/gen-crd.sh

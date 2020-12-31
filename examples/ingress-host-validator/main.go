@@ -8,43 +8,43 @@ import (
 	"os"
 	"regexp"
 
+	"github.com/sirupsen/logrus"
+	kwhhttp "github.com/slok/kubewebhook/v2/pkg/http"
+	kwhlog "github.com/slok/kubewebhook/v2/pkg/log"
+	kwhlogrus "github.com/slok/kubewebhook/v2/pkg/log/logrus"
+	kwhmodel "github.com/slok/kubewebhook/v2/pkg/model"
+	kwhvalidating "github.com/slok/kubewebhook/v2/pkg/webhook/validating"
 	extensionsv1beta1 "k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	whhttp "github.com/slok/kubewebhook/pkg/http"
-	"github.com/slok/kubewebhook/pkg/log"
-	validatingwh "github.com/slok/kubewebhook/pkg/webhook/validating"
 )
 
 type ingressHostValidator struct {
 	hostRegex *regexp.Regexp
-	logger    log.Logger
+	logger    kwhlog.Logger
 }
 
-func (v *ingressHostValidator) Validate(_ context.Context, obj metav1.Object) (bool, validatingwh.ValidatorResult, error) {
+func (v *ingressHostValidator) Validate(_ context.Context, _ *kwhmodel.AdmissionReview, obj metav1.Object) (*kwhvalidating.ValidatorResult, error) {
 	ingress, ok := obj.(*extensionsv1beta1.Ingress)
 
 	if !ok {
-		return false, validatingwh.ValidatorResult{}, fmt.Errorf("not an ingress")
+		return nil, fmt.Errorf("not an ingress")
 	}
 
 	for _, r := range ingress.Spec.Rules {
 		if !v.hostRegex.MatchString(r.Host) {
 			v.logger.Infof("ingress %s denied, host %s is not valid for regex %s", ingress.Name, r.Host, v.hostRegex)
-			res := validatingwh.ValidatorResult{
+			return &kwhvalidating.ValidatorResult{
 				Valid:   false,
 				Message: fmt.Sprintf("%s ingress host doesn't match %s regex", r.Host, v.hostRegex),
-			}
-			return false, res, nil
+			}, nil
 		}
 	}
 
 	v.logger.Infof("ingress %s is valid", ingress.Name)
-	res := validatingwh.ValidatorResult{
+	return &kwhvalidating.ValidatorResult{
 		Valid:   true,
 		Message: "all hosts in the ingress are valid",
-	}
-	return false, res, nil
+	}, nil
 }
 
 type config struct {
@@ -68,7 +68,9 @@ func initFlags() *config {
 }
 
 func main() {
-	logger := &log.Std{Debug: true}
+	logrusLogEntry := logrus.NewEntry(logrus.New())
+	logrusLogEntry.Logger.SetLevel(logrus.DebugLevel)
+	logger := kwhlogrus.NewLogrus(logrusLogEntry)
 
 	cfg := initFlags()
 
@@ -84,11 +86,13 @@ func main() {
 		logger:    logger,
 	}
 
-	vcfg := validatingwh.WebhookConfig{
-		Name: "ingressHostValidator",
-		Obj:  &extensionsv1beta1.Ingress{},
+	vcfg := kwhvalidating.WebhookConfig{
+		ID:        "ingressHostValidator",
+		Obj:       &extensionsv1beta1.Ingress{},
+		Validator: vl,
+		Logger:    logger,
 	}
-	wh, err := validatingwh.NewWebhook(vcfg, vl, nil, nil, logger)
+	wh, err := kwhvalidating.NewWebhook(vcfg)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error creating webhook: %s", err)
 		os.Exit(1)
@@ -96,7 +100,10 @@ func main() {
 
 	// Serve the webhook.
 	logger.Infof("Listening on %s", cfg.addr)
-	err = http.ListenAndServeTLS(cfg.addr, cfg.certFile, cfg.keyFile, whhttp.MustHandlerFor(wh))
+	err = http.ListenAndServeTLS(cfg.addr, cfg.certFile, cfg.keyFile, kwhhttp.MustHandlerFor(kwhhttp.HandlerConfig{
+		Webhook: wh,
+		Logger:  logger,
+	}))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error serving webhook: %s", err)
 		os.Exit(1)

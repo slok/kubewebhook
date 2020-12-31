@@ -21,7 +21,7 @@ package versioned
 import (
 	"fmt"
 
-	buildingv1 "github.com/slok/kubewebhook/test/integration/crd/client/clientset/versioned/typed/building/v1"
+	buildingv1 "github.com/slok/kubewebhook/v2/test/integration/crd/client/clientset/versioned/typed/building/v1"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"

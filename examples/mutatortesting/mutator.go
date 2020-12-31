@@ -6,7 +6,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/slok/kubewebhook/pkg/webhook/mutating"
+	kwhmodel "github.com/slok/kubewebhook/v2/pkg/model"
+	kwhmutating "github.com/slok/kubewebhook/v2/pkg/webhook/mutating"
 )
 
 // PodLabeler is a mutator that will set labels on the received pods.
@@ -15,7 +16,7 @@ type PodLabeler struct {
 }
 
 // NewPodLabeler returns a new PodLabeler initialized.
-func NewPodLabeler(labels map[string]string) mutating.Mutator {
+func NewPodLabeler(labels map[string]string) kwhmutating.Mutator {
 	if labels == nil {
 		labels = make(map[string]string)
 	}
@@ -25,7 +26,7 @@ func NewPodLabeler(labels map[string]string) mutating.Mutator {
 }
 
 // Mutate will set the required labels on the pods. Satisfies mutating.Mutator interface.
-func (p *PodLabeler) Mutate(ctx context.Context, obj metav1.Object) (bool, error) {
+func (p *PodLabeler) Mutate(ctx context.Context, ar *kwhmodel.AdmissionReview, obj metav1.Object) (*kwhmutating.MutatorResult, error) {
 	pod := obj.(*corev1.Pod)
 
 	if pod.Labels == nil {
@@ -35,5 +36,7 @@ func (p *PodLabeler) Mutate(ctx context.Context, obj metav1.Object) (bool, error
 	for k, v := range p.labels {
 		pod.Labels[k] = v
 	}
-	return false, nil
+	return &kwhmutating.MutatorResult{
+		MutatedObject: pod,
+	}, nil
 }

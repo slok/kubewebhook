@@ -5,18 +5,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
-	"github.com/slok/kubewebhook/pkg/log"
-	"github.com/slok/kubewebhook/pkg/observability/metrics"
-	"github.com/slok/kubewebhook/pkg/webhook/validating"
+	"github.com/slok/kubewebhook/v2/pkg/model"
+	"github.com/slok/kubewebhook/v2/pkg/webhook/validating"
 )
 
 func getPodJSON() []byte {
@@ -38,12 +35,11 @@ func getPodJSON() []byte {
 }
 
 func getFakeValidator(valid bool, message string) validating.Validator {
-	return validating.ValidatorFunc(func(_ context.Context, _ metav1.Object) (bool, validating.ValidatorResult, error) {
-		res := validating.ValidatorResult{
+	return validating.ValidatorFunc(func(_ context.Context, _ *model.AdmissionReview, _ metav1.Object) (*validating.ValidatorResult, error) {
+		return &validating.ValidatorResult{
 			Valid:   valid,
 			Message: message,
-		}
-		return false, res, nil
+		}, nil
 	})
 }
 
@@ -51,214 +47,161 @@ func TestPodAdmissionReviewValidation(t *testing.T) {
 	tests := map[string]struct {
 		cfg         validating.WebhookConfig
 		validator   validating.Validator
-		review      *admissionv1beta1.AdmissionReview
-		expResponse *admissionv1beta1.AdmissionResponse
+		review      model.AdmissionReview
+		expResponse model.AdmissionResponse
+		expErr      bool
 	}{
-		"A static webhook review of a Pod with a valid validator result should return allowed.": {
-			cfg:       validating.WebhookConfig{Name: "test", Obj: &corev1.Pod{}},
-			validator: getFakeValidator(true, "valid test chain"),
-			review: &admissionv1beta1.AdmissionReview{
-				Request: &admissionv1beta1.AdmissionRequest{
-					UID: "test",
-					Object: runtime.RawExtension{
-						Raw: getPodJSON(),
-					},
-				},
-			},
-			expResponse: &admissionv1beta1.AdmissionResponse{
-				UID:     "test",
+		"A webhook review with error should return an error.": {
+			cfg: validating.WebhookConfig{ID: "test", Obj: &corev1.Pod{}},
+			validator: validating.ValidatorFunc(func(_ context.Context, _ *model.AdmissionReview, _ metav1.Object) (*validating.ValidatorResult, error) {
+				return nil, fmt.Errorf("wanted error")
+			}),
+			review: model.AdmissionReview{ID: "test", NewObjectRaw: getPodJSON()},
+			expResponse: &model.ValidatingAdmissionResponse{
+				ID:      "test",
 				Allowed: true,
-				Result: &metav1.Status{
-					Status:  metav1.StatusSuccess,
-					Message: "valid test chain",
-				},
+			},
+			expErr: true,
+		},
+
+		"A static webhook review of a Pod with a valid validator result should return allowed.": {
+			cfg:       validating.WebhookConfig{ID: "test", Obj: &corev1.Pod{}},
+			validator: getFakeValidator(true, ""),
+			review:    model.AdmissionReview{ID: "test", NewObjectRaw: getPodJSON()},
+			expResponse: &model.ValidatingAdmissionResponse{
+				ID:      "test",
+				Allowed: true,
 			},
 		},
 
 		"A static webhook review of a Pod with a invalid validator result should return not allowed.": {
-			cfg:       validating.WebhookConfig{Name: "test", Obj: &corev1.Pod{}},
+			cfg:       validating.WebhookConfig{ID: "test", Obj: &corev1.Pod{}},
 			validator: getFakeValidator(false, "invalid test chain"),
-			review: &admissionv1beta1.AdmissionReview{
-				Request: &admissionv1beta1.AdmissionRequest{
-					UID: "test",
-					Object: runtime.RawExtension{
-						Raw: getPodJSON(),
-					},
-				},
-			},
-			expResponse: &admissionv1beta1.AdmissionResponse{
-				UID:     "test",
+			review:    model.AdmissionReview{ID: "test", NewObjectRaw: getPodJSON()},
+			expResponse: &model.ValidatingAdmissionResponse{
+				ID:      "test",
 				Allowed: false,
-				Result: &metav1.Status{
-					Message: "invalid test chain",
-				},
+				Message: "invalid test chain",
 			},
 		},
 
 		"A static webhook review of a delete operation on a Pod should allow.": {
-			cfg: validating.WebhookConfig{Name: "test", Obj: &corev1.Pod{}},
-			validator: validating.ValidatorFunc(func(_ context.Context, obj metav1.Object) (bool, validating.ValidatorResult, error) {
+			cfg: validating.WebhookConfig{ID: "test", Obj: &corev1.Pod{}},
+			validator: validating.ValidatorFunc(func(_ context.Context, _ *model.AdmissionReview, obj metav1.Object) (*validating.ValidatorResult, error) {
 				// Just a check to validate that is unstructured.
 				pod, ok := obj.(*corev1.Pod)
 				if !ok {
-					return true, validating.ValidatorResult{}, fmt.Errorf("not unstructured")
+					return nil, fmt.Errorf("not unstructured")
 				}
 
 				// Validate.
 				_, ok = pod.Labels["test1"]
-				return false, validating.ValidatorResult{
-					Valid:   ok,
-					Message: "label present",
+				return &validating.ValidatorResult{
+					Valid: ok,
 				}, nil
 			}),
-			review: &admissionv1beta1.AdmissionReview{
-				Request: &admissionv1beta1.AdmissionRequest{
-					Operation: admissionv1beta1.Delete,
-					UID:       "test",
-					OldObject: runtime.RawExtension{
-						Raw: getPodJSON(),
-					},
-				},
+			review: model.AdmissionReview{
+				ID:           "test",
+				Operation:    model.OperationDelete,
+				OldObjectRaw: getPodJSON(),
 			},
-			expResponse: &admissionv1beta1.AdmissionResponse{
-				UID:     "test",
+			expResponse: &model.ValidatingAdmissionResponse{
+				ID:      "test",
 				Allowed: true,
-				Result: &metav1.Status{
-					Status:  metav1.StatusSuccess,
-					Message: "label present",
-				},
 			},
 		},
 
 		"A dynamic webhook review of a Pod with a valid validator result should return allowed.": {
-			cfg:       validating.WebhookConfig{Name: "test"},
-			validator: getFakeValidator(true, "valid test chain"),
-			review: &admissionv1beta1.AdmissionReview{
-				Request: &admissionv1beta1.AdmissionRequest{
-					UID: "test",
-					Object: runtime.RawExtension{
-						Raw: getPodJSON(),
-					},
-				},
-			},
-			expResponse: &admissionv1beta1.AdmissionResponse{
-				UID:     "test",
+			cfg:       validating.WebhookConfig{ID: "test"},
+			validator: getFakeValidator(true, ""),
+			review:    model.AdmissionReview{ID: "test", NewObjectRaw: getPodJSON()},
+			expResponse: &model.ValidatingAdmissionResponse{
+				ID:      "test",
 				Allowed: true,
-				Result: &metav1.Status{
-					Status:  metav1.StatusSuccess,
-					Message: "valid test chain",
-				},
 			},
 		},
 
 		"A dynamic webhook review of a Pod with a invalid validator result should return not allowed.": {
-			cfg:       validating.WebhookConfig{Name: "test"},
+			cfg:       validating.WebhookConfig{ID: "test"},
 			validator: getFakeValidator(false, "invalid test chain"),
-			review: &admissionv1beta1.AdmissionReview{
-				Request: &admissionv1beta1.AdmissionRequest{
-					UID: "test",
-					Object: runtime.RawExtension{
-						Raw: getPodJSON(),
-					},
-				},
-			},
-			expResponse: &admissionv1beta1.AdmissionResponse{
-				UID:     "test",
+			review:    model.AdmissionReview{ID: "test", NewObjectRaw: getPodJSON()},
+			expResponse: &model.ValidatingAdmissionResponse{
+				ID:      "test",
 				Allowed: false,
-				Result: &metav1.Status{
-					Message: "invalid test chain",
-				},
+				Message: "invalid test chain",
 			},
 		},
 
 		"A dynamic webhook review of a an unknown type should check that a label is present.": {
-			cfg: validating.WebhookConfig{Name: "test"},
-			validator: validating.ValidatorFunc(func(_ context.Context, obj metav1.Object) (bool, validating.ValidatorResult, error) {
+			cfg: validating.WebhookConfig{ID: "test"},
+			validator: validating.ValidatorFunc(func(_ context.Context, _ *model.AdmissionReview, obj metav1.Object) (*validating.ValidatorResult, error) {
 				// Just a check to validate that is unstructured.
 				if _, ok := obj.(runtime.Unstructured); !ok {
-					return true, validating.ValidatorResult{}, fmt.Errorf("not unstructured")
+					return nil, fmt.Errorf("not unstructured")
 				}
 
 				// Validate.
 				labels := obj.GetLabels()
 				_, ok := labels["test1"]
-				return false, validating.ValidatorResult{
-					Valid:   ok,
-					Message: "label present",
+				return &validating.ValidatorResult{
+					Valid: ok,
 				}, nil
 			}),
-			review: &admissionv1beta1.AdmissionReview{
-				Request: &admissionv1beta1.AdmissionRequest{
-					UID: "test",
-					Object: runtime.RawExtension{
-						Raw: []byte(`
-						{
-							"kind": "whatever",
-							"apiVersion": "v42",
-							"metadata": {
-								"name":"something",
-								"namespace":"someplace",
-								"labels": {
-									"test1": "value1"
-								}
+			review: model.AdmissionReview{
+				ID: "test",
+				NewObjectRaw: []byte(`
+					{
+						"kind": "whatever",
+						"apiVersion": "v42",
+						"metadata": {
+							"name":"something",
+							"namespace":"someplace",
+							"labels": {
+								"test1": "value1"
 							}
-						}`),
-					},
-				},
+						}
+					}`),
 			},
-			expResponse: &admissionv1beta1.AdmissionResponse{
-				UID:     "test",
+			expResponse: &model.ValidatingAdmissionResponse{
+				ID:      "test",
 				Allowed: true,
-				Result: &metav1.Status{
-					Status:  metav1.StatusSuccess,
-					Message: "label present",
-				},
 			},
 		},
 
 		"A dynamic webhook review of a delete operation on a unknown type should check that a label is present.": {
-			cfg: validating.WebhookConfig{Name: "test"},
-			validator: validating.ValidatorFunc(func(_ context.Context, obj metav1.Object) (bool, validating.ValidatorResult, error) {
+			cfg: validating.WebhookConfig{ID: "test"},
+			validator: validating.ValidatorFunc(func(_ context.Context, _ *model.AdmissionReview, obj metav1.Object) (*validating.ValidatorResult, error) {
 				// Just a check to validate that is unstructured.
 				if _, ok := obj.(runtime.Unstructured); !ok {
-					return true, validating.ValidatorResult{}, fmt.Errorf("not unstructured")
+					return nil, fmt.Errorf("not unstructured")
 				}
 
 				// Validate.
 				labels := obj.GetLabels()
 				_, ok := labels["test1"]
-				return false, validating.ValidatorResult{
-					Valid:   ok,
-					Message: "label present",
+				return &validating.ValidatorResult{
+					Valid: ok,
 				}, nil
 			}),
-			review: &admissionv1beta1.AdmissionReview{
-				Request: &admissionv1beta1.AdmissionRequest{
-					UID:       "test",
-					Operation: admissionv1beta1.Delete,
-					OldObject: runtime.RawExtension{
-						Raw: []byte(`
-						{
-							"kind": "whatever",
-							"apiVersion": "v42",
-							"metadata": {
-								"name":"something",
-								"namespace":"someplace",
-								"labels": {
-									"test1": "value1"
-								}
+			review: model.AdmissionReview{
+				ID:        "test",
+				Operation: model.OperationDelete,
+				OldObjectRaw: []byte(`
+					{
+						"kind": "whatever",
+						"apiVersion": "v42",
+						"metadata": {
+							"name":"something",
+							"namespace":"someplace",
+							"labels": {
+								"test1": "value1"
 							}
-						}`),
-					},
-				},
+						}
+					}`),
 			},
-			expResponse: &admissionv1beta1.AdmissionResponse{
-				UID:     "test",
+			expResponse: &model.ValidatingAdmissionResponse{
+				ID:      "test",
 				Allowed: true,
-				Result: &metav1.Status{
-					Status:  metav1.StatusSuccess,
-					Message: "label present",
-				},
 			},
 		},
 	}
@@ -268,39 +211,20 @@ func TestPodAdmissionReviewValidation(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			wh, err := validating.NewWebhook(test.cfg, test.validator, nil, nil, log.Dummy)
+			// Execute.
+			test.cfg.Validator = test.validator
+			wh, err := validating.NewWebhook(test.cfg)
 			require.NoError(err)
-			gotResponse := wh.Review(context.TODO(), test.review)
+			gotResponse, err := wh.Review(context.TODO(), test.review)
 
-			assert.Equal(test.expResponse, gotResponse)
+			// Check.
+			if test.expErr {
+				assert.Error(err)
+			} else {
+				assert.NoError(err)
+				assert.Equal(test.expResponse, gotResponse)
+			}
+
 		})
-	}
-}
-
-func getRandomValidator() validating.Validator {
-	return validating.ValidatorFunc(func(_ context.Context, _ metav1.Object) (bool, validating.ValidatorResult, error) {
-		valid := time.Now().Nanosecond()%2 == 0
-		return false, validating.ValidatorResult{Valid: valid}, nil
-	})
-}
-
-func BenchmarkPodAdmissionReviewValidation(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		ar := &admissionv1beta1.AdmissionReview{
-			Request: &admissionv1beta1.AdmissionRequest{
-				UID: "test",
-				Object: runtime.RawExtension{
-					Raw: getPodJSON(),
-				},
-			},
-		}
-
-		cfg := validating.WebhookConfig{
-			Name: "test",
-			Obj:  &corev1.Pod{},
-		}
-
-		wh, _ := validating.NewWebhook(cfg, getRandomValidator(), nil, metrics.Dummy, log.Dummy)
-		wh.Review(context.TODO(), ar)
 	}
 }

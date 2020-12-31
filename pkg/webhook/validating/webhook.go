@@ -4,59 +4,49 @@ import (
 	"context"
 	"fmt"
 
-	opentracing "github.com/opentracing/opentracing-go"
-	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/slok/kubewebhook/pkg/log"
-	"github.com/slok/kubewebhook/pkg/observability/metrics"
-	"github.com/slok/kubewebhook/pkg/webhook"
-	"github.com/slok/kubewebhook/pkg/webhook/internal/helpers"
-	"github.com/slok/kubewebhook/pkg/webhook/internal/instrumenting"
+	"github.com/slok/kubewebhook/v2/pkg/log"
+	"github.com/slok/kubewebhook/v2/pkg/model"
+	"github.com/slok/kubewebhook/v2/pkg/webhook"
+	"github.com/slok/kubewebhook/v2/pkg/webhook/internal/helpers"
 )
 
 // WebhookConfig is the Validating webhook configuration.
 type WebhookConfig struct {
-	// Name is the name of the webhook.
-	Name string
+	// ID is the id of the webhook.
+	ID string
 	// Object is the object of the webhook, to use multiple types on the same webhook or
 	// type inference, don't set this field (will be `nil`).
 	Obj metav1.Object
+	// Validator is the webhook validator.
+	Validator Validator
+	// Logger is the app logger.
+	Logger log.Logger
 }
 
-func (c *WebhookConfig) validate() error {
-	errs := ""
-
-	if c.Name == "" {
-		errs = errs + "name can't be empty"
+func (c *WebhookConfig) defaults() error {
+	if c.ID == "" {
+		return fmt.Errorf("id is required")
 	}
 
-	if errs != "" {
-		return fmt.Errorf("invalid configuration: %s", errs)
+	if c.Validator == nil {
+		return fmt.Errorf("validator is required")
 	}
+
+	if c.Logger == nil {
+		c.Logger = log.Noop
+	}
+	c.Logger = c.Logger.WithValues(log.Kv{"webhook-id": c.ID, "webhhok-type": "validating"})
 
 	return nil
 }
 
 // NewWebhook is a validating webhook and will return a webhook ready for a type of resource
 // it will validate the received resources.
-func NewWebhook(cfg WebhookConfig, validator Validator, ot opentracing.Tracer, recorder metrics.Recorder, logger log.Logger) (webhook.Webhook, error) {
-	if err := cfg.validate(); err != nil {
-		return nil, err
-	}
-
-	if logger == nil {
-		logger = log.Dummy
-	}
-
-	if recorder == nil {
-		logger.Warningf("no metrics recorder active")
-		recorder = metrics.Dummy
-	}
-
-	if ot == nil {
-		logger.Warningf("no tracer active")
-		ot = &opentracing.NoopTracer{}
+func NewWebhook(cfg WebhookConfig) (webhook.Webhook, error) {
+	if err := cfg.defaults(); err != nil {
+		return nil, fmt.Errorf("invalid configuration: %w", err)
 	}
 
 	// If we don't have the type of the object create a dynamic object creator that will
@@ -69,71 +59,63 @@ func NewWebhook(cfg WebhookConfig, validator Validator, ot opentracing.Tracer, r
 	}
 
 	// Create our webhook and wrap for instrumentation (metrics and tracing).
-	return &instrumenting.Webhook{
-		Webhook: &validateWebhook{
-			objectCreator: oc,
-			validator:     validator,
-			cfg:           cfg,
-			logger:        logger,
-		},
-		ReviewKind:      metrics.ValidatingReviewKind,
-		WebhookName:     cfg.Name,
-		MetricsRecorder: recorder,
-		Tracer:          ot,
+	return &validatingWebhook{
+		id:            cfg.ID,
+		objectCreator: oc,
+		validator:     cfg.Validator,
+		cfg:           cfg,
+		logger:        cfg.Logger,
 	}, nil
 }
 
-type validateWebhook struct {
+type validatingWebhook struct {
+	id            string
 	objectCreator helpers.ObjectCreator
 	validator     Validator
 	cfg           WebhookConfig
 	logger        log.Logger
 }
 
-func (w validateWebhook) Review(ctx context.Context, ar *admissionv1beta1.AdmissionReview) *admissionv1beta1.AdmissionResponse {
-	w.logger.Debugf("reviewing request %s, named: %s/%s", ar.Request.UID, ar.Request.Namespace, ar.Request.Name)
+func (w validatingWebhook) ID() string { return w.id }
 
+func (w validatingWebhook) Kind() model.WebhookKind { return model.WebhookKindValidating }
+
+func (w validatingWebhook) Review(ctx context.Context, ar model.AdmissionReview) (model.AdmissionResponse, error) {
 	// Delete operations don't have body because should be gone on the deletion, instead they have the body
 	// of the object we want to delete as an old object.
-	raw := ar.Request.Object.Raw
-	if ar.Request.Operation == admissionv1beta1.Delete {
-		raw = ar.Request.OldObject.Raw
+	raw := ar.NewObjectRaw
+	if ar.Operation == model.OperationDelete {
+		raw = ar.OldObjectRaw
 	}
 
 	// Create a new object from the raw type.
 	runtimeObj, err := w.objectCreator.NewObject(raw)
 	if err != nil {
-		return w.toAdmissionErrorResponse(ar, err)
+		return nil, fmt.Errorf("could not create object from raw: %w", err)
 	}
 
 	validatingObj, ok := runtimeObj.(metav1.Object)
 	// Get the object.
 	if !ok {
-		err := fmt.Errorf("impossible to type assert the deep copy to metav1.Object")
-		return w.toAdmissionErrorResponse(ar, err)
+		return nil, fmt.Errorf("impossible to type assert the deep copy to metav1.Object")
 	}
 
-	_, res, err := w.validator.Validate(ctx, validatingObj)
+	res, err := w.validator.Validate(ctx, &ar, validatingObj)
 	if err != nil {
-		return w.toAdmissionErrorResponse(ar, err)
+		return nil, fmt.Errorf("validator error: %w", err)
 	}
 
-	var status string
-	if res.Valid {
-		status = metav1.StatusSuccess
+	if res == nil {
+		return nil, fmt.Errorf("result is required, validator result is nil")
 	}
+
+	w.logger.WithCtx(ctx).WithValues(log.Kv{"valid": res.Valid}).Debugf("Webhook validating review finished with %q result", res.Valid)
 
 	// Forge response.
-	return &admissionv1beta1.AdmissionResponse{
-		UID:     ar.Request.UID,
-		Allowed: res.Valid,
-		Result: &metav1.Status{
-			Status:  status,
-			Message: res.Message,
-		},
-	}
-}
-
-func (w validateWebhook) toAdmissionErrorResponse(ar *admissionv1beta1.AdmissionReview, err error) *admissionv1beta1.AdmissionResponse {
-	return helpers.ToAdmissionErrorResponse(ar.Request.UID, err, w.logger)
+	return &model.ValidatingAdmissionResponse{
+		ID:       ar.ID,
+		Allowed:  res.Valid,
+		Message:  res.Message,
+		Warnings: res.Warnings,
+	}, nil
 }

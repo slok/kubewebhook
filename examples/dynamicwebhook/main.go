@@ -9,9 +9,12 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	whhttp "github.com/slok/kubewebhook/pkg/http"
-	"github.com/slok/kubewebhook/pkg/log"
-	mutatingwh "github.com/slok/kubewebhook/pkg/webhook/mutating"
+	"github.com/sirupsen/logrus"
+	kwhhttp "github.com/slok/kubewebhook/v2/pkg/http"
+	kwhlogrus "github.com/slok/kubewebhook/v2/pkg/log/logrus"
+	kwhmodel "github.com/slok/kubewebhook/v2/pkg/model"
+	kwhmutating "github.com/slok/kubewebhook/v2/pkg/webhook/mutating"
+	mutatingwh "github.com/slok/kubewebhook/v2/pkg/webhook/mutating"
 )
 
 type config struct {
@@ -31,32 +34,38 @@ func initFlags() *config {
 }
 
 func main() {
-	logger := &log.Std{Debug: true}
+	logrusLogEntry := logrus.NewEntry(logrus.New())
+	logrusLogEntry.Logger.SetLevel(logrus.DebugLevel)
+	logger := kwhlogrus.NewLogrus(logrusLogEntry)
 
 	cfg := initFlags()
 
 	// Create our mutator.
-	mt := mutatingwh.MutatorFunc(func(_ context.Context, obj metav1.Object) (bool, error) {
+	mt := mutatingwh.MutatorFunc(func(_ context.Context, ar *kwhmodel.AdmissionReview, obj metav1.Object) (*kwhmutating.MutatorResult, error) {
 		labels := obj.GetLabels()
 		if labels == nil {
 			labels = map[string]string{}
 		}
-		labels["kubewebhook"] = "mutated"
+		labels[fmt.Sprintf("kubewebhook-%s", ar.Version)] = "mutated"
 		obj.SetLabels(labels)
 
-		return false, nil
+		return &kwhmutating.MutatorResult{MutatedObject: obj}, nil
 	})
 
 	// We don't use any type, it works for any type.
-	mcfg := mutatingwh.WebhookConfig{Name: "labeler"}
-	wh, err := mutatingwh.NewWebhook(mcfg, mt, nil, nil, logger)
+	mcfg := mutatingwh.WebhookConfig{
+		ID:      "labeler",
+		Mutator: mt,
+		Logger:  logger,
+	}
+	wh, err := mutatingwh.NewWebhook(mcfg)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error creating webhook: %s", err)
 		os.Exit(1)
 	}
 
 	// Get the handler for our webhook.
-	whHandler, err := whhttp.HandlerFor(wh)
+	whHandler, err := kwhhttp.HandlerFor(kwhhttp.HandlerConfig{Webhook: wh, Logger: logger})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error creating webhook handler: %s", err)
 		os.Exit(1)

@@ -19,9 +19,9 @@ limitations under the License.
 package fake
 
 import (
-	clientset "github.com/slok/kubewebhook/test/integration/crd/client/clientset/versioned"
-	buildingv1 "github.com/slok/kubewebhook/test/integration/crd/client/clientset/versioned/typed/building/v1"
-	fakebuildingv1 "github.com/slok/kubewebhook/test/integration/crd/client/clientset/versioned/typed/building/v1/fake"
+	clientset "github.com/slok/kubewebhook/v2/test/integration/crd/client/clientset/versioned"
+	buildingv1 "github.com/slok/kubewebhook/v2/test/integration/crd/client/clientset/versioned/typed/building/v1"
+	fakebuildingv1 "github.com/slok/kubewebhook/v2/test/integration/crd/client/clientset/versioned/typed/building/v1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"

@@ -6,10 +6,35 @@ import (
 	arv1 "k8s.io/api/admissionregistration/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	helperconfig "github.com/slok/kubewebhook/test/integration/helper/config"
+	helperconfig "github.com/slok/kubewebhook/v2/test/integration/helper/config"
 )
 
-func getMutatingWebhookConfig(t *testing.T, cfg helperconfig.TestEnvConfig, rules []arv1.RuleWithOperations) *arv1.MutatingWebhookConfiguration {
+func getValidatingWebhookConfig(t *testing.T, cfg helperconfig.TestEnvConfig, rules []arv1.RuleWithOperations, versions []string) *arv1.ValidatingWebhookConfiguration {
+	whSideEffect := arv1.SideEffectClassNone
+	whFailurePolicy := arv1.Fail
+	var timeoutSecs int32 = 30
+	return &arv1.ValidatingWebhookConfiguration{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "integration-test-webhook",
+		},
+		Webhooks: []arv1.ValidatingWebhook{
+			{
+				Name:                    "test.slok.dev",
+				AdmissionReviewVersions: versions,
+				FailurePolicy:           &whFailurePolicy,
+				TimeoutSeconds:          &timeoutSecs,
+				SideEffects:             &whSideEffect,
+				ClientConfig: arv1.WebhookClientConfig{
+					URL:      &cfg.WebhookURL,
+					CABundle: []byte(cfg.WebhookCert),
+				},
+				Rules: rules,
+			},
+		},
+	}
+}
+
+func getMutatingWebhookConfig(t *testing.T, cfg helperconfig.TestEnvConfig, rules []arv1.RuleWithOperations, versions []string) *arv1.MutatingWebhookConfiguration {
 	whSideEffect := arv1.SideEffectClassNone
 	var timeoutSecs int32 = 30
 	return &arv1.MutatingWebhookConfiguration{
@@ -19,7 +44,7 @@ func getMutatingWebhookConfig(t *testing.T, cfg helperconfig.TestEnvConfig, rule
 		Webhooks: []arv1.MutatingWebhook{
 			{
 				Name:                    "test.slok.dev",
-				AdmissionReviewVersions: []string{"v1beta1"},
+				AdmissionReviewVersions: versions,
 				TimeoutSeconds:          &timeoutSecs,
 				SideEffects:             &whSideEffect,
 				ClientConfig: arv1.WebhookClientConfig{

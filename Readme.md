@@ -8,66 +8,68 @@
 
 Kubewebhook is a small Go framework to create [external admission webhooks][aw-url] for Kubernetes.
 
-With Kubewebhook you can make validating and mutating webhooks very fast and focusing mainly on the domain logic of the webhook itself.
+With Kubewebhook you can make validating and mutating webhooks in any version, fast, easy, and focusing mainly on the domain logic of the webhook itself.
 
 ## Features
 
-- Ready for mutating and validating webhook kinds (compatible with CRDs).
+- Ready for mutating and validating webhook kinds.
+- Abstracts webhook versioning (compatible with `v1beta1` and `v1`).
+- Resource inference (compatible with `CRD`s and fallbacks to [`Unstructured`][runtime-unstructured]).
 - Easy and testable API.
 - Simple, extensible and flexible.
 - Multiple webhooks on the same server.
 - Webhook metrics ([RED][red-metrics-url]) for [Prometheus][prometheus-url] with [Grafana dashboard][grafana-dashboard] included.
-- Webhook tracing with [Opentracing][opentracing-url].
-- Type specific (static) webhooks and multitype (dynamic) webhooks.
+- Supports [warnings].
 
-## Status
+## Getting started
 
-Kubewebhook has been used in production for several months, and the results have been good.
-
-## Example
-
-Here is a simple example of mutating webhook that will add `mutated=true` and `mutator=pod-annotate` annotations.
+**Use `github.com/slok/kubewebhook/v2` to import Kubewebhook `v2`.**
 
 ```go
-func main() {
-    logger := &log.Std{Debug: true}
-    cfg := initFlags()
+func run() error {
+    logger := &kwhlog.Std{Debug: true}
 
-    // Mutator.
-    mt := mutatingwh.MutatorFunc(func(_ context.Context, obj metav1.Object) (bool, error) {
+    // Create our mutator
+    mt := kwhmutating.MutatorFunc(func(_ context.Context, _ *kwhmodel.AdmissionReview, obj metav1.Object) (*kwhmutating.MutatorResult, error) {
         pod, ok := obj.(*corev1.Pod)
         if !ok {
-            return false, nil
+            return &kwhmutating.MutatorResult{}, nil
         }
 
+        // Mutate our object with the required annotations.
         if pod.Annotations == nil {
             pod.Annotations = make(map[string]string)
         }
         pod.Annotations["mutated"] = "true"
         pod.Annotations["mutator"] = "pod-annotate"
 
-        return false, nil
+        return &kwhmutating.MutatorResult{MutatedObject: pod}, nil
     })
 
-    mcfg := mutatingwh.WebhookConfig{
-        Name: "podAnnotate",
-        Obj:  &corev1.Pod{},
-    }
-    wh, err := mutatingwh.NewWebhook(mcfg, mt, nil, nil, logger)
+    // Create webhook.
+    wh, err := kwhmutating.NewWebhook(kwhmutating.WebhookConfig{
+        ID:      "pod-annotate",
+        Mutator: mt,
+        Logger:  logger,
+    })
     if err != nil {
-        fmt.Fprintf(os.Stderr, "error creating webhook: %s", err)
-        os.Exit(1)
+        return fmt.Errorf("error creating webhook: %w", err)
     }
 
-    // Get the handler for our webhook.
-    whHandler := whhttp.HandlerFor(wh)
+    // Get HTTP handler from webhook.
+    whHandler, err := kwhhttp.HandlerFor(kwhhttp.HandlerConfig{Webhook: wh, Logger: logger})
+    if err != nil {
+        return fmt.Errorf("error creating webhook handler: %w", err)
+    }
+
+    // Serve.
     logger.Infof("Listening on :8080")
     err = http.ListenAndServeTLS(":8080", cfg.certFile, cfg.keyFile, whHandler)
     if err != nil {
-        fmt.Fprintf(os.Stderr, "error serving webhook: %s", err)
-        os.Exit(1)
+        return fmt.Errorf("error serving webhook: %w", err)
     }
-}
+
+    return nil
 ```
 
 You can get more examples in [here](examples)
@@ -95,72 +97,27 @@ We have 2 kinds of webhooks:
 
 ## Compatibility matrix
 
-Depending on your Kubernetes cluster version, you should select the Kubewebhook version.
+The Kubernetes' version associated with Kubewebhook's versions means that this specific version
+is tested and supports the shown K8s version, however, this doesn't mean that doesn't work with other versions. Normally they work with multiple versions (e.g `v1.18` and `v1.19`).
 
-This Matrix ensures that Kubernetes libs are used with the described versions and the
-integration tests have been tested against this Kubernetes cluster versions, this doesn't mean
-that other Kubewebhook versions different to the matched ones to Kubernetes versions don't
-work (e.g k8s v1.15 with Kubewebhook v0.3). You can try it and check if they work for you.
-
-| k8s version | Kubewebhook version | Supported admission reviews | Support dynamic webhooks |
-| ----------- | ------------------- | --------------------------- | ------------------------ |
-| 1.19        | v0.11               | v1beta1                     | ✔                        |
-| 1.18        | v0.10               | v1beta1                     | ✔                        |
-| 1.18        | v0.9                | v1beta1                     | ✖                        |
-| 1.17        | v0.8                | v1beta1                     | ✖                        |
-| 1.16        | v0.7                | v1beta1                     | ✖                        |
-| 1.15        | v0.6                | v1beta1                     | ✖                        |
-| 1.14        | v0.5                | v1beta1                     | ✖                        |
-| 1.13        | v0.4                | v1beta1                     | ✖                        |
-| 1.12        | v0.3                | v1beta1                     | ✖                        |
-| 1.11        | v0.2                | v1beta1                     | ✖                        |
-| 1.10        | v0.2                | v1beta1                     | ✖                        |
+| Kubewebhook version | k8s version | Supported admission reviews | Support dynamic webhooks |
+| ------------------- | ----------- | --------------------------- | ------------------------ |
+| v2.0                | 1.19        | v1beta1, v1                 | ✔                        |
+| v0.11               | 1.19        | v1beta1                     | ✔                        |
+| v0.10               | 1.18        | v1beta1                     | ✔                        |
+| v0.9                | 1.18        | v1beta1                     | ✖                        |
+| v0.8                | 1.17        | v1beta1                     | ✖                        |
+| v0.7                | 1.16        | v1beta1                     | ✖                        |
+| v0.6                | 1.15        | v1beta1                     | ✖                        |
+| v0.5                | 1.14        | v1beta1                     | ✖                        |
+| v0.4                | 1.13        | v1beta1                     | ✖                        |
+| v0.3                | 1.12        | v1beta1                     | ✖                        |
+| v0.2                | 1.11        | v1beta1                     | ✖                        |
+| v0.2                | 1.10        | v1beta1                     | ✖                        |
 
 ## Documentation
 
-- [Documentation][docs]
-- [API][godoc-url]
-
-## Integration tests
-
-Tools required
-
-- [mkcert] (optional if you want to create new certificates).
-- [kind] (option1, to run the cluster).
-- ssh (to expose our webhook to the internet).
-
-### (Optional) Certificates
-
-Certificates are ready to be used on [/test/integration/certs]. This certificates are valid for [ngrok] tcp tunnels so, they should be valid for our exposed webhooks using [ngrok].
-
-If you want to create new certificates execute this:
-
-```bash
-make create-integration-test-certs
-```
-
-### Running the tests
-
-The integration tests are on [/tests/integration], there are the certificates valid for [ngrok] where the tunnel will be exposing the webhooks.
-
-Go integration tests require this env vars:
-
-- `TEST_WEBHOOK_URL`: The url where the apiserver should make the webhook requests.
-- `TEST_LISTEN_PORT`: The port where our webhook will be listening the requests.
-
-Kind is what is used to bootstrap the integration tests.
-
-To run the integration tests do:
-
-```bash
-make integration-test
-```
-
-This it will bootstrap a cluster with [kind] by default. A ssh tunnel in a random address, and finally use the precreated certificates (see previous step), after this will execute the tests, and do it's best effort to tear down the clusters.
-
-### Developing integration tests
-
-To develop integration test is handy to run a [k3s] cluster and a Ngrok tunnel, then check out [/tests/integration/helper/config] and use this development settings on the integration tests.
+You can access [here][godoc-url].
 
 [ci-image]: https://github.com/slok/kubewebhook/workflows/CI/badge.svg
 [ci-url]: https://github.com/slok/kubewebhook/actions
@@ -173,11 +130,7 @@ To develop integration test is handy to run a [k3s] cluster and a Ngrok tunnel, 
 [red-metrics-url]: https://www.weave.works/blog/the-red-method-key-metrics-for-microservices-architecture/
 [prometheus-url]: https://prometheus.io/
 [grafana-dashboard]: https://grafana.com/dashboards/7088
-[opentracing-url]: http://opentracing.io
-[mkcert]: https://github.com/FiloSottile/mkcert
-[kind]: https://github.com/kubernetes-sigs/kind
-[k3s]: https://k3s.io
-[ngrok]: https://ngrok.com/
 [mutating-cfg]: https://pkg.go.dev/github.com/slok/kubewebhook/pkg/webhook/mutating?tab=doc#WebhookConfig
 [validating-cfg]: https://pkg.go.dev/github.com/slok/kubewebhook/pkg/webhook/validating?tab=doc#WebhookConfig
 [runtime-unstructured]: https://pkg.go.dev/k8s.io/apimachinery/pkg/runtime?tab=doc#Unstructured
+[warnings]: https://kubernetes.io/blog/2020/09/03/warnings/

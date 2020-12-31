@@ -1,6 +1,7 @@
 FROM golang:1.15
 
 ARG GOLANGCI_LINT_VERSION="1.31.0"
+ARG MOCKERY_VERSION="2.3.0"
 ARG ostype=Linux
 
 RUN apt-get update && apt-get install -y \
@@ -11,9 +12,12 @@ RUN apt-get update && apt-get install -y \
 
 RUN wget https://github.com/golangci/golangci-lint/releases/download/v${GOLANGCI_LINT_VERSION}/golangci-lint-${GOLANGCI_LINT_VERSION}-linux-amd64.tar.gz && \
     tar zxvf golangci-lint-${GOLANGCI_LINT_VERSION}-linux-amd64.tar.gz --strip 1 -C /usr/local/bin/ && \
-    rm golangci-lint-${GOLANGCI_LINT_VERSION}-linux-amd64.tar.gz
-
-RUN go get -u github.com/vektra/mockery/...
+    rm golangci-lint-${GOLANGCI_LINT_VERSION}-linux-amd64.tar.gz && \
+    \
+    wget https://github.com/vektra/mockery/releases/download/v${MOCKERY_VERSION}/mockery_${MOCKERY_VERSION}_Linux_x86_64.tar.gz && \
+    tar zxvf mockery_${MOCKERY_VERSION}_Linux_x86_64.tar.gz -C /tmp && \
+    mv /tmp/mockery /usr/local/bin/ && \
+    rm mockery_${MOCKERY_VERSION}_Linux_x86_64.tar.gz
 
 # Create user.
 ARG uid=1000

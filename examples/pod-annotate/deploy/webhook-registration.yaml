@@ -6,7 +6,7 @@ metadata:
     app: pod-annotate-webhook
     kind: mutator
 webhooks:
-  - name: pod-annotate-webhook.slok.xyz
+  - name: pod-annotate-webhook.slok.dev
     clientConfig:
       service:
         name: pod-annotate-webhook

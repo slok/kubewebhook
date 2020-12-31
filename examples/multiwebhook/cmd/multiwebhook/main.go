@@ -12,19 +12,23 @@ import (
 	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	whhttp "github.com/slok/kubewebhook/pkg/http"
-	"github.com/slok/kubewebhook/pkg/log"
-	"github.com/slok/kubewebhook/pkg/observability/metrics"
+	"github.com/sirupsen/logrus"
+	kwhhttp "github.com/slok/kubewebhook/v2/pkg/http"
+	kwhlog "github.com/slok/kubewebhook/v2/pkg/log"
+	kwhlogrus "github.com/slok/kubewebhook/v2/pkg/log/logrus"
+	kwhprometheus "github.com/slok/kubewebhook/v2/pkg/metrics/prometheus"
+	kwhwebhook "github.com/slok/kubewebhook/v2/pkg/webhook"
 	jaeger "github.com/uber/jaeger-client-go"
 	jaegerconfig "github.com/uber/jaeger-client-go/config"
 
-	"github.com/slok/kubewebhook/examples/multiwebhook/pkg/webhook/mutating"
-	"github.com/slok/kubewebhook/examples/multiwebhook/pkg/webhook/validating"
+	"github.com/slok/kubewebhook/v2/examples/multiwebhook/pkg/webhook/mutating"
+	"github.com/slok/kubewebhook/v2/examples/multiwebhook/pkg/webhook/validating"
 )
 
 const (
-	gracePeriod   = 3 * time.Second
-	jaegerService = "multi-webhook"
+	gracePeriod = 3 * time.Second
+	minReps     = 1
+	maxReps     = 12
 )
 
 var (
@@ -32,48 +36,46 @@ var (
 		"webhook": "multiwebhook",
 		"test":    "kubewebhook",
 	}
-	minReps = 1
-	maxReps = 12
 )
 
 // Main is the main program.
 type Main struct {
 	flags  *Flags
-	logger log.Logger
+	logger kwhlog.Logger
 	stopC  chan struct{}
 }
 
 // Run will run the main program.
 func (m *Main) Run() error {
 
-	m.logger = &log.Std{
-		Debug: m.flags.Debug,
-	}
+	logrusLogEntry := logrus.NewEntry(logrus.New())
+	logrusLogEntry.Logger.SetLevel(logrus.DebugLevel)
+	m.logger = kwhlogrus.NewLogrus(logrusLogEntry)
 
 	// Create services.
 	promReg := prometheus.NewRegistry()
-	metricsRec := metrics.NewPrometheus(promReg)
-	tracer, closer, err := m.createTracer(jaegerService)
+	metricsRec, err := kwhprometheus.NewRecorder(kwhprometheus.RecorderConfig{Registry: promReg})
 	if err != nil {
-		return err
+		return fmt.Errorf("could not create prometheus recorder: %w", err)
 	}
-	defer closer.Close()
 
 	// Create webhooks
-	mpw, err := mutating.NewPodWebhook(defLabels, tracer, metricsRec, m.logger)
+	mpw, err := mutating.NewPodWebhook(defLabels, m.logger)
 	if err != nil {
 		return err
 	}
-	mpwh, err := whhttp.HandlerFor(mpw)
+	mpw = kwhwebhook.NewMeasuredWebhook(metricsRec, mpw)
+	mpwh, err := kwhhttp.HandlerFor(kwhhttp.HandlerConfig{Webhook: mpw, Logger: m.logger})
 	if err != nil {
 		return err
 	}
 
-	vdw, err := validating.NewDeploymentWebhook(minReps, maxReps, tracer, metricsRec, m.logger)
+	vdw, err := validating.NewDeploymentWebhook(minReps, maxReps, m.logger)
 	if err != nil {
 		return err
 	}
-	vdwh, err := whhttp.HandlerFor(vdw)
+	vdw = kwhwebhook.NewMeasuredWebhook(metricsRec, vdw)
+	vdwh, err := kwhhttp.HandlerFor(kwhhttp.HandlerConfig{Webhook: vdw, Logger: m.logger})
 	if err != nil {
 		return err
 	}
