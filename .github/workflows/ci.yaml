@@ -34,7 +34,7 @@ jobs:
     strategy:
       max-parallel: 1 # Due to ngrok account limits.
       matrix:
-        kubernetes: [1.19.1]
+        kubernetes: [1.19.1, 1.20.0]
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
