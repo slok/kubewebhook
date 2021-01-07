@@ -2,14 +2,12 @@ package main
 
 import (
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
-	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
@@ -18,8 +16,6 @@ import (
 	kwhlogrus "github.com/slok/kubewebhook/v2/pkg/log/logrus"
 	kwhprometheus "github.com/slok/kubewebhook/v2/pkg/metrics/prometheus"
 	kwhwebhook "github.com/slok/kubewebhook/v2/pkg/webhook"
-	jaeger "github.com/uber/jaeger-client-go"
-	jaegerconfig "github.com/uber/jaeger-client-go/config"
 
 	"github.com/slok/kubewebhook/v2/examples/multiwebhook/pkg/webhook/mutating"
 	"github.com/slok/kubewebhook/v2/examples/multiwebhook/pkg/webhook/validating"
@@ -138,24 +134,6 @@ func (m *Main) createSignalChan() chan os.Signal {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGTERM, syscall.SIGINT)
 	return c
-}
-
-func (m *Main) createTracer(service string) (opentracing.Tracer, io.Closer, error) {
-	cfg := &jaegerconfig.Configuration{
-		ServiceName: service,
-		Sampler: &jaegerconfig.SamplerConfig{
-			Type:  "const",
-			Param: 1,
-		},
-		Reporter: &jaegerconfig.ReporterConfig{
-			LogSpans: true,
-		},
-	}
-	tracer, closer, err := cfg.NewTracer(jaegerconfig.Logger(jaeger.NullLogger))
-	if err != nil {
-		return nil, nil, fmt.Errorf("cannot init Jaeger: %s", err)
-	}
-	return tracer, closer, nil
 }
 
 func main() {

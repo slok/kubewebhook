@@ -16,6 +16,7 @@
 - Improved the logger on webhooks and HTTP handlers.
 - Use structured logging over the application.
 - Add Logrus logger support.
+- Update to Kubernetes v1.20.
 
 ### Removed
 
