@@ -129,7 +129,7 @@ You can access [here][godoc-url].
 [docs]: https://slok.github.io/kubewebhook/
 [red-metrics-url]: https://www.weave.works/blog/the-red-method-key-metrics-for-microservices-architecture/
 [prometheus-url]: https://prometheus.io/
-[grafana-dashboard]: https://grafana.com/dashboards/7088
+[grafana-dashboard]: https://grafana.com/grafana/dashboards/13685
 [mutating-cfg]: https://pkg.go.dev/github.com/slok/kubewebhook/pkg/webhook/mutating?tab=doc#WebhookConfig
 [validating-cfg]: https://pkg.go.dev/github.com/slok/kubewebhook/pkg/webhook/validating?tab=doc#WebhookConfig
 [runtime-unstructured]: https://pkg.go.dev/k8s.io/apimachinery/pkg/runtime?tab=doc#Unstructured
