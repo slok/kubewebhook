@@ -109,7 +109,7 @@ func (w validatingWebhook) Review(ctx context.Context, ar model.AdmissionReview)
 		return nil, fmt.Errorf("result is required, validator result is nil")
 	}
 
-	w.logger.WithCtx(ctx).WithValues(log.Kv{"valid": res.Valid}).Debugf("Webhook validating review finished with %q result", res.Valid)
+	w.logger.WithCtxValues(ctx).WithValues(log.Kv{"valid": res.Valid}).Debugf("Webhook validating review finished with %q result", res.Valid)
 
 	// Forge response.
 	return &model.ValidatingAdmissionResponse{

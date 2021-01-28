@@ -106,7 +106,7 @@ func (w mutatingWebhook) Review(ctx context.Context, ar model.AdmissionReview) (
 		return nil, err
 	}
 
-	w.logger.WithCtx(ctx).Debugf("Webhook mutating review finished with: '%s' JSON Patch", string(res.JSONPatchPatch))
+	w.logger.WithCtxValues(ctx).Debugf("Webhook mutating review finished with: '%s' JSON Patch", string(res.JSONPatchPatch))
 
 	return res, nil
 }
