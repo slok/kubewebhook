@@ -17,11 +17,15 @@ func NewLogrus(l *logrus.Entry) log.Logger {
 	return logger{Entry: l}
 }
 
-func (l logger) WithValues(kv map[string]interface{}) log.Logger {
+func (l logger) WithValues(kv log.Kv) log.Logger {
 	newLogger := l.Entry.WithFields(kv)
 	return NewLogrus(newLogger)
 }
 
-func (l logger) WithCtx(ctx context.Context) log.Logger {
+func (l logger) WithCtxValues(ctx context.Context) log.Logger {
 	return l.WithValues(log.ValuesFromCtx(ctx))
+}
+
+func (l logger) SetValuesOnCtx(parent context.Context, values log.Kv) context.Context {
+	return log.CtxWithValues(parent, values)
 }

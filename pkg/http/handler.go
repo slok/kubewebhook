@@ -104,7 +104,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Setup log data on context.
-	ctx = log.CtxWithValues(ctx, log.Kv{
+	ctx = h.logger.SetValuesOnCtx(ctx, log.Kv{
 		"webhook-id":   h.webhook.ID(),
 		"webhook-kind": h.webhook.Kind(),
 		"request-id":   ar.ID,
@@ -116,7 +116,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		"name":         ar.Name,
 		"path":         r.URL.Path,
 	})
-	logger := h.logger.WithCtx(ctx)
+	logger := h.logger.WithCtxValues(ctx)
 
 	// Webhook execution logic. This is how we are dealing with the different responses:
 	// |                        | HTTP Code             | status.Code | status.Status | status.Message |
@@ -220,7 +220,7 @@ func (h handler) validatingModelResponseToJSON(ctx context.Context, review model
 	switch review.OriginalAdmissionReview.(type) {
 	case *admissionv1beta1.AdmissionReview:
 		if len(resp.Warnings) > 0 {
-			h.logger.WithCtx(ctx).Warningf("warnings used in a 'v1beta1' webhook")
+			h.logger.WithCtxValues(ctx).Warningf("warnings used in a 'v1beta1' webhook")
 		}
 
 		data, err := json.Marshal(admissionv1beta1.AdmissionReview{
@@ -253,7 +253,7 @@ func (h handler) mutatingModelResponseToJSON(ctx context.Context, review model.A
 	switch review.OriginalAdmissionReview.(type) {
 	case *admissionv1beta1.AdmissionReview:
 		if len(resp.Warnings) > 0 {
-			h.logger.WithCtx(ctx).Warningf("warnings used in a 'v1beta1' webhook")
+			h.logger.WithCtxValues(ctx).Warningf("warnings used in a 'v1beta1' webhook")
 		}
 
 		data, err := json.Marshal(admissionv1beta1.AdmissionReview{
