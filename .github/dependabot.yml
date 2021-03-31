@@ -4,10 +4,9 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
-    # Ignore Kubernetes dependencies to have full control on them.
-    ignored_updates:
-      - match:
-          dependency_name: "k8s.io/*"
+    ignore:
+      # Ignore Kubernetes dependencies to have full control on them.
+      - dependency-name: "k8s.io/*"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
