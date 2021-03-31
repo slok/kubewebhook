@@ -4,7 +4,7 @@
 
 # kubewebhook [![Build Status][ci-image]][ci-url] [![Go Report Card][goreport-image]][goreport-url] [![GoDoc][godoc-image]][godoc-url]
 
-> `master` targets `v2`, if you are looking for v1, check [this](https://github.com/slok/kubewebhook/tree/v1).
+> `master` targets `v2`, if you are looking for `v1`, check [this](https://github.com/slok/kubewebhook/tree/v1).
 
 Kubewebhook is a small Go framework to create [external admission webhooks][aw-url] for Kubernetes.
 
@@ -121,10 +121,10 @@ You can access [here][godoc-url].
 
 [ci-image]: https://github.com/slok/kubewebhook/workflows/CI/badge.svg
 [ci-url]: https://github.com/slok/kubewebhook/actions
-[goreport-image]: https://goreportcard.com/badge/github.com/slok/kubewebhook
-[goreport-url]: https://goreportcard.com/report/github.com/slok/kubewebhook
-[godoc-image]: https://godoc.org/github.com/slok/kubewebhook?status.svg
-[godoc-url]: https://pkg.go.dev/github.com/slok/kubewebhook?tab=doc
+[goreport-image]: https://goreportcard.com/badge/github.com/slok/kubewebhook/v2
+[goreport-url]: https://goreportcard.com/report/github.com/slok/kubewebhook/v2
+[godoc-image]: https://godoc.org/github.com/slok/kubewebhook/v2?status.svg
+[godoc-url]: https://pkg.go.dev/github.com/slok/kubewebhook/v2
 [aw-url]: https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers
 [docs]: https://slok.github.io/kubewebhook/
 [red-metrics-url]: https://www.weave.works/blog/the-red-method-key-metrics-for-microservices-architecture/
