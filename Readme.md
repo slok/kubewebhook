@@ -2,7 +2,13 @@
     <img src="logo/kubewebhook_logo@0,5x.png" width="30%" align="center" alt="kubewebhook">
 </p>
 
-# kubewebhook [![Build Status][ci-image]][ci-url] [![Go Report Card][goreport-image]][goreport-url] [![GoDoc][godoc-image]][godoc-url]
+# kubewebhook
+
+[![CI](https://github.com/slok/kubewebhook/actions/workflows/ci.yaml/badge.svg?branch=master)](https://github.com/slok/kubewebhook/actions/workflows/ci.yaml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/slok/kubewebhook/v2)](https://goreportcard.com/report/github.com/slok/kubewebhook/v2)
+[![GoDoc](https://godoc.org/github.com/slok/kubewebhook/v2?status.svg)][godoc-url]
+[![Apache 2 licensed](https://img.shields.io/badge/license-Apache2-blue.svg)](https://raw.githubusercontent.com/slok/kubewebhook/master/LICENSE)
+[![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/slok/kubewebhook)](https://github.com/slok/kubewebhook/releases/latest)
 
 > `master` targets `v2`, if you are looking for `v1`, check [this](https://github.com/slok/kubewebhook/tree/v1).
 
@@ -119,11 +125,6 @@ is tested and supports the shown K8s version, however, this doesn't mean that do
 
 You can access [here][godoc-url].
 
-[ci-image]: https://github.com/slok/kubewebhook/workflows/CI/badge.svg
-[ci-url]: https://github.com/slok/kubewebhook/actions
-[goreport-image]: https://goreportcard.com/badge/github.com/slok/kubewebhook/v2
-[goreport-url]: https://goreportcard.com/report/github.com/slok/kubewebhook/v2
-[godoc-image]: https://godoc.org/github.com/slok/kubewebhook/v2?status.svg
 [godoc-url]: https://pkg.go.dev/github.com/slok/kubewebhook/v2
 [aw-url]: https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers
 [docs]: https://slok.github.io/kubewebhook/
