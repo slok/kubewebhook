@@ -5,7 +5,7 @@
 # kubewebhook
 
 [![CI](https://github.com/slok/kubewebhook/actions/workflows/ci.yaml/badge.svg?branch=master)](https://github.com/slok/kubewebhook/actions/workflows/ci.yaml)
-[![Go Report Card](https://goreportcard.com/badge/github.com/slok/kubewebhook/v2)](https://goreportcard.com/report/github.com/slok/kubewebhook/v2)
+[![Go Report Card](https://goreportcard.com/badge/github.com/slok/kubewebhook)](https://goreportcard.com/report/github.com/slok/kubewebhook)
 [![GoDoc](https://godoc.org/github.com/slok/kubewebhook/v2?status.svg)][godoc-url]
 [![Apache 2 licensed](https://img.shields.io/badge/license-Apache2-blue.svg)](https://raw.githubusercontent.com/slok/kubewebhook/master/LICENSE)
 [![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/slok/kubewebhook)](https://github.com/slok/kubewebhook/releases/latest)
