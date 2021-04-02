@@ -1,5 +1,9 @@
 ## [Unreleased]
 
+## [2.0.0] - 2021-04-02
+
+v2 of the library mainly refactors the domain model to abstract the admission review versions. This breaks backwards compatibility.
+
 ### Added
 
 - A new model that decouples the different Kubernetes admission review model types.
@@ -138,7 +142,8 @@ Breaking: Webhook constructors now need a tracer.
 - Static mutating webhook.
 - Handler creator for webhooks.
 
-[unreleased]: https://github.com/slok/kubewebhook/compare/v0.11.0...HEAD
+[unreleased]: https://github.com/slok/kubewebhook/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/slok/kubewebhook/compare/v0.11.0...v2.0.0
 [0.11.0]: https://github.com/slok/kubewebhook/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/slok/kubewebhook/compare/v0.9.1...v0.10.0
 [0.9.1]: https://github.com/slok/kubewebhook/compare/v0.9.0...v0.9.1
