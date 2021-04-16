@@ -3,6 +3,7 @@ package model
 import (
 	admissionv1 "k8s.io/api/admission/v1"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
+	authenticationv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -48,6 +49,7 @@ type AdmissionReview struct {
 	OldObjectRaw []byte
 	NewObjectRaw []byte
 	DryRun       bool
+	UserInfo     authenticationv1.UserInfo
 }
 
 // NewAdmissionReviewV1Beta1 returns a new AdmissionReview from a admission/v1beta/admissionReview.
@@ -69,6 +71,7 @@ func NewAdmissionReviewV1Beta1(ar *admissionv1beta1.AdmissionReview) AdmissionRe
 		NewObjectRaw:            ar.Request.Object.Raw,
 		RequestGVR:              ar.Request.RequestResource,
 		RequestGVK:              ar.Request.RequestKind,
+		UserInfo:                ar.Request.UserInfo,
 		DryRun:                  dryRun,
 	}
 }
@@ -107,6 +110,7 @@ func NewAdmissionReviewV1(ar *admissionv1.AdmissionReview) AdmissionReview {
 		NewObjectRaw:            ar.Request.Object.Raw,
 		RequestGVR:              ar.Request.RequestResource,
 		RequestGVK:              ar.Request.RequestKind,
+		UserInfo:                ar.Request.UserInfo,
 		DryRun:                  dryRun,
 	}
 }
