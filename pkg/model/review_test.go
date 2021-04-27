@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	admissionv1 "k8s.io/api/admission/v1"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
+	authenticationv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
@@ -31,6 +32,7 @@ func getBaseARV1Beta1() *admissionv1beta1.AdmissionReview {
 			RequestResource: &metav1.GroupVersionResource{Group: "core", Resource: "pods", Version: "v1"},
 			UID:             "id-1",
 			Operation:       admissionv1beta1.Create,
+			UserInfo:        authenticationv1.UserInfo{},
 			OldObject:       runtime.RawExtension{Raw: []byte("old-raw-thingy")},
 			Object:          runtime.RawExtension{Raw: []byte("raw-thingy")},
 			DryRun:          &trueBool,
@@ -52,6 +54,7 @@ func getBaseARV1() *admissionv1.AdmissionReview {
 			RequestResource: &metav1.GroupVersionResource{Group: "core", Resource: "pods", Version: "v1"},
 			UID:             "id-1",
 			Operation:       admissionv1.Create,
+			UserInfo:        authenticationv1.UserInfo{},
 			OldObject:       runtime.RawExtension{Raw: []byte("old-raw-thingy")},
 			Object:          runtime.RawExtension{Raw: []byte("raw-thingy")},
 			DryRun:          &trueBool,
@@ -67,6 +70,7 @@ func getBaseModelV1Beta1() model.AdmissionReview {
 		Namespace:               "ns-1",
 		Version:                 model.AdmissionReviewVersionV1beta1,
 		Operation:               model.OperationCreate,
+		UserInfo:                authenticationv1.UserInfo{},
 		OldObjectRaw:            []byte("old-raw-thingy"),
 		NewObjectRaw:            []byte("raw-thingy"),
 		RequestGVR:              &metav1.GroupVersionResource{Group: "core", Resource: "pods", Version: "v1"},
@@ -83,6 +87,7 @@ func getBaseModelV1() model.AdmissionReview {
 		Namespace:               "ns-1",
 		Version:                 model.AdmissionReviewVersionV1,
 		Operation:               model.OperationCreate,
+		UserInfo:                authenticationv1.UserInfo{},
 		OldObjectRaw:            []byte("old-raw-thingy"),
 		NewObjectRaw:            []byte("raw-thingy"),
 		RequestGVR:              &metav1.GroupVersionResource{Group: "core", Resource: "pods", Version: "v1"},
