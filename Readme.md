@@ -108,6 +108,7 @@ is tested and supports the shown K8s version, however, this doesn't mean that do
 
 | Kubewebhook version | k8s version | Supported admission reviews | Support dynamic webhooks |
 | ------------------- | ----------- | --------------------------- | ------------------------ |
+| v2.1                | 1.21        | v1beta1, v1                 | ✔                        |
 | v2.0                | 1.20        | v1beta1, v1                 | ✔                        |
 | v0.11               | 1.19        | v1beta1                     | ✔                        |
 | v0.10               | 1.18        | v1beta1                     | ✔                        |

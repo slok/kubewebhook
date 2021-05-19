@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+## [2.1.0] - 2021-05-19
+
 ### Added
 
 - User information to model.
@@ -150,7 +152,8 @@ Breaking: Webhook constructors now need a tracer.
 - Static mutating webhook.
 - Handler creator for webhooks.
 
-[unreleased]: https://github.com/slok/kubewebhook/compare/v2.0.0...HEAD
+[unreleased]: https://github.com/slok/kubewebhook/compare/v2.1.0...HEAD
+[2.1.0]: https://github.com/slok/kubewebhook/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/slok/kubewebhook/compare/v0.11.0...v2.0.0
 [0.11.0]: https://github.com/slok/kubewebhook/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/slok/kubewebhook/compare/v0.9.1...v0.10.0
