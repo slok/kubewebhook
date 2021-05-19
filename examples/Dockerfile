@@ -1,4 +1,4 @@
-FROM golang:1.15-alpine AS build-stage
+FROM golang:1.16-alpine AS build-stage
 
 ARG example
 
