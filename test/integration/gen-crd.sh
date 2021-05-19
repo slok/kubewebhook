@@ -10,11 +10,11 @@ GROUPS_VERSION="building:v1"
 # custom informer/listerwatchers.
 TARGETS="deepcopy,client"
 
-IMAGE=quay.io/slok/kube-code-generator:v1.20.1
+IMAGE=quay.io/slok/kube-code-generator:v1.21.1
 DIR="$( cd "$( dirname "${0}" )" && pwd )"
 ROOT_DIR=${DIR}/../..
-PROJECT_PACKAGE=github.com/slok/kubewebhook
-CRD_PACKAGE=github.com/slok/kubewebhook/test/integration/crd/apis
+PROJECT_PACKAGE=github.com/slok/kubewebhook/v2
+CRD_PACKAGE=github.com/slok/kubewebhook/v2/test/integration/crd/apis
 
 
 docker run -it --rm \
@@ -32,13 +32,3 @@ docker run -it --rm \
 	-e CRD_TYPES_PATH=/src/test/integration/crd/apis \
 	-e CRD_OUT_PATH=/src/test/integration/crd/manifests \
 	${IMAGE} update-crd.sh
-
-# Kubewebhook imports are v2, but not its path, the easies way for not having problems on the
-# generated code is to generate as a regular v1 (not imporot change), and then we replace it
-# the imports. Kind of hackish, but easier than dealing with all the import problems on the CRD
-# generating tools.
-
-# With the first replace we ensure that all the v2 (shouldn't be any, but just in case), are set without v2,
-# and then we replace the v1 imports with v2 imports
-find "${ROOT_DIR}/test/integration/" -iname *.go -type f -exec sed -i -e 's/\"github.com\/slok\/kubewebhook\/v2/\"github.com\/slok\/kubewebhook/g' {} \;
-find "${ROOT_DIR}/test/integration/" -iname *.go -type f -exec sed -i -e 's/\"github.com\/slok\/kubewebhook/\"github.com\/slok\/kubewebhook\/v2/g' {} \;

@@ -1,5 +1,13 @@
 ## [Unreleased]
 
+### Added
+
+- User information to model.
+
+### Changed
+
+- Update to Kubernetes v1.21.
+
 ## [2.0.0] - 2021-04-02
 
 v2 of the library mainly refactors the domain model to abstract the admission review versions. This breaks backwards compatibility.
