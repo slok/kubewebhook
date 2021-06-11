@@ -96,7 +96,7 @@ We have 2 kinds of webhooks:
 - Dynamic: Used when the same webhook act on multiple types, unknown types and/or is used for generic stuff (e.g labels).
   - To use this kind of webhook, don't set the type on the configuration or set to `nil`.
   - If a request for an unknown type is not known by the webhook libraries, it will fallback to [`runtime.Unstructured`][runtime-unstructured] object type.
-  - Very useful to manipulate multiple resources on the same webhook (e.g `Deployments`, `Statfulsets`).
+  - Very useful to manipulate multiple resources on the same webhook (e.g `Deployments`, `Statefulsets`).
   - CRDs are unknown types so they will fallback to [`runtime.Unstructured`][runtime-unstructured]`.
   - If using CRDs, better use `Static` webhooks.
   - Very useful to maniputale any `metadata` based validation or mutations (e.g `Labels, annotations...`)
