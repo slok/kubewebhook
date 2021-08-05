@@ -9,9 +9,7 @@
 [![GoDoc](https://godoc.org/github.com/slok/kubewebhook/v2?status.svg)][godoc-url]
 [![Apache 2 licensed](https://img.shields.io/badge/license-Apache2-blue.svg)](https://raw.githubusercontent.com/slok/kubewebhook/master/LICENSE)
 [![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/slok/kubewebhook)](https://github.com/slok/kubewebhook/releases/latest)
-![Kubernetes release](https://img.shields.io/badge/Kubernetes-v1.21-green?logo=Kubernetes&style=flat&color=326CE5&logoColor=white)
-
-> `master` targets `v2`, if you are looking for `v1`, check [this](https://github.com/slok/kubewebhook/tree/v1).
+![Kubernetes release](https://img.shields.io/badge/Kubernetes-v1.22-green?logo=Kubernetes&style=flat&color=326CE5&logoColor=white)
 
 Kubewebhook is a small Go framework to create [external admission webhooks][aw-url] for Kubernetes.
 
