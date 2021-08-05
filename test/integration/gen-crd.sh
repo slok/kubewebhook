@@ -10,7 +10,7 @@ GROUPS_VERSION="building:v1"
 # custom informer/listerwatchers.
 TARGETS="deepcopy,client"
 
-IMAGE=quay.io/slok/kube-code-generator:v1.21.1
+IMAGE=quay.io/slok/kube-code-generator:v1.22.0
 DIR="$( cd "$( dirname "${0}" )" && pwd )"
 ROOT_DIR=${DIR}/../..
 PROJECT_PACKAGE=github.com/slok/kubewebhook/v2
