@@ -4,6 +4,10 @@
 
 - Update to Kubernetes v1.22.
 
+### Fixed
+
+- Review errors on http handler were not being logged, now are logged as `Error`.
+
 ## [2.1.0] - 2021-05-19
 
 ### Added
