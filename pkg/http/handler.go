@@ -128,6 +128,8 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// | Err                    | 500                   | -           | Failure       | Err string     |
 	admissionResp, err := h.webhook.Review(ctx, *ar)
 	if err != nil {
+		logger.Errorf("Admission review error: %s", err)
+
 		errResp, err := h.errorToJSON(*ar, err)
 		if err != nil {
 			msg := fmt.Sprintf("could not marshall status error on admission response: %v", err)
@@ -141,13 +143,17 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			msg := fmt.Sprintf("could not write response: %v", err)
 			http.Error(w, msg, http.StatusInternalServerError)
 			logger.Errorf(msg)
+			return
 		}
+
 		return
 	}
 
 	// Create the review response.
 	resp, err := h.modelResponseToJSON(ctx, *ar, admissionResp)
 	if err != nil {
+		logger.Errorf("Could not map model response to JSON: %s", err)
+
 		errResp, err := h.errorToJSON(*ar, err)
 		if err != nil {
 			msg := fmt.Sprintf("could not marshall status error on admission response: %v", err)
@@ -161,7 +167,9 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			msg := fmt.Sprintf("could not write response: %v", err)
 			http.Error(w, msg, http.StatusInternalServerError)
 			logger.Errorf(msg)
+			return
 		}
+
 		return
 	}
 
@@ -171,6 +179,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		msg := fmt.Sprintf("could not write response: %v", err)
 		http.Error(w, msg, http.StatusInternalServerError)
 		logger.Errorf(msg)
+		return
 	}
 
 	logger.WithValues(log.Kv{
