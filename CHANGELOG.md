@@ -1,5 +1,9 @@
 ## [Unreleased]
 
+### Added
+
+- Infer automatically (using Unstructured) Kubernetes types that don't implement metav1.Object like `corev1.PodExecOptions`.
+
 ### Changed
 
 - Update to Kubernetes v1.22.

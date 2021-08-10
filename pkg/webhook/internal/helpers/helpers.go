@@ -3,7 +3,6 @@ package helpers
 import (
 	"fmt"
 	"reflect"
-	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -12,8 +11,16 @@ import (
 	clientsetscheme "k8s.io/client-go/kubernetes/scheme"
 )
 
-// NewK8sObj returns a new object of a Kubernetes type based on the type.
-func NewK8sObj(t reflect.Type) metav1.Object {
+// K8sObject represents a full Kubernetes object.
+// If a Kubernetes Object is not known or doesn't satisfy both interfaces,
+// it should use `Unstructured` (e.g: pod/exec like `corev1.PodExecOptions`).
+type K8sObject interface {
+	metav1.Object
+	runtime.Object
+}
+
+// newK8sObj returns a new object of a Kubernetes type based on the type.
+func newK8sObj(t reflect.Type) metav1.Object {
 	// Create a new object of the webhook resource type
 	// convert to ptr and typeassert to Kubernetes Object.
 	var obj interface{}
@@ -22,22 +29,18 @@ func NewK8sObj(t reflect.Type) metav1.Object {
 	return obj.(metav1.Object)
 }
 
-// GetK8sObjType returns the type (not the pointer type) of a kubernetes object.
-func GetK8sObjType(obj metav1.Object) reflect.Type {
+// getK8sObjType returns the type (not the pointer type) of a kubernetes object.
+func getK8sObjType(obj metav1.Object) reflect.Type {
 	// Object is an interface, is safe to assume that is a pointer.
 	// Get the indirect type of the object.
 	return reflect.Indirect(reflect.ValueOf(obj)).Type()
 }
 
-// GroupVersionResourceToString returns a string representation. It differs from the
-// original stringer of the object itself.
-func GroupVersionResourceToString(gvr metav1.GroupVersionResource) string {
-	return strings.Join([]string{gvr.Group, "/", gvr.Version, "/", gvr.Resource}, "")
-}
-
-// ObjectCreator knows how to create objects from Raw JSON data into specific types.
+// ObjectCreator knows how to create objects from Raw JSON or YAML data into specific Kubernetes
+// types that are compatible with runtime.Object and metav1.Object, if not it will fallback to
+// `unstructured.Unstructured`.
 type ObjectCreator interface {
-	NewObject(rawJSON []byte) (runtime.Object, error)
+	NewObject(raw []byte) (K8sObject, error)
 }
 
 type staticObjectCreator struct {
@@ -50,23 +53,23 @@ type staticObjectCreator struct {
 func NewStaticObjectCreator(obj metav1.Object) ObjectCreator {
 	codecs := serializer.NewCodecFactory(runtime.NewScheme())
 	return staticObjectCreator{
-		objType:      GetK8sObjType(obj),
+		objType:      getK8sObjType(obj),
 		deserializer: codecs.UniversalDeserializer(),
 	}
 }
 
-func (s staticObjectCreator) NewObject(rawJSON []byte) (runtime.Object, error) {
-	runtimeObj, ok := NewK8sObj(s.objType).(runtime.Object)
+func (s staticObjectCreator) NewObject(raw []byte) (K8sObject, error) {
+	obj, ok := newK8sObj(s.objType).(K8sObject)
 	if !ok {
-		return nil, fmt.Errorf("could not type assert metav1.Object to runtime.Object")
+		return nil, fmt.Errorf("could not type assert metav1.Object and runtime.Object")
 	}
 
-	_, _, err := s.deserializer.Decode(rawJSON, nil, runtimeObj)
+	_, _, err := s.deserializer.Decode(raw, nil, obj)
 	if err != nil {
 		return nil, fmt.Errorf("error deseralizing request raw object: %s", err)
 	}
 
-	return runtimeObj, nil
+	return obj, nil
 }
 
 type dynamicObjectCreator struct {
@@ -80,7 +83,10 @@ type dynamicObjectCreator struct {
 // To be able to infer the types the types need to be registered on the global client Scheme.
 // Normally when a user tries casting the metav1.Object to a specific type, the object is already
 // registered. In case the type is not registered and the object can't be created it will fallback
-// to an Unstructured type.
+// to an `Unstructured` type.
+//
+// Some types like pod/exec (`corev1.PodExecOptions`) implement `runtime.Object` however they don't
+// implement `metav1.Object`. In that case we also fallback to `Unstructured`.
 //
 // Useful to make dynamic webhooks that expect multiple or unknown types.
 func NewDynamicObjectCreator() ObjectCreator {
@@ -90,11 +96,25 @@ func NewDynamicObjectCreator() ObjectCreator {
 	}
 }
 
-func (d dynamicObjectCreator) NewObject(rawJSON []byte) (runtime.Object, error) {
-	runtimeObj, _, err := d.universalDecoder.Decode(rawJSON, nil, nil)
-	// Fallback to unstructured.
-	if err != nil {
-		runtimeObj, _, err = d.unstructuredDecoder.Decode(rawJSON, nil, nil)
+func (d dynamicObjectCreator) NewObject(raw []byte) (K8sObject, error) {
+	runtimeObj, _, err := d.universalDecoder.Decode(raw, nil, nil)
+	if err == nil {
+		// TODO(slok): Some types like pod/exec (`corev1.PodExecOptions`) implement `runtime.Object` however
+		// they don't implement `metav1.Object`. Think if our Mutator and Validator APIs should give the
+		// user a runtime.Object instead of a metav1.Object. In the meantime if we have this kind of
+		// objects we will fallback to Unstructured.
+		obj, ok := runtimeObj.(K8sObject)
+		if ok {
+			return obj, nil
+		}
 	}
-	return runtimeObj, err
+
+	// Fallback to unstructured.
+	runtimeObj, _, err = d.unstructuredDecoder.Decode(raw, nil, nil)
+	obj, ok := runtimeObj.(K8sObject)
+	if !ok {
+		return nil, fmt.Errorf("could not type assert metav1.Object and runtime.Object")
+	}
+
+	return obj, err
 }
