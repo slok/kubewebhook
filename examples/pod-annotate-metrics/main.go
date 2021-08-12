@@ -122,9 +122,7 @@ func run() error {
 func main() {
 	err := run()
 	if err != nil {
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "error running app: %s", err)
-			os.Exit(1)
-		}
+		fmt.Fprintf(os.Stderr, "error running app: %s", err)
+		os.Exit(1)
 	}
 }

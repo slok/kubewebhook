@@ -36,7 +36,7 @@ func initFlags() *config {
 	fl.StringVar(&cfg.certFile, "tls-cert-file", "", "TLS certificate file")
 	fl.StringVar(&cfg.keyFile, "tls-key-file", "", "TLS key file")
 
-	fl.Parse(os.Args[1:])
+	_ = fl.Parse(os.Args[1:])
 	return cfg
 }
 
@@ -123,9 +123,7 @@ func newTracer(name string) (tracer kwhtracing.Tracer, stop func(), err error) {
 func main() {
 	err := run()
 	if err != nil {
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "error running app: %s", err)
-			os.Exit(1)
-		}
+		fmt.Fprintf(os.Stderr, "error running app: %s", err)
+		os.Exit(1)
 	}
 }
