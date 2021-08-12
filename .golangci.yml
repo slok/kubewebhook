@@ -6,3 +6,12 @@ run:
 
   build-tags:
     - integration
+
+linters:
+  enable:
+    - misspell
+    - goimports
+    - revive
+    - gofmt
+    - depguard
+    - godot
