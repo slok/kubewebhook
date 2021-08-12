@@ -28,7 +28,7 @@ type Mutator interface {
 	// as result.MutatedObject is the object that will be used as the mutation.
 	// It must be of the same type of the received one (if is a Pod, it must return a Pod)
 	// if no object is returned, it will be used the received one as the mutated one.
-	// Also recieves the webhook admission review in case it wants more context and
+	// Also receives the webhook admission review in case it wants more context and
 	// information of the review.
 	// Mutators can be grouped in chains, that's why we have a `StopChain` boolean
 	// in the result, to stop executing the validators chain.

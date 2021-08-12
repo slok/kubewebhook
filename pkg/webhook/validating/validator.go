@@ -26,7 +26,7 @@ type ValidatorResult struct {
 type Validator interface {
 	// Validate receives a Kubernetes resource object to be validated, it must
 	// return an error or a validation result.
-	// Also recieves the webhook admission review in case it wants more context and
+	// Also receives the webhook admission review in case it wants more context and
 	// information of the review.
 	// Validators can be grouped in chains, that's why we have a `StopChain` boolean
 	// in the result, to stop executing the validators chain.
