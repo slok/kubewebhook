@@ -24,6 +24,7 @@ With Kubewebhook you can make validating and mutating webhooks in any version, f
 - Simple, extensible and flexible.
 - Multiple webhooks on the same server.
 - Webhook metrics ([RED][red-metrics-url]) for [Prometheus][prometheus-url] with [Grafana dashboard][grafana-dashboard] included.
+- Webhook tracing with [Opentelemetry] support.
 - Supports [warnings].
 
 ## Getting started
@@ -135,3 +136,4 @@ You can access [here][godoc-url].
 [validating-cfg]: https://pkg.go.dev/github.com/slok/kubewebhook/pkg/webhook/validating?tab=doc#WebhookConfig
 [runtime-unstructured]: https://pkg.go.dev/k8s.io/apimachinery/pkg/runtime?tab=doc#Unstructured
 [warnings]: https://kubernetes.io/blog/2020/09/03/warnings/
+[opentelemetry]: https://opentelemetry.io/
