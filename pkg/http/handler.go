@@ -23,14 +23,15 @@ import (
 )
 
 var (
-	runtimeScheme = func() *runtime.Scheme {
+	admissionReviewDeserializer = func() runtime.Decoder {
 		r := runtime.NewScheme()
 		r.AddKnownTypes(admissionv1beta1.SchemeGroupVersion, &admissionv1beta1.AdmissionReview{})
 		r.AddKnownTypes(admissionv1.SchemeGroupVersion, &admissionv1.AdmissionReview{})
-		return r
+
+		codecs := serializer.NewCodecFactory(r)
+
+		return codecs.UniversalDeserializer()
 	}()
-	codecs       = serializer.NewCodecFactory(runtimeScheme)
-	deserializer = codecs.UniversalDeserializer()
 )
 
 // MustHandlerFor it's the same as HandleFor but will panic instead of returning
@@ -76,7 +77,7 @@ func HandlerFor(config HandlerConfig) (http.Handler, error) {
 		return nil, fmt.Errorf("handler invalid configuration: %w", err)
 	}
 
-	h := config.Tracer.TraceHTTPHandler("http.ServeHTTP", handler{
+	h := config.Tracer.TraceHTTPHandler("webhookHTTPHandler", handler{
 		webhook: config.Webhook,
 		logger:  config.Logger,
 		tracer:  config.Tracer,
@@ -200,7 +201,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}).Infof("Admission review request handled")
 }
 func (h handler) requestBodyToModelReview(body []byte) (*model.AdmissionReview, error) {
-	kubeReview, _, err := deserializer.Decode(body, nil, nil)
+	kubeReview, _, err := admissionReviewDeserializer.Decode(body, nil, nil)
 	if err != nil {
 		return nil, fmt.Errorf("could not decode the admission review from the request: %w", err)
 	}
