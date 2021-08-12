@@ -18,6 +18,7 @@ import (
 
 	"github.com/slok/kubewebhook/v2/pkg/log"
 	"github.com/slok/kubewebhook/v2/pkg/model"
+	"github.com/slok/kubewebhook/v2/pkg/tracing"
 	"github.com/slok/kubewebhook/v2/pkg/webhook"
 )
 
@@ -46,6 +47,7 @@ func MustHandlerFor(config HandlerConfig) http.Handler {
 type HandlerConfig struct {
 	Webhook webhook.Webhook
 	Logger  log.Logger
+	Tracer  tracing.Tracer
 }
 
 func (c *HandlerConfig) defaults() error {
@@ -58,6 +60,11 @@ func (c *HandlerConfig) defaults() error {
 	}
 	c.Logger = c.Logger.WithValues(log.Kv{"svc": "http.Handler"})
 
+	if c.Tracer == nil {
+		c.Tracer = tracing.Noop
+	}
+	c.Tracer = c.Tracer.WithValues(map[string]interface{}{"svc": "http.Handler"})
+
 	return nil
 }
 
@@ -69,14 +76,19 @@ func HandlerFor(config HandlerConfig) (http.Handler, error) {
 		return nil, fmt.Errorf("handler invalid configuration: %w", err)
 	}
 
-	return handler{
+	h := config.Tracer.TraceHTTPHandler("http.ServeHTTP", handler{
 		webhook: config.Webhook,
-		logger:  config.Logger}, nil
+		logger:  config.Logger,
+		tracer:  config.Tracer,
+	})
+
+	return h, nil
 }
 
 type handler struct {
 	webhook webhook.Webhook
 	logger  log.Logger
+	tracer  tracing.Tracer
 }
 
 func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -115,6 +127,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		"ns":           ar.Namespace,
 		"name":         ar.Name,
 		"path":         r.URL.Path,
+		"trace-id":     h.tracer.TraceID(ctx),
 	})
 	logger := h.logger.WithCtxValues(ctx)
 
