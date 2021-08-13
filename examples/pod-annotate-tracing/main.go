@@ -7,14 +7,21 @@ import (
 	"net/http"
 	"os"
 
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/sirupsen/logrus"
 	kwhhttp "github.com/slok/kubewebhook/v2/pkg/http"
 	kwhlogrus "github.com/slok/kubewebhook/v2/pkg/log/logrus"
 	kwhmodel "github.com/slok/kubewebhook/v2/pkg/model"
+	kwhtracing "github.com/slok/kubewebhook/v2/pkg/tracing"
+	kwhotel "github.com/slok/kubewebhook/v2/pkg/tracing/otel"
+	kwhwebhook "github.com/slok/kubewebhook/v2/pkg/webhook"
 	kwhmutating "github.com/slok/kubewebhook/v2/pkg/webhook/mutating"
+	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/sdk/resource"
+	otelsdktrace "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type config struct {
@@ -29,7 +36,7 @@ func initFlags() *config {
 	fl.StringVar(&cfg.certFile, "tls-cert-file", "", "TLS certificate file")
 	fl.StringVar(&cfg.keyFile, "tls-key-file", "", "TLS key file")
 
-	fl.Parse(os.Args[1:])
+	_ = fl.Parse(os.Args[1:])
 	return cfg
 }
 
@@ -54,8 +61,18 @@ func run() error {
 		pod.Annotations["mutated"] = "true"
 		pod.Annotations["mutator"] = "pod-annotate"
 
-		return &kwhmutating.MutatorResult{MutatedObject: pod}, nil
+		return &kwhmutating.MutatorResult{
+			MutatedObject: pod,
+			Warnings:      []string{"pod mutated"},
+		}, nil
 	})
+
+	// Prepare Tracer.
+	tracer, stop, err := newTracer("pod-annotate-tracing")
+	if err != nil {
+		return fmt.Errorf("could not create tracer: %w", err)
+	}
+	defer stop()
 
 	// Create webhook.
 	mcfg := kwhmutating.WebhookConfig{
@@ -69,19 +86,38 @@ func run() error {
 	}
 
 	// Get HTTP handler from webhook.
-	whHandler, err := kwhhttp.HandlerFor(kwhhttp.HandlerConfig{Webhook: wh, Logger: logger})
+	whHandler, err := kwhhttp.HandlerFor(kwhhttp.HandlerConfig{
+		Webhook: kwhwebhook.NewTracedWebhook(tracer, wh),
+		Tracer:  tracer,
+		Logger:  logger,
+	})
 	if err != nil {
 		return fmt.Errorf("error creating webhook handler: %w", err)
 	}
 
-	// Serve.
 	logger.Infof("Listening on :8080")
-	err = http.ListenAndServeTLS(":8080", cfg.certFile, cfg.keyFile, whHandler)
+	return http.ListenAndServeTLS(":8080", cfg.certFile, cfg.keyFile, whHandler)
+}
+
+func newTracer(name string) (tracer kwhtracing.Tracer, stop func(), err error) {
+	exporter, err := stdouttrace.New(stdouttrace.WithPrettyPrint())
 	if err != nil {
-		return fmt.Errorf("error serving webhook: %w", err)
+		return nil, nil, err
 	}
 
-	return nil
+	tp := otelsdktrace.NewTracerProvider(
+		otelsdktrace.WithBatcher(exporter),
+		otelsdktrace.WithSampler(otelsdktrace.AlwaysSample()),
+		otelsdktrace.WithResource(resource.NewWithAttributes(
+			semconv.SchemaURL,
+			semconv.ServiceNameKey.String(name),
+		)),
+	)
+
+	propagator := propagation.NewCompositeTextMapPropagator(propagation.Baggage{}, propagation.TraceContext{})
+	tracer = kwhotel.NewTracer(tp, propagator)
+	stop = func() { _ = tp.Shutdown(context.Background()) }
+	return tracer, stop, nil
 }
 
 func main() {

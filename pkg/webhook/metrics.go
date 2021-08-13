@@ -8,7 +8,7 @@ import (
 	"github.com/slok/kubewebhook/v2/pkg/model"
 )
 
-// MeasureOpCommonData is the
+// MeasureOpCommonData is the measuring data used to measure a webhook operation.
 type MeasureOpCommonData struct {
 	WebhookID              string
 	WebhookType            string
@@ -74,7 +74,6 @@ func (m measuredWebhook) ID() string              { return m.next.ID() }
 func (m measuredWebhook) Kind() model.WebhookKind { return m.next.Kind() }
 func (m measuredWebhook) Review(ctx context.Context, ar model.AdmissionReview) (resp model.AdmissionResponse, err error) {
 	defer func(t0 time.Time) {
-		gvk := ar.RequestGVK
 		cData := MeasureOpCommonData{
 			WebhookID:              m.webhookID,
 			AdmissionReviewVersion: string(ar.Version),
@@ -83,13 +82,13 @@ func (m measuredWebhook) Review(ctx context.Context, ar model.AdmissionReview) (
 			ResourceName:           ar.Name,
 			ResourceNamespace:      ar.Namespace,
 			Operation:              string(ar.Operation),
-			ResourceKind:           strings.Trim(strings.Join([]string{gvk.Group, gvk.Version, gvk.Kind}, "/"), "/"),
+			ResourceKind:           getResourceKind(ar),
 			DryRun:                 ar.DryRun,
 		}
 
 		switch r := resp.(type) {
 		case *model.ValidatingAdmissionResponse:
-			cData.WebhookType = model.WebhookKindMutating
+			cData.WebhookType = model.WebhookKindValidating
 			cData.WarningsNumber = len(r.Warnings)
 			m.rec.MeasureValidatingWebhookReviewOp(ctx, MeasureValidatingOpData{
 				MeasureOpCommonData: cData,
@@ -97,11 +96,11 @@ func (m measuredWebhook) Review(ctx context.Context, ar model.AdmissionReview) (
 			})
 
 		case *model.MutatingAdmissionResponse:
-			cData.WebhookType = model.WebhookKindValidating
+			cData.WebhookType = model.WebhookKindMutating
 			cData.WarningsNumber = len(r.Warnings)
 			m.rec.MeasureMutatingWebhookReviewOp(ctx, MeasureMutatingOpData{
 				MeasureOpCommonData: cData,
-				Mutated:             len(r.JSONPatchPatch) > 0 && string(r.JSONPatchPatch) != "[]",
+				Mutated:             hasMutated(r),
 			})
 
 		default:
@@ -112,4 +111,13 @@ func (m measuredWebhook) Review(ctx context.Context, ar model.AdmissionReview) (
 	}(time.Now())
 
 	return m.next.Review(ctx, ar)
+}
+
+func getResourceKind(ar model.AdmissionReview) string {
+	gvk := ar.RequestGVK
+	return strings.Trim(strings.Join([]string{gvk.Group, gvk.Version, gvk.Kind}, "/"), "/")
+}
+
+func hasMutated(r *model.MutatingAdmissionResponse) bool {
+	return len(r.JSONPatchPatch) > 0 && string(r.JSONPatchPatch) != "[]"
 }

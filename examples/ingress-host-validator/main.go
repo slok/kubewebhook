@@ -63,7 +63,7 @@ func initFlags() *config {
 	fl.StringVar(&cfg.addr, "listen-addr", ":8080", "The address to start the server")
 	fl.StringVar(&cfg.hostRegex, "ingress-host-regex", "", "The ingress host regex that matches valid ingresses")
 
-	fl.Parse(os.Args[1:])
+	_ = fl.Parse(os.Args[1:])
 	return cfg
 }
 

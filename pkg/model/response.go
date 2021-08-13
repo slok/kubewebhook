@@ -25,7 +25,7 @@ type MutatingAdmissionResponse struct {
 	Warnings       []string
 }
 
-// Helper type to satisfiy the AdmissionResponse sealed interface.
+// Helper type to satisfy the AdmissionResponse sealed interface.
 type admissionResponse struct{}
 
 func (admissionResponse) isWebhookResponse() bool { return true }

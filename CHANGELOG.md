@@ -3,6 +3,7 @@
 ### Added
 
 - Infer automatically (using Unstructured) Kubernetes types that don't implement metav1.Object like `corev1.PodExecOptions`.
+- Tracing support with Opentelemetry implementation.
 
 ### Changed
 
@@ -48,6 +49,7 @@ v2 of the library mainly refactors the domain model to abstract the admission re
 
 - V1 docs.
 - STD logger.
+- Tracing
 
 ## [0.11.0] - 2020-10-21
 
