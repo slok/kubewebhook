@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+## [2.2.0] - 2021-12-05
+
 ### Added
 
 - Infer automatically (using Unstructured) Kubernetes types that don't implement metav1.Object like `corev1.PodExecOptions`.
@@ -166,7 +168,8 @@ Breaking: Webhook constructors now need a tracer.
 - Static mutating webhook.
 - Handler creator for webhooks.
 
-[unreleased]: https://github.com/slok/kubewebhook/compare/v2.1.0...HEAD
+[unreleased]: https://github.com/slok/kubewebhook/compare/v2.2.0...HEAD
+[2.2.0]: https://github.com/slok/kubewebhook/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/slok/kubewebhook/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/slok/kubewebhook/compare/v0.11.0...v2.0.0
 [0.11.0]: https://github.com/slok/kubewebhook/compare/v0.10.0...v0.11.0

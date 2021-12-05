@@ -106,21 +106,24 @@ We have 2 kinds of webhooks:
 The Kubernetes' version associated with Kubewebhook's versions means that this specific version
 is tested and supports the shown K8s version, however, this doesn't mean that doesn't work with other versions. Normally they work with multiple versions (e.g `v1.18` and `v1.19`).
 
-| Kubewebhook version | k8s version | Supported admission reviews | Support dynamic webhooks |
-| ------------------- | ----------- | --------------------------- | ------------------------ |
-| v2.1                | 1.21        | v1beta1, v1                 | ✔                        |
-| v2.0                | 1.20        | v1beta1, v1                 | ✔                        |
-| v0.11               | 1.19        | v1beta1                     | ✔                        |
-| v0.10               | 1.18        | v1beta1                     | ✔                        |
-| v0.9                | 1.18        | v1beta1                     | ✖                        |
-| v0.8                | 1.17        | v1beta1                     | ✖                        |
-| v0.7                | 1.16        | v1beta1                     | ✖                        |
-| v0.6                | 1.15        | v1beta1                     | ✖                        |
-| v0.5                | 1.14        | v1beta1                     | ✖                        |
-| v0.4                | 1.13        | v1beta1                     | ✖                        |
-| v0.3                | 1.12        | v1beta1                     | ✖                        |
-| v0.2                | 1.11        | v1beta1                     | ✖                        |
-| v0.2                | 1.10        | v1beta1                     | ✖                        |
+| Kubewebhook | Kubernetes | Admission reviews | Dynamic webhooks | [OpenTelemetry] tracing |
+| ----------- | ---------- | ----------------- | ---------------- | ----------------------- |
+| v2.2        | 1.22       | v1beta1, v1       | ✔                | ✔                       |
+| v2.1        | 1.21       | v1beta1, v1       | ✔                | ✖                       |
+| v2.1        | 1.21       | v1beta1, v1       | ✔                | ✖                       |
+| v2.1        | 1.21       | v1beta1, v1       | ✔                | ✖                       |
+| v2.0        | 1.20       | v1beta1, v1       | ✔                | ✖                       |
+| v0.11       | 1.19       | v1beta1           | ✔                | ✖                       |
+| v0.10       | 1.18       | v1beta1           | ✔                | ✖                       |
+| v0.9        | 1.18       | v1beta1           | ✖                | ✖                       |
+| v0.8        | 1.17       | v1beta1           | ✖                | ✖                       |
+| v0.7        | 1.16       | v1beta1           | ✖                | ✖                       |
+| v0.6        | 1.15       | v1beta1           | ✖                | ✖                       |
+| v0.5        | 1.14       | v1beta1           | ✖                | ✖                       |
+| v0.4        | 1.13       | v1beta1           | ✖                | ✖                       |
+| v0.3        | 1.12       | v1beta1           | ✖                | ✖                       |
+| v0.2        | 1.11       | v1beta1           | ✖                | ✖                       |
+| v0.2        | 1.10       | v1beta1           | ✖                | ✖                       |
 
 ## Documentation
 
