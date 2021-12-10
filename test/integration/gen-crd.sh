@@ -10,12 +10,11 @@ GROUPS_VERSION="building:v1"
 # custom informer/listerwatchers.
 TARGETS="deepcopy,client"
 
-IMAGE=quay.io/slok/kube-code-generator:v1.22.0
-DIR="$( cd "$( dirname "${0}" )" && pwd )"
+IMAGE=quay.io/slok/kube-code-generator:v1.23.0
+DIR="$(cd "$(dirname "${0}")" && pwd)"
 ROOT_DIR=${DIR}/../..
 PROJECT_PACKAGE=github.com/slok/kubewebhook/v2
 CRD_PACKAGE=github.com/slok/kubewebhook/v2/test/integration/crd/apis
-
 
 docker run -it --rm \
         -v ${ROOT_DIR}:/go/src/${PROJECT_PACKAGE} \
@@ -24,11 +23,11 @@ docker run -it --rm \
         -e APIS_ROOT="${CRD_PACKAGE}" \
         -e GROUPS_VERSION="${GROUPS_VERSION}" \
         -e GENERATION_TARGETS="${TARGETS}" \
-        ${IMAGE} 
+        ${IMAGE}
 
 docker run -it --rm \
-	-v ${ROOT_DIR}:/src \
+        -v ${ROOT_DIR}:/src \
         -e GO_PROJECT_ROOT=/src \
-	-e CRD_TYPES_PATH=/src/test/integration/crd/apis \
-	-e CRD_OUT_PATH=/src/test/integration/crd/manifests \
-	${IMAGE} update-crd.sh
+        -e CRD_TYPES_PATH=/src/test/integration/crd/apis \
+        -e CRD_OUT_PATH=/src/test/integration/crd/manifests \
+        ${IMAGE} update-crd.sh
