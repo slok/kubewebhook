@@ -40,6 +40,27 @@ func getBaseARV1Beta1() *admissionv1beta1.AdmissionReview {
 	}
 }
 
+func getBaseARV1Beta1WithoutOptional() *admissionv1beta1.AdmissionReview {
+	return &admissionv1beta1.AdmissionReview{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "AdmissionReview",
+			APIVersion: "admission.k8s.io/v1beta1",
+		},
+		Request: &admissionv1beta1.AdmissionRequest{
+			Name:      "test-1",
+			Namespace: "ns-1",
+			Kind:      metav1.GroupVersionKind{Group: "core", Kind: "Pod", Version: "v1"},
+			Resource:  metav1.GroupVersionResource{Group: "core", Resource: "pods", Version: "v1"},
+			UID:       "id-1",
+			Operation: admissionv1beta1.Create,
+			UserInfo:  authenticationv1.UserInfo{},
+			OldObject: runtime.RawExtension{Raw: []byte("old-raw-thingy")},
+			Object:    runtime.RawExtension{Raw: []byte("raw-thingy")},
+			DryRun:    &trueBool,
+		},
+	}
+}
+
 func getBaseARV1() *admissionv1.AdmissionReview {
 	return &admissionv1.AdmissionReview{
 		TypeMeta: metav1.TypeMeta{
@@ -165,6 +186,23 @@ func TestNewAdmissionReviewV1Beta1(t *testing.T) {
 			},
 			expModel: func() model.AdmissionReview {
 				o := getBaseARV1Beta1()
+				o.Request.Operation = admissionv1beta1.Connect
+
+				m := getBaseModelV1Beta1()
+				m.OriginalAdmissionReview = o
+				m.Operation = model.OperationConnect
+				return m
+			},
+		},
+
+		"Regular Kubernetes object to model without optional (RequestKind/RequestResource) (Connect op).": {
+			ar: func() *admissionv1beta1.AdmissionReview {
+				o := getBaseARV1Beta1WithoutOptional()
+				o.Request.Operation = admissionv1beta1.Connect
+				return o
+			},
+			expModel: func() model.AdmissionReview {
+				o := getBaseARV1Beta1WithoutOptional()
 				o.Request.Operation = admissionv1beta1.Connect
 
 				m := getBaseModelV1Beta1()
