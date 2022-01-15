@@ -29,6 +29,7 @@ func getBaseARV1Beta1() *admissionv1beta1.AdmissionReview {
 			Namespace:       "ns-1",
 			Kind:            metav1.GroupVersionKind{Group: "core", Kind: "Pod", Version: "v1"},
 			RequestKind:     &metav1.GroupVersionKind{Group: "core", Kind: "Pod", Version: "v1"},
+			Resource:        metav1.GroupVersionResource{Group: "core", Resource: "pods", Version: "v1"},
 			RequestResource: &metav1.GroupVersionResource{Group: "core", Resource: "pods", Version: "v1"},
 			UID:             "id-1",
 			Operation:       admissionv1beta1.Create,
@@ -36,27 +37,6 @@ func getBaseARV1Beta1() *admissionv1beta1.AdmissionReview {
 			OldObject:       runtime.RawExtension{Raw: []byte("old-raw-thingy")},
 			Object:          runtime.RawExtension{Raw: []byte("raw-thingy")},
 			DryRun:          &trueBool,
-		},
-	}
-}
-
-func getBaseARV1Beta1WithoutOptional() *admissionv1beta1.AdmissionReview {
-	return &admissionv1beta1.AdmissionReview{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "AdmissionReview",
-			APIVersion: "admission.k8s.io/v1beta1",
-		},
-		Request: &admissionv1beta1.AdmissionRequest{
-			Name:      "test-1",
-			Namespace: "ns-1",
-			Kind:      metav1.GroupVersionKind{Group: "core", Kind: "Pod", Version: "v1"},
-			Resource:  metav1.GroupVersionResource{Group: "core", Resource: "pods", Version: "v1"},
-			UID:       "id-1",
-			Operation: admissionv1beta1.Create,
-			UserInfo:  authenticationv1.UserInfo{},
-			OldObject: runtime.RawExtension{Raw: []byte("old-raw-thingy")},
-			Object:    runtime.RawExtension{Raw: []byte("raw-thingy")},
-			DryRun:    &trueBool,
 		},
 	}
 }
@@ -72,6 +52,7 @@ func getBaseARV1() *admissionv1.AdmissionReview {
 			Namespace:       "ns-1",
 			Kind:            metav1.GroupVersionKind{Group: "core", Kind: "Pod", Version: "v1"},
 			RequestKind:     &metav1.GroupVersionKind{Group: "core", Kind: "Pod", Version: "v1"},
+			Resource:        metav1.GroupVersionResource{Group: "core", Resource: "pods", Version: "v1"},
 			RequestResource: &metav1.GroupVersionResource{Group: "core", Resource: "pods", Version: "v1"},
 			UID:             "id-1",
 			Operation:       admissionv1.Create,
@@ -195,19 +176,20 @@ func TestNewAdmissionReviewV1Beta1(t *testing.T) {
 			},
 		},
 
-		"Regular Kubernetes object to model without optional (RequestKind/RequestResource) (Connect op).": {
+		"Regular Kubernetes object to model (without optional Request Kind,Resource).": {
 			ar: func() *admissionv1beta1.AdmissionReview {
-				o := getBaseARV1Beta1WithoutOptional()
-				o.Request.Operation = admissionv1beta1.Connect
+				o := getBaseARV1Beta1()
+				o.Request.RequestKind = nil
+				o.Request.RequestResource = nil
 				return o
 			},
 			expModel: func() model.AdmissionReview {
-				o := getBaseARV1Beta1WithoutOptional()
-				o.Request.Operation = admissionv1beta1.Connect
+				o := getBaseARV1Beta1()
+				o.Request.RequestKind = nil
+				o.Request.RequestResource = nil
 
 				m := getBaseModelV1Beta1()
 				m.OriginalAdmissionReview = o
-				m.Operation = model.OperationConnect
 				return m
 			},
 		},
@@ -295,6 +277,24 @@ func TestNewAdmissionReviewV1(t *testing.T) {
 				m := getBaseModelV1()
 				m.OriginalAdmissionReview = o
 				m.Operation = model.OperationConnect
+				return m
+			},
+		},
+
+		"Regular Kubernetes object to model (without optional Request Kind,Resource).": {
+			ar: func() *admissionv1.AdmissionReview {
+				o := getBaseARV1()
+				o.Request.RequestKind = nil
+				o.Request.RequestResource = nil
+				return o
+			},
+			expModel: func() model.AdmissionReview {
+				o := getBaseARV1()
+				o.Request.RequestKind = nil
+				o.Request.RequestResource = nil
+
+				m := getBaseModelV1()
+				m.OriginalAdmissionReview = o
 				return m
 			},
 		},
