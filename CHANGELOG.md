@@ -3,6 +3,8 @@
 ### Changed
 
 - Update to Kubernetes v1.23.
+- Fix panics on missing requestKind and RequestResource on v1beta1.
+- Fix panics on missing requestKind and RequestResource on v1.
 
 ## [2.2.0] - 2021-12-05
 

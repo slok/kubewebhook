@@ -132,10 +132,34 @@ func NewAdmissionReviewV1(ar *admissionv1.AdmissionReview) AdmissionReview {
 		Operation:               v1OperationToModel(ar.Request.Operation),
 		OldObjectRaw:            ar.Request.OldObject.Raw,
 		NewObjectRaw:            ar.Request.Object.Raw,
-		RequestGVR:              ar.Request.RequestResource,
-		RequestGVK:              ar.Request.RequestKind,
+		RequestGVR:              v1ResourceToModel(ar),
+		RequestGVK:              v1KindToModel(ar),
 		UserInfo:                ar.Request.UserInfo,
 		DryRun:                  dryRun,
+	}
+}
+
+func v1ResourceToModel(ar *admissionv1.AdmissionReview) *metav1.GroupVersionResource {
+	if ar.Request.RequestResource != nil {
+		return ar.Request.RequestResource
+	}
+
+	return &metav1.GroupVersionResource{
+		Group:    ar.Request.Resource.Group,
+		Version:  ar.Request.Resource.Version,
+		Resource: ar.Request.Resource.Resource,
+	}
+}
+
+func v1KindToModel(ar *admissionv1.AdmissionReview) *metav1.GroupVersionKind {
+	if ar.Request.RequestKind != nil {
+		return ar.Request.RequestKind
+	}
+
+	return &metav1.GroupVersionKind{
+		Group:   ar.Request.Kind.Group,
+		Version: ar.Request.Kind.Version,
+		Kind:    ar.Request.Kind.Kind,
 	}
 }
 
