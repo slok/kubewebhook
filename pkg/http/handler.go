@@ -4,13 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"time"
 
 	admissionv1 "k8s.io/api/admission/v1"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
@@ -99,8 +100,12 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Get webhook body with the admission review.
 	var body []byte
 	if r.Body != nil {
-		if data, err := ioutil.ReadAll(r.Body); err == nil {
+		if data, err := configReader(r); err == nil {
 			body = data
+		} else {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			h.logger.Errorf(err.Error())
+			return
 		}
 	}
 	if len(body) == 0 {
@@ -339,6 +344,30 @@ func (h handler) errorToJSON(review model.AdmissionReview, err error) ([]byte, e
 	}
 
 	return nil, fmt.Errorf("invalid admission response type")
+}
+
+// MaxRequestBodyBytes represents the max size of Kubernetes objects we read. Kubernetes allows a 2x
+// buffer on the max etcd size
+// (https://github.com/kubernetes/kubernetes/blob/0afa569499d480df4977568454a50790891860f5/staging/src/k8s.io/apiserver/pkg/server/config.go#L362).
+// We allow an additional 2x buffer, as it is still fairly cheap (6mb)
+// Taken from https://github.com/istio/istio/commit/6ca5055a4db6695ef5504eabdfde3799f2ea91fd
+const MaxRequestBodyBytes = int64(6 * 1024 * 1024)
+
+// configReader is reads an HTTP request, imposing size restrictions aligned with Kubernetes limits.
+func configReader(req *http.Request) ([]byte, error) {
+	defer req.Body.Close()
+	lr := &io.LimitedReader{
+		R: req.Body,
+		N: MaxRequestBodyBytes + 1,
+	}
+	data, err := io.ReadAll(lr)
+	if err != nil {
+		return nil, err
+	}
+	if lr.N <= 0 {
+		return nil, errors.NewRequestEntityTooLargeError(fmt.Sprintf("limit is %d", MaxRequestBodyBytes))
+	}
+	return data, nil
 }
 
 var (
