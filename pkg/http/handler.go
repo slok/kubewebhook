@@ -353,7 +353,7 @@ func (h handler) errorToJSON(review model.AdmissionReview, err error) ([]byte, e
 // Taken from https://github.com/istio/istio/commit/6ca5055a4db6695ef5504eabdfde3799f2ea91fd
 const MaxRequestBodyBytes = int64(6 * 1024 * 1024)
 
-// configReader is reads an HTTP request, imposing size restrictions aligned with Kubernetes limits
+// configReader is reads an HTTP request, imposing size restrictions aligned with Kubernetes limits.
 func configReader(req *http.Request) ([]byte, error) {
 	defer req.Body.Close()
 	lr := &io.LimitedReader{
