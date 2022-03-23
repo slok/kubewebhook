@@ -108,6 +108,7 @@ is tested and supports the shown K8s version, however, this doesn't mean that do
 
 | Kubewebhook | Kubernetes | Admission reviews | Dynamic webhooks | [OpenTelemetry] tracing |
 | ----------- | ---------- | ----------------- | ---------------- | ----------------------- |
+| v2.3        | 1.23       | v1beta1, v1       | ✔                | ✔                       |
 | v2.2        | 1.22       | v1beta1, v1       | ✔                | ✔                       |
 | v2.1        | 1.21       | v1beta1, v1       | ✔                | ✖                       |
 | v2.1        | 1.21       | v1beta1, v1       | ✔                | ✖                       |
