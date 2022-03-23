@@ -5,6 +5,12 @@
 - Update to Kubernetes v1.23.
 - Fix panics on missing requestKind and RequestResource on v1beta1.
 - Fix panics on missing requestKind and RequestResource on v1.
+- Update to Go v1.18.
+
+### Fixed
+
+- [Unauthenticated control plane denial of service attack.](https://github.com/istio/istio/security/advisories/GHSA-856q-xv3c-7f2f)
+
 
 ## [2.2.0] - 2021-12-05
 
