@@ -1,5 +1,9 @@
 ## [Unreleased]
 
+### Changed
+
+- Update to Kubernetes v1.24.
+
 ## [2.3.0] - 2022-03-23
 
 ### Changed
