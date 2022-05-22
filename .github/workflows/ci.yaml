@@ -12,7 +12,7 @@ jobs:
     name: Check
     runs-on: ubuntu-latest
     # Execute the checks inside the container instead the VM.
-    container: golangci/golangci-lint:v1.43.0-alpine
+    container: golangci/golangci-lint:v1.46.2-alpine
     steps:
       - uses: actions/checkout@v3
       - run: ./hack/scripts/check.sh
@@ -34,7 +34,7 @@ jobs:
     strategy:
       max-parallel: 1 # Due to ngrok account limits.
       matrix:
-        kubernetes: [1.22.0, 1.23.0]
+        kubernetes: [1.23.6, 1.24.0]
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v2
@@ -42,7 +42,7 @@ jobs:
           go-version: 1.18
       - name: Execute tests
         env:
-          KIND_VERSION: v0.11.1
+          KIND_VERSION: v0.14.0
           NGROK_SSH_PRIVATE_KEY_B64: ${{secrets.NGROK_SSH_PRIVATE_KEY_B64}}
         run: |
           # Prepare access.
