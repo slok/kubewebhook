@@ -278,6 +278,15 @@ func (h handler) validatingModelResponseToJSON(ctx context.Context, review model
 }
 
 func (h handler) mutatingModelResponseToJSON(ctx context.Context, review model.AdmissionReview, resp *model.MutatingAdmissionResponse) (data []byte, err error) {
+	var resultStatus *metav1.Status
+	if resp.Rejected {
+		resultStatus = &metav1.Status{
+			Message: resp.Message,
+			Status:  metav1.StatusFailure,
+			Code:    http.StatusBadRequest,
+		}
+	}
+
 	switch review.OriginalAdmissionReview.(type) {
 	case *admissionv1beta1.AdmissionReview:
 		if len(resp.Warnings) > 0 {
@@ -290,7 +299,8 @@ func (h handler) mutatingModelResponseToJSON(ctx context.Context, review model.A
 				UID:       types.UID(review.ID),
 				PatchType: v1beta1JSONPatchType,
 				Patch:     resp.JSONPatchPatch,
-				Allowed:   true,
+				Allowed:   !resp.Rejected,
+				Result:    resultStatus,
 			},
 		})
 		return data, err
@@ -302,8 +312,9 @@ func (h handler) mutatingModelResponseToJSON(ctx context.Context, review model.A
 				UID:       types.UID(review.ID),
 				PatchType: v1JSONPatchType,
 				Patch:     resp.JSONPatchPatch,
-				Allowed:   true,
+				Allowed:   !resp.Rejected,
 				Warnings:  resp.Warnings,
+				Result:    resultStatus,
 			},
 		})
 
