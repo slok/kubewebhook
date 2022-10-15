@@ -2,7 +2,7 @@ package prometheus_test
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"net/http/httptest"
 	"testing"
 	"time"
@@ -152,7 +152,7 @@ func TestRecorder(t *testing.T) {
 			h := promhttp.HandlerFor(reg, promhttp.HandlerOpts{})
 			w := httptest.NewRecorder()
 			h.ServeHTTP(w, httptest.NewRequest("GET", "/metrics", nil))
-			allMetrics, err := ioutil.ReadAll(w.Result().Body)
+			allMetrics, err := io.ReadAll(w.Result().Body)
 			require.NoError(err)
 
 			// Check metrics.
