@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+## [2.4.0] - 2022-10-15
+
 ### Changed
 
 - Update to Kubernetes v1.24.
@@ -186,7 +188,8 @@ Breaking: Webhook constructors now need a tracer.
 - Static mutating webhook.
 - Handler creator for webhooks.
 
-[unreleased]: https://github.com/slok/kubewebhook/compare/v2.3.0...HEAD
+[unreleased]: https://github.com/slok/kubewebhook/compare/v2.4.0...HEAD
+[2.4.0]: https://github.com/slok/kubewebhook/compare/v2.3.0...v2.4.0
 [2.3.0]: https://github.com/slok/kubewebhook/compare/v2.2.0...v2.3.0
 [2.2.0]: https://github.com/slok/kubewebhook/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/slok/kubewebhook/compare/v2.0.0...v2.1.0
