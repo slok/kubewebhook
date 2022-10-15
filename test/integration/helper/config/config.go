@@ -2,7 +2,6 @@ package config
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -39,7 +38,7 @@ func (c *TestEnvConfig) defaults() error {
 
 	// Load certificate data.
 	if c.WebhookCert == "" {
-		cert, err := ioutil.ReadFile(c.WebhookCertPath)
+		cert, err := os.ReadFile(c.WebhookCertPath)
 		if err != nil {
 			return fmt.Errorf("error loading cert: %s", err)
 		}
