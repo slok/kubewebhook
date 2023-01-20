@@ -39,7 +39,7 @@ func (c *WebhookConfig) defaults() error {
 	if c.Logger == nil {
 		c.Logger = log.Noop
 	}
-	c.Logger = c.Logger.WithValues(log.Kv{"webhook-id": c.ID, "webhhok-type": "mutating"})
+	c.Logger = c.Logger.WithValues(log.Kv{"webhook-id": c.ID, "webhook-type": "mutating"})
 
 	return nil
 }
