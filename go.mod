@@ -5,12 +5,12 @@ go 1.19
 require (
 	github.com/prometheus/client_golang v1.14.0
 	github.com/sirupsen/logrus v1.9.0
-	github.com/stretchr/testify v1.8.1
+	github.com/stretchr/testify v1.8.2
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.3
-	go.opentelemetry.io/otel v1.11.1
-	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.11.0
-	go.opentelemetry.io/otel/sdk v1.11.1
-	go.opentelemetry.io/otel/trace v1.11.1
+	go.opentelemetry.io/otel v1.14.0
+	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.14.0
+	go.opentelemetry.io/otel/sdk v1.14.0
+	go.opentelemetry.io/otel/trace v1.14.0
 	gomodules.xyz/jsonpatch/v3 v3.0.1
 	k8s.io/api v0.25.3
 	k8s.io/apimachinery v0.25.3
@@ -53,7 +53,7 @@ require (
 	go.opentelemetry.io/otel/metric v0.32.3 // indirect
 	golang.org/x/net v0.0.0-20220722155237-a158d28d115b // indirect
 	golang.org/x/oauth2 v0.0.0-20220223155221-ee480838109b // indirect
-	golang.org/x/sys v0.0.0-20220919091848-fb04ddd9f9c8 // indirect
+	golang.org/x/sys v0.5.0 // indirect
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/time v0.0.0-20220210224613-90d013bbcef8 // indirect
