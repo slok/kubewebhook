@@ -14,6 +14,12 @@ import (
 type MutatorResult struct {
 	// StopChain will stop the chain of validators in case there is a chain set.
 	StopChain bool
+	// Reject tells the apiserver that the resource is incorrect and it should reject the request.
+	// Contrary to ValidatorResult, Reject is used instead of Allowed so that the default value is to allow.
+	// If Reject is true, this implies StopChain.
+	Reject bool
+	// Message will be used by the apiserver to give more information in case the resource is not valid.
+	Message string
 	// MutatedObject is the object that has been mutated. If is nil, it will be used the one
 	// received by the Mutator.
 	MutatedObject metav1.Object
@@ -83,7 +89,7 @@ func (c *Chain) Mutate(ctx context.Context, ar *model.AdmissionReview, obj metav
 				obj = res.MutatedObject
 			}
 
-			if res.StopChain {
+			if res.StopChain || res.Reject {
 				res.Warnings = warnings
 				return res, nil
 			}
