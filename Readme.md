@@ -9,7 +9,7 @@
 [![GoDoc](https://godoc.org/github.com/slok/kubewebhook/v2?status.svg)][godoc-url]
 [![Apache 2 licensed](https://img.shields.io/badge/license-Apache2-blue.svg)](https://raw.githubusercontent.com/slok/kubewebhook/master/LICENSE)
 [![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/slok/kubewebhook)](https://github.com/slok/kubewebhook/releases/latest)
-![Kubernetes release](https://img.shields.io/badge/Kubernetes-v1.25-green?logo=Kubernetes&style=flat&color=326CE5&logoColor=white)
+![Kubernetes release](https://img.shields.io/badge/Kubernetes-v1.29-green?logo=Kubernetes&style=flat&color=326CE5&logoColor=white)
 
 Kubewebhook is a small Go framework to create [external admission webhooks][aw-url] for Kubernetes.
 
@@ -103,30 +103,28 @@ We have 2 kinds of webhooks:
 
 ## Compatibility matrix
 
-The Kubernetes' version associated with Kubewebhook's versions means that this specific version
-is tested and supports the shown K8s version, however, this doesn't mean that doesn't work with other versions. Normally they work with multiple versions (e.g `v1.18` and `v1.19`).
+To know the validated compatibility, check the integration tests on CI.
 
-| Kubewebhook | Kubernetes | Admission reviews | Dynamic webhooks | [OpenTelemetry] tracing |
-| ----------- | ---------- | ----------------- | ---------------- | ----------------------- |
-| v2.5        | 1.25       | v1beta1, v1       | ✔                | ✔                       |
-| v2.4        | 1.24       | v1beta1, v1       | ✔                | ✔                       |
-| v2.3        | 1.23       | v1beta1, v1       | ✔                | ✔                       |
-| v2.2        | 1.22       | v1beta1, v1       | ✔                | ✔                       |
-| v2.1        | 1.21       | v1beta1, v1       | ✔                | ✖                       |
-| v2.1        | 1.21       | v1beta1, v1       | ✔                | ✖                       |
-| v2.1        | 1.21       | v1beta1, v1       | ✔                | ✖                       |
-| v2.0        | 1.20       | v1beta1, v1       | ✔                | ✖                       |
-| v0.11       | 1.19       | v1beta1           | ✔                | ✖                       |
-| v0.10       | 1.18       | v1beta1           | ✔                | ✖                       |
-| v0.9        | 1.18       | v1beta1           | ✖                | ✖                       |
-| v0.8        | 1.17       | v1beta1           | ✖                | ✖                       |
-| v0.7        | 1.16       | v1beta1           | ✖                | ✖                       |
-| v0.6        | 1.15       | v1beta1           | ✖                | ✖                       |
-| v0.5        | 1.14       | v1beta1           | ✖                | ✖                       |
-| v0.4        | 1.13       | v1beta1           | ✖                | ✖                       |
-| v0.3        | 1.12       | v1beta1           | ✖                | ✖                       |
-| v0.2        | 1.11       | v1beta1           | ✖                | ✖                       |
-| v0.2        | 1.10       | v1beta1           | ✖                | ✖                       |
+| Kubewebhook | Kubernetes              | Admission reviews | Dynamic webhooks | [OpenTelemetry] tracing |
+| ----------- | ----------------------- | ----------------- | ---------------- | ----------------------- |
+| v2.6        | 1.29, 1.28, 1.27, 1.26  | v1beta1, v1       | ✔                | ✔                       |
+| v2.5        | 1.25                    | v1beta1, v1       | ✔                | ✔                       |
+| v2.4        | 1.24                    | v1beta1, v1       | ✔                | ✔                       |
+| v2.3        | 1.23                    | v1beta1, v1       | ✔                | ✔                       |
+| v2.2        | 1.22                    | v1beta1, v1       | ✔                | ✔                       |
+| v2.1        | 1.21                    | v1beta1, v1       | ✔                | ✖                       |
+| v2.0        | 1.20                    | v1beta1, v1       | ✔                | ✖                       |
+| v0.11       | 1.19                    | v1beta1           | ✔                | ✖                       |
+| v0.10       | 1.18                    | v1beta1           | ✔                | ✖                       |
+| v0.9        | 1.18                    | v1beta1           | ✖                | ✖                       |
+| v0.8        | 1.17                    | v1beta1           | ✖                | ✖                       |
+| v0.7        | 1.16                    | v1beta1           | ✖                | ✖                       |
+| v0.6        | 1.15                    | v1beta1           | ✖                | ✖                       |
+| v0.5        | 1.14                    | v1beta1           | ✖                | ✖                       |
+| v0.4        | 1.13                    | v1beta1           | ✖                | ✖                       |
+| v0.3        | 1.12                    | v1beta1           | ✖                | ✖                       |
+| v0.2        | 1.11                    | v1beta1           | ✖                | ✖                       |
+| v0.2        | 1.10                    | v1beta1           | ✖                | ✖                       |
 
 ## Documentation
 
