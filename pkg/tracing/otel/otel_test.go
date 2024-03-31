@@ -269,18 +269,15 @@ func TestTracer(t *testing.T) {
 			expect: func(t *testing.T, spans []sdktrace.ReadOnlySpan) {
 				exp := []expSpan{
 					{name: "test-http-span1", kind: trace.SpanKindServer, StatusCode: codes.Unset, attrs: map[string]interface{}{
-						"http.flavor":      "1.1",
-						"http.host":        "example.com",
-						"http.method":      "GET",
-						"http.scheme":      "http",
-						"http.server_name": "test-http-span1",
-						"http.status_code": int64(303),
-						"http.target":      "/this/is/a/test",
-						"http.wrote_bytes": int64(14),
-						"net.host.name":    "example.com",
-						"net.peer.ip":      "192.0.2.1",
-						"net.peer.port":    int64(1234),
-						"net.transport":    "ip_tcp",
+						"http.method":          "GET",
+						"http.scheme":          "http",
+						"http.status_code":     int64(303),
+						"http.target":          "/this/is/a/test",
+						"http.wrote_bytes":     int64(14),
+						"net.host.name":        "example.com",
+						"net.protocol.version": "1.1",
+						"net.sock.peer.addr":   "192.0.2.1",
+						"net.sock.peer.port":   int64(1234),
 					}},
 				}
 				assertSpans(t, exp, spans, nil)
@@ -320,31 +317,28 @@ func TestTracer(t *testing.T) {
 						"code": int64(202),
 					}},
 					{name: "test-http-server", kind: trace.SpanKindServer, StatusCode: codes.Unset, attrs: map[string]interface{}{
-						"http.flavor":      "1.1",
-						"http.host":        "", // Ignored.
-						"http.method":      "GET",
-						"http.scheme":      "http",
-						"http.server_name": "test-http-server",
-						"http.status_code": int64(202),
-						"http.target":      "/this/is/a/test",
-						"http.wrote_bytes": int64(14),
-						"net.peer.ip":      "127.0.0.1",
-						"net.peer.port":    0, // Ignored.
-						"net.transport":    "ip_tcp",
-						"net.host.ip":      "127.0.0.1",
-						"net.host.port":    0, // Ignored.
-						"http.user_agent":  "Go-http-client/1.1",
+						"http.method":          "GET",
+						"http.scheme":          "http",
+						"http.status_code":     int64(202),
+						"http.target":          "/this/is/a/test",
+						"http.wrote_bytes":     int64(14),
+						"net.host.name":        "127.0.0.1",
+						"net.host.port":        "", // Ignored.
+						"net.protocol.version": "1.1",
+						"net.sock.peer.addr":   "127.0.0.1",
+						"net.sock.peer.port":   "", // Ignored.
+						"user_agent.original":  "Go-http-client/1.1",
 					}},
 					{name: "test-http-client: HTTP GET", kind: trace.SpanKindClient, StatusCode: codes.Unset, attrs: map[string]interface{}{
-						"http.method":      "GET",
-						"http.url":         "", // Ignored.
-						"http.scheme":      "http",
-						"http.host":        "", // Ignored.
-						"http.flavor":      "1.1",
-						"http.status_code": int64(202),
+						"http.method":                  "GET",
+						"http.response_content_length": int64(14),
+						"http.status_code":             int64(202),
+						"http.url":                     "http://127.0.0.1:33003/this/is/a/test",
+						"net.peer.name":                "127.0.0.1",
+						"net.peer.port":                int64(111),
 					}},
 				}
-				assertSpans(t, exp, spans, []string{"http.host", "net.peer.port", "http.url", "net.host.port"})
+				assertSpans(t, exp, spans, []string{"net.peer.port", "http.url", "net.host.port", "net.sock.peer.port"})
 
 				// Check hierarchy.
 				var (

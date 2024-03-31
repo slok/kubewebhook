@@ -12,17 +12,21 @@ jobs:
     name: Check
     runs-on: ubuntu-latest
     # Execute the checks inside the container instead the VM.
-    container: golangci/golangci-lint:v1.50.0-alpine
+    container: golangci/golangci-lint:v1.57.2-alpine
     steps:
       - uses: actions/checkout@v3
-      - run: ./hack/scripts/check.sh
+      - run: |
+          # We need this go flag because it started to error after golangci-lint is using Go 1.21.
+          # TODO(slok): Remove it on next (>1.54.1) golangci-lint upgrade to check if this problem has gone.
+          export GOFLAGS="-buildvcs=false"
+          ./hack/scripts/check.sh
 
   unit-test:
     name: Unit test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v4
         with:
           go-version-file: go.mod
       - run: make ci-unit-test
@@ -34,7 +38,7 @@ jobs:
     strategy:
       max-parallel: 1 # Due to ngrok account limits.
       matrix:
-        kubernetes: [1.24.6, 1.25.2]
+        kubernetes: [1.26.14, 1.27.11, 1.28.7, 1.29.2]
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v3
@@ -42,7 +46,7 @@ jobs:
           go-version-file: go.mod
       - name: Execute tests
         env:
-          KIND_VERSION: v0.16.0
+          KIND_VERSION: v0.22.0
           NGROK_SSH_PRIVATE_KEY_B64: ${{secrets.NGROK_SSH_PRIVATE_KEY_B64}}
         run: |
           # Prepare access.

@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"gomodules.xyz/jsonpatch/v3"
+	"gomodules.xyz/jsonpatch/v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/slok/kubewebhook/v2/pkg/log"
