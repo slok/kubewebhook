@@ -14,7 +14,7 @@ jobs:
     # Execute the checks inside the container instead the VM.
     container: golangci/golangci-lint:v1.57.2-alpine
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - run: |
           # We need this go flag because it started to error after golangci-lint is using Go 1.21.
           # TODO(slok): Remove it on next (>1.54.1) golangci-lint upgrade to check if this problem has gone.
@@ -25,7 +25,7 @@ jobs:
     name: Unit test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: actions/setup-go@v4
         with:
           go-version-file: go.mod
@@ -40,7 +40,7 @@ jobs:
       matrix:
         kubernetes: [1.26.14, 1.27.11, 1.28.7, 1.29.2]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: actions/setup-go@v3
         with:
           go-version-file: go.mod
