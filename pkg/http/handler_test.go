@@ -174,13 +174,29 @@ func TestDefaultWebhookFlow(t *testing.T) {
 			expCode: 200,
 		},
 
+		"A correct rejected mutating admission v1beta1 webhook without mutation should not fail.": {
+			body: getTestAdmissionReviewV1beta1RequestStr("1234567890"),
+			mock: func(mw *webhookmock.Webhook) {
+				resp := &model.MutatingAdmissionResponse{
+					ID:             "1234567890",
+					Rejected:       true,
+					Message:        "this is not valid because reasons",
+					JSONPatchPatch: []byte(``),
+					Warnings:       []string{"warn1", "warn2"}, // v1beta1 ignores warnings.
+				}
+				mw.On("Review", mock.Anything, mock.Anything).Once().Return(resp, nil)
+			},
+			expBody: `{"kind":"AdmissionReview","apiVersion":"admission.k8s.io/v1beta1","response":{"uid":"1234567890","allowed":false,"status":{"metadata":{},"status":"Failure","message":"this is not valid because reasons","code":400},"patchType":"JSONPatch"}}`,
+			expCode: 200,
+		},
+
 		"A correct validation admission v1 webhook that allows should not fail.": {
 			body: getTestAdmissionReviewV1RequestStr("1234567890"),
 			mock: func(mw *webhookmock.Webhook) {
 				resp := &model.ValidatingAdmissionResponse{
 					ID:       "1234567890",
 					Allowed:  true,
-					Warnings: []string{"warn1", "warn2"}, // v1beta1 ignores warnings.
+					Warnings: []string{"warn1", "warn2"}, // v1 includes warnings.
 				}
 				mw.On("Review", mock.Anything, mock.Anything).Once().Return(resp, nil)
 			},
@@ -195,7 +211,7 @@ func TestDefaultWebhookFlow(t *testing.T) {
 					ID:       "1234567890",
 					Allowed:  false,
 					Message:  "this is not valid because reasons",
-					Warnings: []string{"warn1", "warn2"}, // v1beta1 ignores warnings.
+					Warnings: []string{"warn1", "warn2"}, // v1 includes warnings.
 				}
 				mw.On("Review", mock.Anything, mock.Anything).Once().Return(resp, nil)
 			},
@@ -209,7 +225,7 @@ func TestDefaultWebhookFlow(t *testing.T) {
 				resp := &model.MutatingAdmissionResponse{
 					ID:             "1234567890",
 					JSONPatchPatch: []byte(`{"something": something}`),
-					Warnings:       []string{"warn1", "warn2"}, // v1beta1 ignores warnings.
+					Warnings:       []string{"warn1", "warn2"}, // v1 includes warnings.
 				}
 				mw.On("Review", mock.Anything, mock.Anything).Once().Return(resp, nil)
 			},
@@ -223,11 +239,27 @@ func TestDefaultWebhookFlow(t *testing.T) {
 				resp := &model.MutatingAdmissionResponse{
 					ID:             "1234567890",
 					JSONPatchPatch: []byte(``),
-					Warnings:       []string{"warn1", "warn2"}, // v1beta1 ignores warnings.
+					Warnings:       []string{"warn1", "warn2"}, // v1 includes warnings.
 				}
 				mw.On("Review", mock.Anything, mock.Anything).Once().Return(resp, nil)
 			},
 			expBody: `{"kind":"AdmissionReview","apiVersion":"admission.k8s.io/v1","response":{"uid":"1234567890","allowed":true,"patchType":"JSONPatch","warnings":["warn1","warn2"]}}`,
+			expCode: 200,
+		},
+
+		"A correct rejected mutating admission v1 webhook without mutation should not fail.": {
+			body: getTestAdmissionReviewV1RequestStr("1234567890"),
+			mock: func(mw *webhookmock.Webhook) {
+				resp := &model.MutatingAdmissionResponse{
+					ID:             "1234567890",
+					Rejected:       true,
+					Message:        "this is not valid because reasons",
+					JSONPatchPatch: []byte(``),
+					Warnings:       []string{"warn1", "warn2"}, // v1 includes warnings.
+				}
+				mw.On("Review", mock.Anything, mock.Anything).Once().Return(resp, nil)
+			},
+			expBody: `{"kind":"AdmissionReview","apiVersion":"admission.k8s.io/v1","response":{"uid":"1234567890","allowed":false,"status":{"metadata":{},"status":"Failure","message":"this is not valid because reasons","code":400},"patchType":"JSONPatch","warnings":["warn1","warn2"]}}`,
 			expCode: 200,
 		},
 

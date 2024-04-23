@@ -21,6 +21,8 @@ type MutatingAdmissionResponse struct {
 	admissionResponse
 
 	ID             string
+	Rejected       bool
+	Message        string
 	JSONPatchPatch []byte
 	Warnings       []string
 }
