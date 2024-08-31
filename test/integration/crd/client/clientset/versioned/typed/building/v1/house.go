@@ -4,14 +4,13 @@ package v1
 
 import (
 	"context"
-	"time"
 
 	v1 "github.com/slok/kubewebhook/v2/test/integration/crd/apis/building/v1"
 	scheme "github.com/slok/kubewebhook/v2/test/integration/crd/client/clientset/versioned/scheme"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
-	rest "k8s.io/client-go/rest"
+	gentype "k8s.io/client-go/gentype"
 )
 
 // HousesGetter has a method to return a HouseInterface.
@@ -35,128 +34,18 @@ type HouseInterface interface {
 
 // houses implements HouseInterface
 type houses struct {
-	client rest.Interface
-	ns     string
+	*gentype.ClientWithList[*v1.House, *v1.HouseList]
 }
 
 // newHouses returns a Houses
 func newHouses(c *BuildingV1Client, namespace string) *houses {
 	return &houses{
-		client: c.RESTClient(),
-		ns:     namespace,
+		gentype.NewClientWithList[*v1.House, *v1.HouseList](
+			"houses",
+			c.RESTClient(),
+			scheme.ParameterCodec,
+			namespace,
+			func() *v1.House { return &v1.House{} },
+			func() *v1.HouseList { return &v1.HouseList{} }),
 	}
-}
-
-// Get takes name of the house, and returns the corresponding house object, and an error if there is any.
-func (c *houses) Get(ctx context.Context, name string, options metav1.GetOptions) (result *v1.House, err error) {
-	result = &v1.House{}
-	err = c.client.Get().
-		Namespace(c.ns).
-		Resource("houses").
-		Name(name).
-		VersionedParams(&options, scheme.ParameterCodec).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// List takes label and field selectors, and returns the list of Houses that match those selectors.
-func (c *houses) List(ctx context.Context, opts metav1.ListOptions) (result *v1.HouseList, err error) {
-	var timeout time.Duration
-	if opts.TimeoutSeconds != nil {
-		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
-	}
-	result = &v1.HouseList{}
-	err = c.client.Get().
-		Namespace(c.ns).
-		Resource("houses").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Watch returns a watch.Interface that watches the requested houses.
-func (c *houses) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
-	var timeout time.Duration
-	if opts.TimeoutSeconds != nil {
-		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
-	}
-	opts.Watch = true
-	return c.client.Get().
-		Namespace(c.ns).
-		Resource("houses").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Watch(ctx)
-}
-
-// Create takes the representation of a house and creates it.  Returns the server's representation of the house, and an error, if there is any.
-func (c *houses) Create(ctx context.Context, house *v1.House, opts metav1.CreateOptions) (result *v1.House, err error) {
-	result = &v1.House{}
-	err = c.client.Post().
-		Namespace(c.ns).
-		Resource("houses").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(house).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Update takes the representation of a house and updates it. Returns the server's representation of the house, and an error, if there is any.
-func (c *houses) Update(ctx context.Context, house *v1.House, opts metav1.UpdateOptions) (result *v1.House, err error) {
-	result = &v1.House{}
-	err = c.client.Put().
-		Namespace(c.ns).
-		Resource("houses").
-		Name(house.Name).
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(house).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Delete takes name of the house and deletes it. Returns an error if one occurs.
-func (c *houses) Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error {
-	return c.client.Delete().
-		Namespace(c.ns).
-		Resource("houses").
-		Name(name).
-		Body(&opts).
-		Do(ctx).
-		Error()
-}
-
-// DeleteCollection deletes a collection of objects.
-func (c *houses) DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error {
-	var timeout time.Duration
-	if listOpts.TimeoutSeconds != nil {
-		timeout = time.Duration(*listOpts.TimeoutSeconds) * time.Second
-	}
-	return c.client.Delete().
-		Namespace(c.ns).
-		Resource("houses").
-		VersionedParams(&listOpts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Body(&opts).
-		Do(ctx).
-		Error()
-}
-
-// Patch applies the patch and returns the patched house.
-func (c *houses) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.House, err error) {
-	result = &v1.House{}
-	err = c.client.Patch(pt).
-		Namespace(c.ns).
-		Resource("houses").
-		Name(name).
-		SubResource(subresources...).
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(data).
-		Do(ctx).
-		Into(result)
-	return
 }

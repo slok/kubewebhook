@@ -5,10 +5,9 @@ package fake
 import (
 	"context"
 
-	buildingv1 "github.com/slok/kubewebhook/v2/test/integration/crd/apis/building/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "github.com/slok/kubewebhook/v2/test/integration/crd/apis/building/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	testing "k8s.io/client-go/testing"
@@ -20,36 +19,38 @@ type FakeHouses struct {
 	ns   string
 }
 
-var housesResource = schema.GroupVersionResource{Group: "building.kubewebhook.slok.dev", Version: "v1", Resource: "houses"}
+var housesResource = v1.SchemeGroupVersion.WithResource("houses")
 
-var housesKind = schema.GroupVersionKind{Group: "building.kubewebhook.slok.dev", Version: "v1", Kind: "House"}
+var housesKind = v1.SchemeGroupVersion.WithKind("House")
 
 // Get takes name of the house, and returns the corresponding house object, and an error if there is any.
-func (c *FakeHouses) Get(ctx context.Context, name string, options v1.GetOptions) (result *buildingv1.House, err error) {
+func (c *FakeHouses) Get(ctx context.Context, name string, options metav1.GetOptions) (result *v1.House, err error) {
+	emptyResult := &v1.House{}
 	obj, err := c.Fake.
-		Invokes(testing.NewGetAction(housesResource, c.ns, name), &buildingv1.House{})
+		Invokes(testing.NewGetActionWithOptions(housesResource, c.ns, name, options), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
-	return obj.(*buildingv1.House), err
+	return obj.(*v1.House), err
 }
 
 // List takes label and field selectors, and returns the list of Houses that match those selectors.
-func (c *FakeHouses) List(ctx context.Context, opts v1.ListOptions) (result *buildingv1.HouseList, err error) {
+func (c *FakeHouses) List(ctx context.Context, opts metav1.ListOptions) (result *v1.HouseList, err error) {
+	emptyResult := &v1.HouseList{}
 	obj, err := c.Fake.
-		Invokes(testing.NewListAction(housesResource, housesKind, c.ns, opts), &buildingv1.HouseList{})
+		Invokes(testing.NewListActionWithOptions(housesResource, housesKind, c.ns, opts), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 
 	label, _, _ := testing.ExtractFromListOptions(opts)
 	if label == nil {
 		label = labels.Everything()
 	}
-	list := &buildingv1.HouseList{ListMeta: obj.(*buildingv1.HouseList).ListMeta}
-	for _, item := range obj.(*buildingv1.HouseList).Items {
+	list := &v1.HouseList{ListMeta: obj.(*v1.HouseList).ListMeta}
+	for _, item := range obj.(*v1.HouseList).Items {
 		if label.Matches(labels.Set(item.Labels)) {
 			list.Items = append(list.Items, item)
 		}
@@ -58,57 +59,60 @@ func (c *FakeHouses) List(ctx context.Context, opts v1.ListOptions) (result *bui
 }
 
 // Watch returns a watch.Interface that watches the requested houses.
-func (c *FakeHouses) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
+func (c *FakeHouses) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
-		InvokesWatch(testing.NewWatchAction(housesResource, c.ns, opts))
+		InvokesWatch(testing.NewWatchActionWithOptions(housesResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a house and creates it.  Returns the server's representation of the house, and an error, if there is any.
-func (c *FakeHouses) Create(ctx context.Context, house *buildingv1.House, opts v1.CreateOptions) (result *buildingv1.House, err error) {
+func (c *FakeHouses) Create(ctx context.Context, house *v1.House, opts metav1.CreateOptions) (result *v1.House, err error) {
+	emptyResult := &v1.House{}
 	obj, err := c.Fake.
-		Invokes(testing.NewCreateAction(housesResource, c.ns, house), &buildingv1.House{})
+		Invokes(testing.NewCreateActionWithOptions(housesResource, c.ns, house, opts), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
-	return obj.(*buildingv1.House), err
+	return obj.(*v1.House), err
 }
 
 // Update takes the representation of a house and updates it. Returns the server's representation of the house, and an error, if there is any.
-func (c *FakeHouses) Update(ctx context.Context, house *buildingv1.House, opts v1.UpdateOptions) (result *buildingv1.House, err error) {
+func (c *FakeHouses) Update(ctx context.Context, house *v1.House, opts metav1.UpdateOptions) (result *v1.House, err error) {
+	emptyResult := &v1.House{}
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateAction(housesResource, c.ns, house), &buildingv1.House{})
+		Invokes(testing.NewUpdateActionWithOptions(housesResource, c.ns, house, opts), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
-	return obj.(*buildingv1.House), err
+	return obj.(*v1.House), err
 }
 
 // Delete takes name of the house and deletes it. Returns an error if one occurs.
-func (c *FakeHouses) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
+func (c *FakeHouses) Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteActionWithOptions(housesResource, c.ns, name, opts), &buildingv1.House{})
+		Invokes(testing.NewDeleteActionWithOptions(housesResource, c.ns, name, opts), &v1.House{})
 
 	return err
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakeHouses) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(housesResource, c.ns, listOpts)
+func (c *FakeHouses) DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error {
+	action := testing.NewDeleteCollectionActionWithOptions(housesResource, c.ns, opts, listOpts)
 
-	_, err := c.Fake.Invokes(action, &buildingv1.HouseList{})
+	_, err := c.Fake.Invokes(action, &v1.HouseList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched house.
-func (c *FakeHouses) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *buildingv1.House, err error) {
+func (c *FakeHouses) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.House, err error) {
+	emptyResult := &v1.House{}
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(housesResource, c.ns, name, pt, data, subresources...), &buildingv1.House{})
+		Invokes(testing.NewPatchSubresourceActionWithOptions(housesResource, c.ns, name, pt, data, opts, subresources...), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
-	return obj.(*buildingv1.House), err
+	return obj.(*v1.House), err
 }
