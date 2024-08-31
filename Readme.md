@@ -9,7 +9,7 @@
 [![GoDoc](https://godoc.org/github.com/slok/kubewebhook/v2?status.svg)][godoc-url]
 [![Apache 2 licensed](https://img.shields.io/badge/license-Apache2-blue.svg)](https://raw.githubusercontent.com/slok/kubewebhook/master/LICENSE)
 [![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/slok/kubewebhook)](https://github.com/slok/kubewebhook/releases/latest)
-![Kubernetes release](https://img.shields.io/badge/Kubernetes-v1.29-green?logo=Kubernetes&style=flat&color=326CE5&logoColor=white)
+![Kubernetes release](https://img.shields.io/badge/Kubernetes-v1.31-green?logo=Kubernetes&style=flat&color=326CE5&logoColor=white)
 
 Kubewebhook is a small Go framework to create [external admission webhooks][aw-url] for Kubernetes.
 
@@ -107,6 +107,7 @@ To know the validated compatibility, check the integration tests on CI.
 
 | Kubewebhook | Kubernetes              | Admission reviews | Dynamic webhooks | [OpenTelemetry] tracing |
 | ----------- | ----------------------- | ----------------- | ---------------- | ----------------------- |
+| v2.7        | 1.31, 1.30, 1.29, 1.28  | v1beta1, v1       | ✔                | ✔                       |
 | v2.6        | 1.29, 1.28, 1.27, 1.26  | v1beta1, v1       | ✔                | ✔                       |
 | v2.5        | 1.25                    | v1beta1, v1       | ✔                | ✔                       |
 | v2.4        | 1.24                    | v1beta1, v1       | ✔                | ✔                       |
