@@ -269,15 +269,15 @@ func TestTracer(t *testing.T) {
 			expect: func(t *testing.T, spans []sdktrace.ReadOnlySpan) {
 				exp := []expSpan{
 					{name: "test-http-span1", kind: trace.SpanKindServer, StatusCode: codes.Unset, attrs: map[string]interface{}{
-						"http.method":          "GET",
-						"http.scheme":          "http",
-						"http.status_code":     int64(303),
-						"http.target":          "/this/is/a/test",
-						"http.wrote_bytes":     int64(14),
-						"net.host.name":        "example.com",
-						"net.protocol.version": "1.1",
-						"net.sock.peer.addr":   "192.0.2.1",
-						"net.sock.peer.port":   int64(1234),
+						"http.method":                  "GET",
+						"http.scheme":                  "http",
+						"http.status_code":             int64(303),
+						"http.target":                  "/this/is/a/test",
+						"http.response_content_length": int64(14),
+						"net.host.name":                "example.com",
+						"net.protocol.version":         "1.1",
+						"net.sock.peer.addr":           "192.0.2.1",
+						"net.sock.peer.port":           int64(1234),
 					}},
 				}
 				assertSpans(t, exp, spans, nil)
@@ -317,17 +317,17 @@ func TestTracer(t *testing.T) {
 						"code": int64(202),
 					}},
 					{name: "test-http-server", kind: trace.SpanKindServer, StatusCode: codes.Unset, attrs: map[string]interface{}{
-						"http.method":          "GET",
-						"http.scheme":          "http",
-						"http.status_code":     int64(202),
-						"http.target":          "/this/is/a/test",
-						"http.wrote_bytes":     int64(14),
-						"net.host.name":        "127.0.0.1",
-						"net.host.port":        "", // Ignored.
-						"net.protocol.version": "1.1",
-						"net.sock.peer.addr":   "127.0.0.1",
-						"net.sock.peer.port":   "", // Ignored.
-						"user_agent.original":  "Go-http-client/1.1",
+						"http.method":                  "GET",
+						"http.scheme":                  "http",
+						"http.status_code":             int64(202),
+						"http.target":                  "/this/is/a/test",
+						"http.response_content_length": int64(14),
+						"net.host.name":                "127.0.0.1",
+						"net.host.port":                "", // Ignored.
+						"net.protocol.version":         "1.1",
+						"net.sock.peer.addr":           "127.0.0.1",
+						"net.sock.peer.port":           "", // Ignored.
+						"user_agent.original":          "Go-http-client/1.1",
 					}},
 					{name: "test-http-client: HTTP GET", kind: trace.SpanKindClient, StatusCode: codes.Unset, attrs: map[string]interface{}{
 						"http.method":                  "GET",
