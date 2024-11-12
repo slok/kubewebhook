@@ -1,6 +1,6 @@
 module github.com/slok/kubewebhook/v2
 
-go 1.23.0
+go 1.22.0
 
 require (
 	github.com/prometheus/client_golang v1.20.2
