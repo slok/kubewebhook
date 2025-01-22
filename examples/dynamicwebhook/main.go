@@ -14,7 +14,6 @@ import (
 	kwhlogrus "github.com/slok/kubewebhook/v2/pkg/log/logrus"
 	kwhmodel "github.com/slok/kubewebhook/v2/pkg/model"
 	kwhmutating "github.com/slok/kubewebhook/v2/pkg/webhook/mutating"
-	mutatingwh "github.com/slok/kubewebhook/v2/pkg/webhook/mutating"
 )
 
 type config struct {
@@ -41,7 +40,7 @@ func main() {
 	cfg := initFlags()
 
 	// Create our mutator.
-	mt := mutatingwh.MutatorFunc(func(_ context.Context, ar *kwhmodel.AdmissionReview, obj metav1.Object) (*kwhmutating.MutatorResult, error) {
+	mt := kwhmutating.MutatorFunc(func(_ context.Context, ar *kwhmodel.AdmissionReview, obj metav1.Object) (*kwhmutating.MutatorResult, error) {
 		labels := obj.GetLabels()
 		if labels == nil {
 			labels = map[string]string{}
@@ -53,12 +52,12 @@ func main() {
 	})
 
 	// We don't use any type, it works for any type.
-	mcfg := mutatingwh.WebhookConfig{
+	mcfg := kwhmutating.WebhookConfig{
 		ID:      "labeler",
 		Mutator: mt,
 		Logger:  logger,
 	}
-	wh, err := mutatingwh.NewWebhook(mcfg)
+	wh, err := kwhmutating.NewWebhook(mcfg)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error creating webhook: %s", err)
 		os.Exit(1)
