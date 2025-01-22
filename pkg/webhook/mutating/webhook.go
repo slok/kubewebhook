@@ -146,6 +146,8 @@ func (w mutatingWebhook) mutatingAdmissionReview(ctx context.Context, ar model.A
 	// Forge response.
 	return &model.MutatingAdmissionResponse{
 		ID:             ar.ID,
+		Rejected:       res.Reject,
+		Message:        res.Message,
 		JSONPatchPatch: marshalledPatch,
 		Warnings:       res.Warnings,
 	}, nil
