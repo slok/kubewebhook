@@ -13,8 +13,7 @@
 
 Kubewebhook is a small Go framework to create [external admission webhooks][aw-url] for Kubernetes.
 
-With Kubewebhook you can make validating and mutating webhooks in any version, fast, easy, and focusing mainly on the domain logic of the webhook itself.
-
+With Kubewebhook, you can create validating and mutating webhooks for any version quickly and easily, focusing primarily on the webhook's domain logic.
 ## Features
 
 - Ready for mutating and validating webhook kinds.
@@ -78,7 +77,7 @@ func run() error {
     return nil
 ```
 
-You can get more examples in [here](examples)
+You can find more examples [here](examples)
 
 ## Production ready example
 
